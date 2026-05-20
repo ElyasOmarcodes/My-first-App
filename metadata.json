@@ -1,0 +1,6 @@
+{
+  "name": "جامع Madrasa",
+  "description": "Comprehensive Islamic Madrasa Management System managing students, teachers, finance, and attendance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
