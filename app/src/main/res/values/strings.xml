@@ -74,6 +74,7 @@
     <string name="pref_autotext_export">AutoText خوندي کول (Export)</string>
 
     <string name="pref_arrows">د تیرو کیلیو قطار (▲▼◀▶)</string>
+    <string name="pref_arrow_height">د تیرو قطار لوړوالی (٪)</string>
     <string name="pref_arrows_sum">د کیبورډ لاندې د کرسر د خوځولو کیلۍ</string>
 
     <string name="pref_vibrate">لړزول (Vibration)</string>
@@ -89,6 +90,7 @@
     <string name="pref_clear_learned_sum">ټولې زده شوې کلمې او وړاندوینې ړنګوي</string>
     <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
 
+    <string name="credit">By : ElyasOmar\n2026</string>
     <string name="clip_prefix">کاپي شوی:</string>
     <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
 

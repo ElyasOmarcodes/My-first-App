@@ -58,7 +58,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private var soundPool: android.media.SoundPool? = null
     private var popSoundId = 0
-    private var soundType = "pop"
+    private var soundType = "wood"
 
     private var autocorrectOn = true
     private var isPasswordField = false
@@ -221,9 +221,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val landscape =
             resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         kv.keyHeightDp =
-            if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 52)
-        kv.fontScale = p.getInt("font_scale", 100) / 100f
-        kv.hintScale = p.getInt("hint_scale", 100) / 100f
+            if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
+        kv.arrowRowScale = p.getInt("arrow_height", 100) / 100f
+        kv.fontScale = p.getInt("font_scale", 70) / 100f
+        kv.hintScale = p.getInt("hint_scale", 96) / 100f
         kv.cornerRadiusDp = p.getInt("corner_radius", 6)
         kv.keyGapDp = p.getInt("key_gap", 2) / 1.33f
         kv.showHints = p.getBoolean("hints", true)
@@ -232,13 +233,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.longPressTimeout = (p.getString("longpress", "350") ?: "350").toLong()
         val density = resources.displayMetrics.density
-        kv.setPadding(0, 0, 0, (p.getInt("bottom_gap", 0) * density).toInt())
+        kv.setPadding(0, 0, 0, (p.getInt("bottom_gap", 43) * density).toInt())
 
         vibrateOn = p.getBoolean("vibrate", true)
         vibrateMs = p.getInt("vibrate_ms", 20).toLong()
-        soundOn = p.getBoolean("sound", false)
-        soundVol = p.getInt("sound_vol", 60) / 100f
-        soundType = p.getString("sound_type", "pop") ?: "pop"
+        soundOn = p.getBoolean("sound", true)
+        soundVol = p.getInt("sound_vol", 15) / 100f
+        soundType = p.getString("sound_type", "wood") ?: "wood"
         if (soundOn && soundType != "system") initSoundPool()
         suggestionsOn = p.getBoolean("suggestions", true)
         learnWordsOn = p.getBoolean("learn_words", true)
@@ -259,7 +260,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         val enabled = p.getStringSet("languages", null)
-        val list = if (enabled.isNullOrEmpty()) Layouts.ALL
+            ?: setOf("ps", "fa", "ar", "en")
+        val list = if (enabled.isEmpty()) Layouts.ALL
         else Layouts.ALL.filter { enabled.contains(it.code) }
         languages = if (list.isEmpty()) Layouts.ALL else list
         if (langIndex >= languages.size) langIndex = 0

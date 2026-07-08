@@ -2,20 +2,20 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <SeekBarPreference android:key="key_height" android:title="@string/pref_key_height"
-        android:defaultValue="52" android:max="72" app:min="36" app:showSeekBarValue="true" />
+        android:defaultValue="72" android:max="100" app:min="36" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="key_height_land" android:title="@string/pref_key_height_land"
-        android:defaultValue="42" android:max="60" app:min="30" app:showSeekBarValue="true" />
+        android:defaultValue="42" android:max="80" app:min="30" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="font_scale" android:title="@string/pref_font_scale"
-        android:defaultValue="100" android:max="140" app:min="70" app:showSeekBarValue="true" />
+        android:defaultValue="70" android:max="140" app:min="70" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="hint_scale" android:title="@string/pref_hint_scale"
-        android:defaultValue="100" android:max="150" app:min="60" app:showSeekBarValue="true" />
+        android:defaultValue="96" android:max="150" app:min="60" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="corner_radius" android:title="@string/pref_corner_radius"
         android:defaultValue="6" android:max="24" app:min="0" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="key_gap" android:title="@string/pref_key_gap"
         android:defaultValue="2" android:max="8" app:min="0" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="bottom_gap" android:title="@string/pref_bottom_gap"
         android:summary="@string/pref_bottom_gap_sum"
-        android:defaultValue="0" android:max="48" app:min="0" app:showSeekBarValue="true" />
+        android:defaultValue="43" android:max="48" app:min="0" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="sugg_font" android:title="@string/pref_sugg_font"
         android:defaultValue="17" android:max="24" app:min="13" app:showSeekBarValue="true" />
 </PreferenceScreen>

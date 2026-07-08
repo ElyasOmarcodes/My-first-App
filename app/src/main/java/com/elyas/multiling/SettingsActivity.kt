@@ -102,15 +102,15 @@ class SettingsActivity : AppCompatActivity() {
         if (previewHolder.visibility != android.view.View.VISIBLE) return
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         preview.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
-        preview.keyHeightDp = p.getInt("key_height", 52)
-        preview.fontScale = p.getInt("font_scale", 100) / 100f
-        preview.hintScale = p.getInt("hint_scale", 100) / 100f
+        preview.keyHeightDp = p.getInt("key_height", 72)
+        preview.fontScale = p.getInt("font_scale", 70) / 100f
+        preview.hintScale = p.getInt("hint_scale", 96) / 100f
         preview.cornerRadiusDp = p.getInt("corner_radius", 6)
         preview.keyGapDp = p.getInt("key_gap", 2) / 1.33f
         preview.showHints = p.getBoolean("hints", true)
         preview.keyBorder = p.getBoolean("key_border", false)
         val density = resources.displayMetrics.density
-        preview.setPadding(0, 0, 0, (p.getInt("bottom_gap", 0) * density).toInt())
+        preview.setPadding(0, 0, 0, (p.getInt("bottom_gap", 43) * density).toInt())
         val rows = ArrayList<List<KeyDef>>(Layouts.PASHTO.rows)
         rows.add(
             listOf(

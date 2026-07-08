@@ -6,7 +6,7 @@
         android:summary="@string/pref_languages_sum"
         android:entries="@array/lang_names"
         android:entryValues="@array/lang_codes"
-        android:defaultValue="@array/lang_codes" />
+        android:defaultValue="@array/lang_codes_default" />
     <SwitchPreferenceCompat
         android:key="space_swipe"
         android:title="@string/pref_space_swipe"

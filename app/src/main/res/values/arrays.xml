@@ -15,6 +15,13 @@
         <item>en</item>
     </string-array>
 
+    <string-array name="lang_codes_default">
+        <item>ps</item>
+        <item>fa</item>
+        <item>ar</item>
+        <item>en</item>
+    </string-array>
+
     <string-array name="theme_names">
         <item>تور (Dark)</item>
         <item>روښانه (Light)</item>

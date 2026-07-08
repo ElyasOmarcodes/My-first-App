@@ -74,6 +74,7 @@ class KeyboardView(context: Context) : View(context) {
         set(value) { field = value; invalidate() }
 
     var keyHeightDp: Int = 52
+    var arrowRowScale: Float = 1f
     var fontScale: Float = 1f
     var hintScale: Float = 1f
     var cornerRadiusDp: Int = 6
@@ -170,11 +171,20 @@ class KeyboardView(context: Context) : View(context) {
     private var gridCellW = 0f
     private var gridCellH = 0f
 
+    private fun isArrowRow(row: List<KeyDef>): Boolean =
+        row.isNotEmpty() && row.all { it.code in Keys.ARROW_RIGHT..Keys.ARROW_UP }
+
+    private fun rowHeightPx(row: List<KeyDef>): Float {
+        val base = keyHeightDp * density
+        return if (isArrowRow(row)) base * arrowRowScale else base
+    }
+
     // ------------------------------------------------------------- measure
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
-        val rowH = (keyHeightDp * density).toInt()
-        val height = rowH * max(1, rows.size) + paddingTop + paddingBottom
+        var h = (paddingTop + paddingBottom).toFloat()
+        for (row in rows) h += rowHeightPx(row)
+        val height = max((keyHeightDp * density).toInt(), h.toInt())
         setMeasuredDimension(width, height)
     }
 
@@ -185,11 +195,11 @@ class KeyboardView(context: Context) : View(context) {
     private fun layoutKeys() {
         placed = ArrayList()
         if (rows.isEmpty() || width == 0) return
-        val rowH = keyHeightDp * density
         val gap = keyGapDp * density
         val sidePad = keyGapDp * density
         var y = paddingTop.toFloat()
         for ((ri, row) in rows.withIndex()) {
+            val rowH = rowHeightPx(row)
             val totalW = row.sumOf { it.width.toDouble() }.toFloat()
             val unit = (width - 2 * sidePad) / totalW
             var x = sidePad
@@ -551,8 +561,8 @@ class KeyboardView(context: Context) : View(context) {
         gridCols = cols
         gridHandler = onSelect
         val rowsCount = (labels.size + cols - 1) / cols
-        gridCellW = (width * (if (cols == 1) 0.55f else 0.9f)) / cols
-        gridCellH = keyHeightDp * density
+        gridCellW = (width * (if (cols == 1) 0.45f else 0.9f)) / cols
+        gridCellH = keyHeightDp * density * (if (cols == 1) 0.72f else 1f)
         val totalW = gridCellW * cols
         val totalH = gridCellH * rowsCount
 
@@ -577,7 +587,7 @@ class KeyboardView(context: Context) : View(context) {
                 tv.text = labels[i]
                 tv.gravity = Gravity.CENTER
                 tv.setTextColor(theme.text)
-                tv.textSize = 17f
+                tv.textSize = if (cols == 1) 14f else 17f
                 tv.layoutParams =
                     LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
                 tv.setOnClickListener {
