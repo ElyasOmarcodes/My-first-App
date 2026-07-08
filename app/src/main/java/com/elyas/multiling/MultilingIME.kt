@@ -62,6 +62,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private var autocorrectOn = true
     private var isPasswordField = false
+    private var revertOriginal: String? = null
+    private var revertCorrected: String? = null
+    private val rejectedWords = HashSet<String>()
+    private var lastDataVersion = -1
     private var pendingClip: String? = null
     private var bestCandidate: WordStore.Cand? = null
     private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
@@ -247,6 +251,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         suggFontSp = p.getInt("sugg_font", 17).toFloat()
         arrowsOn = p.getBoolean("arrows", true)
 
+        val dv = p.getInt("data_version", 0)
+        if (dv != lastDataVersion) {
+            lastDataVersion = dv
+            wordStores.clear()
+            autoText = null
+        }
+
         val enabled = p.getStringSet("languages", null)
         val list = if (enabled.isNullOrEmpty()) Layouts.ALL
         else Layouts.ALL.filter { enabled.contains(it.code) }
@@ -338,6 +349,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------ listener
     override fun onChar(text: String) {
         feedback()
+        revertOriginal = null
+        revertCorrected = null
         val ic = currentInputConnection ?: return
 
         val isLetter = text.length == 1 && Character.isLetter(text[0])
@@ -378,11 +391,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 val best = bestCandidate
                 if (autocorrectOn && suggestionsOn && sep == " " &&
                     word.length >= 2 && best != null && !best.exact &&
-                    best.sameLen && !store().contains(word)
+                    best.sameLen && !store().contains(word) &&
+                    !rejectedWords.contains(word)
                 ) {
                     ic.deleteSurroundingText(word.length, 0)
                     ic.commitText(best.word, 1)
                     committed = best.word
+                    // backspace right after this replacement restores the
+                    // original word (Samsung-style revert)
+                    revertOriginal = word
+                    revertCorrected = best.word
                 }
                 if (committed.length >= 2) {
                     if (suggestionsOn && learnWordsOn) store().learn(committed)
@@ -420,6 +438,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             Keys.DELETE -> {
                 feedback()
+                if (tryRevertAutocorrect()) return
                 if (wordBuffer.isNotEmpty()) wordBuffer.setLength(wordBuffer.length - 1)
                 sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
                 updateSuggestions()
@@ -503,6 +522,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /**
+     * Backspace immediately after an autocorrection restores the word the
+     * user actually typed, and stops correcting that word from then on
+     * (a second revert makes it a learned dictionary word).
+     */
+    private fun tryRevertAutocorrect(): Boolean {
+        val original = revertOriginal ?: return false
+        val corrected = revertCorrected ?: return false
+        revertOriginal = null
+        revertCorrected = null
+        val ic = currentInputConnection ?: return false
+        val expect = "$corrected "
+        val before = try { ic.getTextBeforeCursor(expect.length, 0) } catch (_: Exception) { null }
+        if (before == null || before.toString() != expect) return false
+        ic.deleteSurroundingText(expect.length, 0)
+        ic.commitText(original, 1)
+        rejectedWords.add(original)
+        if (learnWordsOn) store().learn(original)
+        wordBuffer.setLength(0)
+        wordBuffer.append(original)
+        updateSuggestions()
+        return true
+    }
+
     /** Arrows honour edit-panel select mode by holding Shift. */
     private fun sendArrow(keyCode: Int) {
         val ic = currentInputConnection ?: return
@@ -548,7 +591,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private fun showLanguageMenu() {
         val kv = keyboardView ?: return
-        kv.showGridMenu(languages.map { it.nativeName }, initial = langIndex) { which ->
+        kv.showGridMenu(languages.map { it.nativeName }, initial = langIndex, cols = 1) { which ->
             langIndex = which
             mode = Mode.LETTERS
             shift = 0
@@ -603,6 +646,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 }
             }
         } else {
+            // the word being typed always leads, live (long-press saves it)
+            items.add(Triple(prefix, STYLE_TYPED, false))
             if (autotextOn) {
                 for (e in autoTextStore().matching(prefix, 2)) {
                     items.add(Triple(e, STYLE_ACCENT, false))
@@ -610,13 +655,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             val cands = store().suggestSmart(prefix, 6, seedDictOn, confusion())
             bestCandidate = cands.firstOrNull()
-            if (cands.isEmpty() && items.isEmpty()) {
-                // unknown word: show it live; long-press saves it
-                items.add(Triple(prefix, STYLE_TYPED, false))
-            } else {
-                for ((i, c) in cands.withIndex()) {
-                    items.add(Triple(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL, false))
-                }
+            for ((i, c) in cands.withIndex()) {
+                items.add(Triple(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL, false))
             }
         }
 

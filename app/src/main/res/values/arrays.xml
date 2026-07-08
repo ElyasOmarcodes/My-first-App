@@ -32,10 +32,20 @@
 
     <string-array name="sound_type_names">
         <item>نرم (Pop)</item>
+        <item>کلیک (Click)</item>
+        <item>څاڅکی (Drop)</item>
+        <item>لرګین (Wood)</item>
+        <item>حباب (Bubble)</item>
+        <item>ډېر نرم (Soft)</item>
         <item>د سیسټم غږ</item>
     </string-array>
     <string-array name="sound_type_values">
         <item>pop</item>
+        <item>click</item>
+        <item>drop</item>
+        <item>wood</item>
+        <item>bubble</item>
+        <item>soft</item>
         <item>system</item>
     </string-array>
 

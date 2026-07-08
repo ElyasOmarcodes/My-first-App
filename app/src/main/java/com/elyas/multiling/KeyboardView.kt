@@ -475,6 +475,7 @@ class KeyboardView(context: Context) : View(context) {
 
         if (key.def.code == Keys.SPACE) {
             st.longPressFired = true
+            longPressPointerId = id // keep tracking this pointer for the menu
             dismissPreview()
             listener?.onSpaceLongPress()
             return
@@ -550,7 +551,7 @@ class KeyboardView(context: Context) : View(context) {
         gridCols = cols
         gridHandler = onSelect
         val rowsCount = (labels.size + cols - 1) / cols
-        gridCellW = (width * 0.9f) / cols
+        gridCellW = (width * (if (cols == 1) 0.55f else 0.9f)) / cols
         gridCellH = keyHeightDp * density
         val totalW = gridCellW * cols
         val totalH = gridCellH * rowsCount

@@ -12,6 +12,19 @@ import java.io.File
  */
 class AutoTextStore(private val context: Context) {
 
+    companion object {
+        /**
+         * The keyboard service caches dictionaries and autotext in memory.
+         * Editors (autotext screen, imports) bump this counter so the
+         * service knows to reload from disk.
+         */
+        fun bumpDataVersion(context: Context) {
+            val p = androidx.preference.PreferenceManager
+                .getDefaultSharedPreferences(context)
+            p.edit().putInt("data_version", p.getInt("data_version", 0) + 1).apply()
+        }
+    }
+
     private val map = LinkedHashMap<String, String>()
     private var loaded = false
     private var dirty = false

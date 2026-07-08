@@ -49,6 +49,7 @@ class SettingsActivity : AppCompatActivity() {
             )
         )
         setContentView(root)
+        applyEdgePadding()
 
         if (savedInstanceState == null) {
             supportFragmentManager
@@ -213,6 +214,7 @@ class SettingsActivity : AppCompatActivity() {
                         for (l in Layouts.ALL) {
                             WordStore(requireContext(), l.code).clearLearned()
                         }
+                        AutoTextStore.bumpDataVersion(requireContext())
                         toast(getString(R.string.done))
                     }
                     .setNegativeButton(android.R.string.cancel, null)
@@ -324,6 +326,7 @@ class SettingsActivity : AppCompatActivity() {
                         val text = ctx.contentResolver.openInputStream(uri)
                             ?.bufferedReader()?.readText() ?: return
                         val n = WordStore(ctx, pendingLang).importText(text)
+                        AutoTextStore.bumpDataVersion(ctx)
                         toast(getString(R.string.imported_n_words, n))
                     }
                     REQ_DICT_EXPORT -> {
@@ -336,6 +339,7 @@ class SettingsActivity : AppCompatActivity() {
                         val text = ctx.contentResolver.openInputStream(uri)
                             ?.bufferedReader()?.readText() ?: return
                         val n = AutoTextStore(ctx).importText(text)
+                        AutoTextStore.bumpDataVersion(ctx)
                         toast(getString(R.string.imported_n_words, n))
                     }
                     REQ_AUTOTEXT_EXPORT -> {

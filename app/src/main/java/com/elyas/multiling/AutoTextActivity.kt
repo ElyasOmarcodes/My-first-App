@@ -19,6 +19,7 @@ class AutoTextActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_autotext)
+        applyEdgePadding()
         store = AutoTextStore(this)
         supportActionBar?.setTitle(R.string.autotext_title)
 
@@ -59,6 +60,7 @@ class AutoTextActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
+        AutoTextStore.bumpDataVersion(this)
         entries = store.all()
         adapter.clear()
         for ((s, e) in entries) adapter.add("$s  ←  $e")
