@@ -158,10 +158,11 @@ class KeyboardView(context: Context) : View(context) {
     private var altPopupLeftInView = 0f
     private var altCellWidth = 0f
 
-    // slide-to-select grid menu (long-press on 123)
+    // slide-to-select grid menu (long-press on 123, language menu)
     private var gridPopup: PopupWindow? = null
     private var gridViews: List<TextView> = emptyList()
-    private var gridCodes: List<Int> = emptyList()
+    private var gridCount = 0
+    private var gridHandler: ((Int) -> Unit)? = null
     private var gridCols = 3
     private var gridIndex = -1
     private var gridLeftInView = 0f
@@ -319,6 +320,12 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun onPointerDown(id: Int, x: Float, y: Float) {
+        // a tap outside an open (tap-mode) grid menu just dismisses it
+        if (gridPopup != null && longPressPointerId == -1) {
+            dismissGridPopup()
+            pointers[id] = PointerState(id, null, x, y)
+            return
+        }
         // Rollover: a new finger flushes any still-held character keys so
         // fast typing never loses the previous letter.
         if (altPopup != null) {
@@ -532,13 +539,17 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     /**
-     * Slide-to-select menu grid shown while the finger is still down on the
-     * 123 key: move over an item and release to activate it — no second tap.
+     * Slide-to-select menu grid: while the finger that opened it is still
+     * down, glide over an item and release to activate it (the [initial]
+     * item is pre-highlighted, so releasing in place activates it).
+     * The cells are also tappable, so the same grid works after the
+     * finger has lifted (e.g. the language menu opened from this menu).
      */
-    fun showGridMenu(items: List<Pair<String, Int>>, cols: Int = 3) {
+    fun showGridMenu(labels: List<String>, initial: Int = 0, cols: Int = 3, onSelect: (Int) -> Unit) {
         dismissPopups()
         gridCols = cols
-        val rowsCount = (items.size + cols - 1) / cols
+        gridHandler = onSelect
+        val rowsCount = (labels.size + cols - 1) / cols
         gridCellW = (width * 0.9f) / cols
         gridCellH = keyHeightDp * density
         val totalW = gridCellW * cols
@@ -553,38 +564,43 @@ class KeyboardView(context: Context) : View(context) {
         container.background = bg
 
         val views = ArrayList<TextView>()
-        val codes = ArrayList<Int>()
         var i = 0
         for (r in 0 until rowsCount) {
             val rowLayout = LinearLayout(context)
             rowLayout.orientation = LinearLayout.HORIZONTAL
             rowLayout.layoutDirection = View.LAYOUT_DIRECTION_LTR
             for (c in 0 until cols) {
-                if (i >= items.size) break
-                val (label, code) = items[i]
+                if (i >= labels.size) break
+                val idx = i
                 val tv = TextView(context)
-                tv.text = label
+                tv.text = labels[i]
                 tv.gravity = Gravity.CENTER
                 tv.setTextColor(theme.text)
                 tv.textSize = 17f
                 tv.layoutParams =
                     LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
+                tv.setOnClickListener {
+                    val h = gridHandler
+                    dismissGridPopup()
+                    h?.invoke(idx)
+                }
                 rowLayout.addView(tv)
                 views.add(tv)
-                codes.add(code)
                 i++
             }
             container.addView(rowLayout)
         }
         gridViews = views
-        gridCodes = codes
-        gridIndex = -1
+        gridCount = labels.size
+        gridIndex = if (initial in labels.indices) initial else -1
+        highlightGrid()
 
         gridLeftInView = (width - totalW) / 2
         gridTopInView = max(4 * density, height - totalH - (keyHeightDp * density) * 2.2f)
 
         val popup = PopupWindow(container, totalW.toInt(), totalH.toInt(), false)
         popup.isClippingEnabled = false
+        popup.isTouchable = true
         val loc = IntArray(2)
         getLocationInWindow(loc)
         popup.showAtLocation(
@@ -595,16 +611,18 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun updateGridSelection(x: Float, y: Float) {
-        if (gridCodes.isEmpty()) return
+        if (gridCount == 0) return
         val col = ((x - gridLeftInView) / gridCellW).toInt()
         val row = ((y - gridTopInView) / gridCellH).toInt()
-        gridIndex = if (
-            x < gridLeftInView || y < gridTopInView ||
-            col !in 0 until gridCols || row < 0
-        ) -1 else {
+        if (x >= gridLeftInView && y >= gridTopInView && col in 0 until gridCols && row >= 0) {
             val idx = row * gridCols + col
-            if (idx in gridCodes.indices) idx else -1
+            // outside the item range keeps the current selection
+            if (idx in 0 until gridCount) gridIndex = idx
         }
+        highlightGrid()
+    }
+
+    private fun highlightGrid() {
         for ((i, tv) in gridViews.withIndex()) {
             if (i == gridIndex) {
                 val d = GradientDrawable()
@@ -618,17 +636,19 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun commitGridSelection() {
-        val code = gridCodes.getOrNull(gridIndex)
+        val idx = gridIndex
+        val h = gridHandler
         dismissGridPopup()
-        if (code != null) listener?.onSpecial(code)
+        if (idx >= 0) h?.invoke(idx)
     }
 
     private fun dismissGridPopup() {
         gridPopup?.dismiss()
         gridPopup = null
         gridViews = emptyList()
-        gridCodes = emptyList()
+        gridCount = 0
         gridIndex = -1
+        gridHandler = null
     }
 
     private fun updateAltSelection(x: Float) {

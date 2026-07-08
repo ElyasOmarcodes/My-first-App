@@ -1,6 +1,5 @@
 package com.elyas.multiling
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -11,7 +10,6 @@ import android.os.Vibrator
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
-import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.HorizontalScrollView
@@ -62,6 +60,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var popSoundId = 0
     private var soundType = "pop"
 
+    private var autocorrectOn = true
+    private var isPasswordField = false
+    private var pendingClip: String? = null
+    private var bestCandidate: WordStore.Cand? = null
+    private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
+
     private val wordStores = HashMap<String, WordStore>()
     private var autoText: AutoTextStore? = null
     private val wordBuffer = StringBuilder()
@@ -75,7 +79,24 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun autoTextStore(): AutoTextStore =
         autoText ?: AutoTextStore(this).also { autoText = it }
 
+    private fun confusion(): Map<Char, Set<Char>> =
+        confusionMaps.getOrPut(lang.code) { Layouts.confusionMap(lang) }
+
     // ------------------------------------------------------------ lifecycle
+    override fun onCreate() {
+        super.onCreate()
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.addPrimaryClipChangedListener {
+                pendingClip = try {
+                    cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
+                        ?.trim()?.take(500)?.ifEmpty { null }
+                } catch (_: Exception) { null }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
     override fun onCreateInputView(): View {
         val kv = KeyboardView(this)
         kv.listener = this
@@ -121,13 +142,23 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         applySettings()
-        // number/phone/date fields automatically get the number pad
-        val cls = (info?.inputType ?: 0) and InputType.TYPE_MASK_CLASS
-        mode = when (cls) {
-            InputType.TYPE_CLASS_NUMBER,
-            InputType.TYPE_CLASS_PHONE,
-            InputType.TYPE_CLASS_DATETIME -> Mode.NUMPAD
-            else -> Mode.LETTERS
+        // number/phone/date fields automatically get the number pad;
+        // the edit/control panel survives switching fields and apps
+        val inputType = info?.inputType ?: 0
+        val cls = inputType and InputType.TYPE_MASK_CLASS
+        val variation = inputType and InputType.TYPE_MASK_VARIATION
+        isPasswordField = cls == InputType.TYPE_CLASS_TEXT && (
+            variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+            variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+            variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
+        )
+        if (mode != Mode.EDIT) {
+            mode = when (cls) {
+                InputType.TYPE_CLASS_NUMBER,
+                InputType.TYPE_CLASS_PHONE,
+                InputType.TYPE_CLASS_DATETIME -> Mode.NUMPAD
+                else -> Mode.LETTERS
+            }
         }
         shift = 0
         selectMode = false
@@ -152,9 +183,26 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         super.onUpdateSelection(
             oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd
         )
-        // if the user selected text or tapped elsewhere, drop the word buffer
         if (newSelStart != newSelEnd) {
+            // an active selection has no "current word"
             wordBuffer.setLength(0)
+            updateSuggestions()
+        } else {
+            // re-derive the current word from around the cursor, so moving
+            // the cursor into a word brings back its suggestions
+            syncBufferFromCursor()
+        }
+    }
+
+    private fun syncBufferFromCursor() {
+        val ic = currentInputConnection ?: return
+        val before = try { ic.getTextBeforeCursor(32, 0) } catch (_: Exception) { null } ?: ""
+        var start = before.length
+        while (start > 0 && Character.isLetter(before[start - 1])) start--
+        val word = before.substring(start)
+        if (word != wordBuffer.toString()) {
+            wordBuffer.setLength(0)
+            wordBuffer.append(word)
             updateSuggestions()
         }
     }
@@ -187,12 +235,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         soundOn = p.getBoolean("sound", false)
         soundVol = p.getInt("sound_vol", 60) / 100f
         soundType = p.getString("sound_type", "pop") ?: "pop"
-        if (soundOn && soundType == "pop" && soundPool == null) initSoundPool()
+        if (soundOn && soundType != "system") initSoundPool()
         suggestionsOn = p.getBoolean("suggestions", true)
         learnWordsOn = p.getBoolean("learn_words", true)
         seedDictOn = p.getBoolean("seed_dict", true)
         bigramsOn = p.getBoolean("bigrams", true)
         autotextOn = p.getBoolean("autotext_on", true)
+        autocorrectOn = p.getBoolean("autocorrect", true)
         doubleSpacePeriod = p.getBoolean("double_space", true)
         autoCapsOn = p.getBoolean("autocaps", true)
         suggFontSp = p.getInt("sugg_font", 17).toFloat()
@@ -222,7 +271,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private fun buildSymBottomRow(): List<KeyDef> = listOf(
         KeyDef("ابت", code = Keys.ABC, width = 1.5f),
-        KeyDef(",", null, listOf("،", "؛")),
+        if (lang.rtl) KeyDef("،", null, listOf(",", "؛"))
+        else KeyDef(",", null, listOf("،", ";")),
         KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
         KeyDef(lang.period, null, lang.periodAlts),
         KeyDef("↵", code = Keys.ENTER, width = 1.5f)
@@ -315,19 +365,35 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val word = wordBuffer.toString()
         wordBuffer.setLength(0)
 
-        if (word.isNotEmpty() && ic != null) {
+        if (word.isNotEmpty() && ic != null && !isPasswordField) {
             val expansion = if (autotextOn) autoTextStore().expansionFor(word) else null
+            var committed = word
             if (expansion != null) {
                 ic.deleteSurroundingText(word.length, 0)
                 ic.commitText(expansion, 1)
-            } else if (word.length >= 2) {
-                if (suggestionsOn && learnWordsOn) store().learn(word)
-                if (suggestionsOn && bigramsOn && lastWord.isNotEmpty()) {
-                    store().learnBigram(lastWord, word)
+                committed = expansion
+            } else {
+                // autocorrect: replace an unknown same-length typo with the
+                // highlighted best suggestion (e.g. "چط" → "چې")
+                val best = bestCandidate
+                if (autocorrectOn && suggestionsOn && sep == " " &&
+                    word.length >= 2 && best != null && !best.exact &&
+                    best.sameLen && !store().contains(word)
+                ) {
+                    ic.deleteSurroundingText(word.length, 0)
+                    ic.commitText(best.word, 1)
+                    committed = best.word
+                }
+                if (committed.length >= 2) {
+                    if (suggestionsOn && learnWordsOn) store().learn(committed)
+                    if (suggestionsOn && bigramsOn && lastWord.isNotEmpty()) {
+                        store().learnBigram(lastWord, committed)
+                    }
                 }
             }
-            lastWord = expansion ?: word
+            lastWord = committed
         }
+        bestCandidate = null
         if (commitSep && sep.isNotEmpty()) ic?.commitText(sep, 1)
         updateAutoCaps()
     }
@@ -460,7 +526,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onSymLongPress() {
         feedback()
-        keyboardView?.showGridMenu(Layouts.menuItems())
+        val kv = keyboardView ?: return
+        val items = Layouts.menuItems()
+        kv.showGridMenu(items.map { it.first }, initial = 0) { which ->
+            onSpecial(items[which].second)
+        }
     }
 
     // ------------------------------------------------------------ languages
@@ -477,24 +547,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun showLanguageMenu() {
-        val view = keyboardView ?: return
-        val names = languages.map { it.nativeName }.toTypedArray()
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.pref_languages))
-            .setItems(names) { _, which ->
-                langIndex = which
-                mode = Mode.LETTERS
-                shift = 0
-                rebuildKeyboard()
-            }
-            .create()
-        val window = dialog.window ?: return
-        val lp = window.attributes
-        lp.token = view.windowToken
-        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG
-        window.attributes = lp
-        window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
-        dialog.show()
+        val kv = keyboardView ?: return
+        kv.showGridMenu(languages.map { it.nativeName }, initial = langIndex) { which ->
+            langIndex = which
+            mode = Mode.LETTERS
+            shift = 0
+            wordBuffer.setLength(0)
+            lastWord = ""
+            rebuildKeyboard()
+            updateSuggestions()
+        }
     }
 
     // ------------------------------------------------------------ voice
@@ -520,27 +582,50 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     // -------------------------------------------------------- suggestions
     private fun updateSuggestions() {
+        bestCandidate = null
         val bar = suggestionBar ?: return
         bar.removeAllViews()
-        if (!suggestionsOn) return
+        if (!suggestionsOn || isPasswordField) return
         val kv = keyboardView ?: return
         val prefix = wordBuffer.toString()
 
-        val items = ArrayList<Pair<String, Boolean>>() // text to isAutotext
-        if (prefix.isNotEmpty()) {
-            if (autotextOn) {
-                autoTextStore().expansionFor(prefix)?.let { items.add(it to true) }
+        // item text to (isAccent, isTypedWord, isClip)
+        val items = ArrayList<Triple<String, Int, Boolean>>() // text, style, isClip
+        val STYLE_NORMAL = 0
+        val STYLE_ACCENT = 1
+        val STYLE_TYPED = 2
+
+        if (prefix.isEmpty()) {
+            pendingClip?.let { items.add(Triple(it, STYLE_ACCENT, true)) }
+            if (bigramsOn && lastWord.isNotEmpty()) {
+                for (w in store().suggestNext(lastWord, 4)) {
+                    items.add(Triple(w, STYLE_NORMAL, false))
+                }
             }
-            for (w in store().suggest(prefix, 6, seedDictOn)) items.add(w to false)
-        } else if (bigramsOn && lastWord.isNotEmpty()) {
-            for (w in store().suggestNext(lastWord, 4)) items.add(w to false)
+        } else {
+            if (autotextOn) {
+                for (e in autoTextStore().matching(prefix, 2)) {
+                    items.add(Triple(e, STYLE_ACCENT, false))
+                }
+            }
+            val cands = store().suggestSmart(prefix, 6, seedDictOn, confusion())
+            bestCandidate = cands.firstOrNull()
+            if (cands.isEmpty() && items.isEmpty()) {
+                // unknown word: show it live; long-press saves it
+                items.add(Triple(prefix, STYLE_TYPED, false))
+            } else {
+                for ((i, c) in cands.withIndex()) {
+                    items.add(Triple(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL, false))
+                }
+            }
         }
 
         val density = resources.displayMetrics.density
-        for ((word, isAuto) in items) {
+        for ((text, style, isClip) in items) {
             val tv = TextView(this)
-            tv.text = word
-            tv.setTextColor(if (isAuto) kv.theme.accent else kv.theme.text)
+            tv.text = if (isClip) getString(R.string.clip_prefix) + " " + text.take(40) else text
+            tv.setTextColor(if (style == STYLE_ACCENT) kv.theme.accent else kv.theme.text)
+            if (style == STYLE_ACCENT) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
             tv.textSize = suggFontSp
             tv.maxLines = 1
             tv.setPadding((14 * density).toInt(), 0, (14 * density).toInt(), 0)
@@ -549,12 +634,31 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
             )
-            tv.setOnClickListener { commitSuggestion(word) }
-            if (!isAuto) {
-                tv.setOnLongClickListener {
-                    store().forget(word)
-                    updateSuggestions()
-                    true
+            when {
+                isClip -> {
+                    tv.setOnClickListener {
+                        currentInputConnection?.commitText(text, 1)
+                        pendingClip = null
+                        feedback()
+                        updateSuggestions()
+                    }
+                }
+                style == STYLE_TYPED -> {
+                    tv.setOnClickListener { commitSuggestion(text) }
+                    tv.setOnLongClickListener {
+                        store().learn(text)
+                        store().learn(text) // count 2 → suggested from now on
+                        Toast.makeText(this, R.string.word_saved, Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                }
+                else -> {
+                    tv.setOnClickListener { commitSuggestion(text) }
+                    tv.setOnLongClickListener {
+                        store().forget(text)
+                        updateSuggestions()
+                        true
+                    }
                 }
             }
             bar.addView(tv)
@@ -589,8 +693,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    private fun soundRes(type: String): Int = when (type) {
+        "click" -> R.raw.keyclick
+        "drop" -> R.raw.keydrop
+        "wood" -> R.raw.keywood
+        "bubble" -> R.raw.keybubble
+        "soft" -> R.raw.keysoft
+        else -> R.raw.keypop
+    }
+
+    private var loadedSoundType = ""
+
     private fun initSoundPool() {
         try {
+            if (soundPool != null && loadedSoundType == soundType) return
+            soundPool?.release()
             val attrs = android.media.AudioAttributes.Builder()
                 .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
                 .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -599,8 +716,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 .setMaxStreams(3)
                 .setAudioAttributes(attrs)
                 .build()
-            popSoundId = sp.load(this, R.raw.keypop, 1)
+            popSoundId = sp.load(this, soundRes(soundType), 1)
             soundPool = sp
+            loadedSoundType = soundType
         } catch (_: Exception) {
         }
     }
@@ -622,7 +740,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
         if (soundOn) {
             try {
-                if (soundType == "pop") {
+                if (soundType != "system") {
                     if (soundPool == null) initSoundPool()
                     val sp = soundPool
                     if (sp != null && popSoundId != 0) {

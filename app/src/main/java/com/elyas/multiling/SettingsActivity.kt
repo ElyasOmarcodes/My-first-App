@@ -3,42 +3,167 @@ package com.elyas.multiling
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 
+/**
+ * Settings: a main screen with one entry per category; each entry opens its
+ * own sub-screen. Appearance/size screens show a live keyboard preview that
+ * updates as options change. The backup screen imports/exports everything.
+ */
 class SettingsActivity : AppCompatActivity() {
+
+    private lateinit var preview: KeyboardView
+    private lateinit var previewHolder: FrameLayout
+
+    private val prefListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshPreview() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val root = LinearLayout(this)
+        root.orientation = LinearLayout.VERTICAL
+        val host = FrameLayout(this)
+        host.id = R.id.settings_host
+        root.addView(
+            host,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+        previewHolder = FrameLayout(this)
+        preview = KeyboardView(this)
+        previewHolder.addView(preview)
+        previewHolder.visibility = android.view.View.GONE
+        root.addView(
+            previewHolder,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+        setContentView(root)
+
         if (savedInstanceState == null) {
             supportFragmentManager
                 .beginTransaction()
-                .replace(android.R.id.content, SettingsFragment())
+                .replace(R.id.settings_host, SettingsFragment.create("main"))
                 .commit()
         }
         supportActionBar?.setTitle(R.string.settings_title)
+        supportFragmentManager.addOnBackStackChangedListener { updatePreviewVisibility() }
     }
 
+    override fun onResume() {
+        super.onResume()
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .registerOnSharedPreferenceChangeListener(prefListener)
+        refreshPreview()
+    }
+
+    override fun onPause() {
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(prefListener)
+        super.onPause()
+    }
+
+    fun openScreen(screen: String, title: CharSequence) {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.settings_host, SettingsFragment.create(screen))
+            .addToBackStack(screen)
+            .commit()
+        supportActionBar?.title = title
+        updatePreviewVisibility(screen)
+    }
+
+    private fun currentScreen(): String {
+        val i = supportFragmentManager.backStackEntryCount
+        return if (i == 0) "main"
+        else supportFragmentManager.getBackStackEntryAt(i - 1).name ?: "main"
+    }
+
+    private fun updatePreviewVisibility(screen: String = currentScreen()) {
+        val show = screen == "look" || screen == "sizes"
+        previewHolder.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
+        if (screen == "main") supportActionBar?.setTitle(R.string.settings_title)
+        if (show) refreshPreview()
+    }
+
+    /** Live keyboard preview reflecting the current preferences. */
+    private fun refreshPreview() {
+        if (previewHolder.visibility != android.view.View.VISIBLE) return
+        val p = PreferenceManager.getDefaultSharedPreferences(this)
+        preview.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
+        preview.keyHeightDp = p.getInt("key_height", 52)
+        preview.fontScale = p.getInt("font_scale", 100) / 100f
+        preview.hintScale = p.getInt("hint_scale", 100) / 100f
+        preview.cornerRadiusDp = p.getInt("corner_radius", 6)
+        preview.keyGapDp = p.getInt("key_gap", 2) / 1.33f
+        preview.showHints = p.getBoolean("hints", true)
+        preview.keyBorder = p.getBoolean("key_border", false)
+        val density = resources.displayMetrics.density
+        preview.setPadding(0, 0, 0, (p.getInt("bottom_gap", 0) * density).toInt())
+        val rows = ArrayList<List<KeyDef>>(Layouts.PASHTO.rows)
+        rows.add(
+            listOf(
+                KeyDef("۱۲۳", code = Keys.SYM, width = 1.5f, hintIcon = Keys.ICON_MIC),
+                KeyDef("ـ"),
+                KeyDef("پښتو", code = Keys.SPACE, width = 4f),
+                KeyDef("."),
+                KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+            )
+        )
+        preview.setKeyboard(rows, rows.map { row -> row.map { it.label } })
+    }
+
+    // ------------------------------------------------------------ fragment
     class SettingsFragment : PreferenceFragmentCompat() {
 
         private var pendingLang = "ps"
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.prefs, rootKey)
+            val screen = arguments?.getString("screen") ?: "main"
+            val res = when (screen) {
+                "langs" -> R.xml.prefs_langs
+                "look" -> R.xml.prefs_look
+                "sizes" -> R.xml.prefs_sizes
+                "typing" -> R.xml.prefs_typing
+                "autotext" -> R.xml.prefs_autotext
+                "control" -> R.xml.prefs_control
+                "feedback" -> R.xml.prefs_feedback
+                "backup" -> R.xml.prefs_backup
+                else -> R.xml.prefs
+            }
+            setPreferencesFromResource(res, rootKey)
+            if (screen == "main") wireMain() else if (screen == "autotext") wireAutoText()
+            if (screen == "backup") wireBackup()
+        }
 
+        private fun wireMain() {
+            val map = listOf(
+                "screen_langs" to "langs", "screen_look" to "look",
+                "screen_sizes" to "sizes", "screen_typing" to "typing",
+                "screen_autotext" to "autotext", "screen_control" to "control",
+                "screen_feedback" to "feedback", "screen_backup" to "backup"
+            )
+            for ((key, screen) in map) {
+                findPreference<Preference>(key)?.setOnPreferenceClickListener { pref ->
+                    (activity as? SettingsActivity)?.openScreen(screen, pref.title ?: "")
+                    true
+                }
+            }
+        }
+
+        private fun wireAutoText() {
             findPreference<Preference>("autotext_manage")?.setOnPreferenceClickListener {
                 startActivity(Intent(requireContext(), AutoTextActivity::class.java))
-                true
-            }
-            findPreference<Preference>("dict_import")?.setOnPreferenceClickListener {
-                chooseLanguage { openDocument(REQ_DICT_IMPORT) }
-                true
-            }
-            findPreference<Preference>("dict_export")?.setOnPreferenceClickListener {
-                chooseLanguage { createDocument(REQ_DICT_EXPORT, "dict_$pendingLang.txt") }
                 true
             }
             findPreference<Preference>("autotext_import")?.setOnPreferenceClickListener {
@@ -47,6 +172,37 @@ class SettingsActivity : AppCompatActivity() {
             }
             findPreference<Preference>("autotext_export")?.setOnPreferenceClickListener {
                 createDocument(REQ_AUTOTEXT_EXPORT, "autotext.txt")
+                true
+            }
+        }
+
+        private fun wireBackup() {
+            findPreference<Preference>("settings_export")?.setOnPreferenceClickListener {
+                createDocument(REQ_SETTINGS_EXPORT, "keyboard_settings.txt")
+                true
+            }
+            findPreference<Preference>("settings_import")?.setOnPreferenceClickListener {
+                openDocument(REQ_SETTINGS_IMPORT)
+                true
+            }
+            findPreference<Preference>("settings_reset")?.setOnPreferenceClickListener {
+                AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.pref_settings_reset)
+                    .setMessage(R.string.settings_reset_q)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        resetToDefaults()
+                        toast(getString(R.string.done))
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                true
+            }
+            findPreference<Preference>("dict_import")?.setOnPreferenceClickListener {
+                chooseLanguage { openDocument(REQ_DICT_IMPORT) }
+                true
+            }
+            findPreference<Preference>("dict_export")?.setOnPreferenceClickListener {
+                chooseLanguage { createDocument(REQ_DICT_EXPORT, "dict_$pendingLang.txt") }
                 true
             }
             findPreference<Preference>("clear_learned")?.setOnPreferenceClickListener {
@@ -65,6 +221,60 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
+        // -------------------------------------------- settings serialization
+        private fun exportSettings(): String {
+            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val sb = StringBuilder()
+            for ((k, v) in p.all) {
+                when (v) {
+                    is Boolean -> sb.append(k).append("\tb\t").append(v).append('\n')
+                    is Int -> sb.append(k).append("\ti\t").append(v).append('\n')
+                    is String -> sb.append(k).append("\ts\t").append(v).append('\n')
+                    is Set<*> -> sb.append(k).append("\tss\t")
+                        .append(v.joinToString(",")).append('\n')
+                }
+            }
+            return sb.toString()
+        }
+
+        private fun importSettings(text: String): Int {
+            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val e = p.edit()
+            var n = 0
+            for (line in text.lineSequence()) {
+                val parts = line.split('\t')
+                if (parts.size != 3) continue
+                val (k, t, v) = parts
+                try {
+                    when (t) {
+                        "b" -> e.putBoolean(k, v.toBoolean())
+                        "i" -> e.putInt(k, v.toInt())
+                        "s" -> e.putString(k, v)
+                        "ss" -> e.putStringSet(
+                            k, v.split(',').filter { it.isNotEmpty() }.toSet()
+                        )
+                        else -> continue
+                    }
+                    n++
+                } catch (_: Exception) {
+                }
+            }
+            e.apply()
+            return n
+        }
+
+        private fun resetToDefaults() {
+            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            p.edit().clear().apply()
+            try {
+                val text = requireContext().assets.open("default_settings.txt")
+                    .bufferedReader().readText()
+                importSettings(text)
+            } catch (_: Exception) {
+            }
+        }
+
+        // ------------------------------------------------------ SAF helpers
         private fun chooseLanguage(then: () -> Unit) {
             val names = Layouts.ALL.map { it.nativeName }.toTypedArray()
             AlertDialog.Builder(requireContext())
@@ -134,6 +344,18 @@ class SettingsActivity : AppCompatActivity() {
                         }
                         toast(getString(R.string.done))
                     }
+                    REQ_SETTINGS_EXPORT -> {
+                        ctx.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use {
+                            it.write(exportSettings())
+                        }
+                        toast(getString(R.string.done))
+                    }
+                    REQ_SETTINGS_IMPORT -> {
+                        val text = ctx.contentResolver.openInputStream(uri)
+                            ?.bufferedReader()?.readText() ?: return
+                        val n = importSettings(text)
+                        toast(getString(R.string.imported_n_words, n))
+                    }
                 }
             } catch (e: Exception) {
                 toast(e.message ?: "error")
@@ -149,6 +371,16 @@ class SettingsActivity : AppCompatActivity() {
             private const val REQ_DICT_EXPORT = 12
             private const val REQ_AUTOTEXT_IMPORT = 13
             private const val REQ_AUTOTEXT_EXPORT = 14
+            private const val REQ_SETTINGS_EXPORT = 15
+            private const val REQ_SETTINGS_IMPORT = 16
+
+            fun create(screen: String): SettingsFragment {
+                val f = SettingsFragment()
+                val b = Bundle()
+                b.putString("screen", screen)
+                f.arguments = b
+                return f
+            }
         }
     }
 }

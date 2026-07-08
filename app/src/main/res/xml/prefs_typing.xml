@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <SwitchPreferenceCompat android:key="suggestions" android:title="@string/pref_suggestions"
+        android:summary="@string/pref_suggestions_sum" android:defaultValue="true" />
+    <SwitchPreferenceCompat android:key="autocorrect" android:title="@string/pref_autocorrect"
+        android:summary="@string/pref_autocorrect_sum" android:defaultValue="true"
+        android:dependency="suggestions" />
+    <SwitchPreferenceCompat android:key="learn_words" android:title="@string/pref_learn_words"
+        android:summary="@string/pref_learn_words_sum" android:defaultValue="true"
+        android:dependency="suggestions" />
+    <SwitchPreferenceCompat android:key="seed_dict" android:title="@string/pref_seed_dict"
+        android:summary="@string/pref_seed_dict_sum" android:defaultValue="true"
+        android:dependency="suggestions" />
+    <SwitchPreferenceCompat android:key="bigrams" android:title="@string/pref_bigrams"
+        android:summary="@string/pref_bigrams_sum" android:defaultValue="true"
+        android:dependency="suggestions" />
+    <SwitchPreferenceCompat android:key="double_space" android:title="@string/pref_double_space"
+        android:defaultValue="true" />
+    <SwitchPreferenceCompat android:key="autocaps" android:title="@string/pref_autocaps"
+        android:summary="@string/pref_autocaps_sum" android:defaultValue="true" />
+    <ListPreference android:key="longpress" android:title="@string/pref_longpress"
+        android:entries="@array/longpress_names" android:entryValues="@array/longpress_values"
+        android:defaultValue="350" app:useSimpleSummaryProvider="true" />
+</PreferenceScreen>

@@ -89,6 +89,31 @@
     <string name="pref_clear_learned_sum">ټولې زده شوې کلمې او وړاندوینې ړنګوي</string>
     <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
 
+    <string name="clip_prefix">کاپي شوی:</string>
+    <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
+
+    <string name="screen_langs_sum">فعالې ژبې او د ژبې بدلول</string>
+    <string name="screen_look_sum">تم، حاشیې، کوچني توري، پاپ اپ</string>
+    <string name="screen_sizes_sum">لوړوالی، فونټ، واټنونه، ګردوالی</string>
+    <string name="screen_typing_sum">وړاندیز، اتومات سمون، زده کول</string>
+    <string name="screen_autotext_sum">لنډیزونه — لنډ ولیکئ، بشپړ به ولیکل شي</string>
+    <string name="screen_control_sum">د تیرو کیلۍ او کنټرول</string>
+    <string name="screen_feedback_sum">لړزول او غږونه</string>
+    <string name="screen_backup_sum">د تنظیماتو او لغتنامې شاتړ</string>
+
+    <string name="pref_autocorrect">اتومات سمون (Auto-correct)</string>
+    <string name="pref_autocorrect_sum">د سپیس سره غلطه کلمه پخپله په ښه وړاندیز بدلیږي</string>
+
+    <string name="cat_settings_backup">تنظیمات</string>
+    <string name="cat_dict_backup">لغتنامه</string>
+    <string name="pref_settings_export">تنظیمات خوندي کول (Export)</string>
+    <string name="pref_settings_export_sum">ټول تنظیمات یو متن فایل ته</string>
+    <string name="pref_settings_import">تنظیمات راوړل (Import)</string>
+    <string name="pref_settings_import_sum">له خوندي شوي فایل نه</string>
+    <string name="pref_settings_reset">تنظیمات ډیفالټ ته راګرځول</string>
+    <string name="pref_settings_reset_sum">ټول تنظیمات اصلي حالت ته ورګرځي</string>
+    <string name="settings_reset_q">ډاډه یاست؟ ټول تنظیمات به ډیفالټ شي.</string>
+
     <string name="autotext_title">AutoText لنډیزونه</string>
     <string name="autotext_desc">لنډیز ولیکئ او بشپړه جمله یې مقابل کې — بیا په کیبورډ کې لنډیز + سپیس ولیکئ، بشپړه جمله به ځای پر ځای شي.</string>
     <string name="autotext_shortcut_hint">لنډیز (مثلاً: سلام)</string>

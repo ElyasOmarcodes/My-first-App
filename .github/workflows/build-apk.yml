@@ -37,26 +37,27 @@ jobs:
       - name: Decode debug keystore
         run: base64 -d debug.keystore.base64 > debug.keystore
 
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon
+      - name: Build release APK
+        run: gradle :app:assembleRelease --no-daemon
 
       - name: Collect APK
         run: |
           mkdir -p .build-outputs
-          cp app/build/outputs/apk/debug/app-debug.apk .build-outputs/app-debug.apk
+          rm -f .build-outputs/app-debug.apk
+          cp app/build/outputs/apk/release/app-release.apk .build-outputs/MultiKeyboard.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: multi-keyboard-apk
-          path: .build-outputs/app-debug.apk
+          path: .build-outputs/MultiKeyboard.apk
 
       - name: Commit APK back to branch
         if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .build-outputs/app-debug.apk
+          git add -A .build-outputs
           if git diff --cached --quiet; then
             echo "APK unchanged"
           else

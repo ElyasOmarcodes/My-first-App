@@ -17,8 +17,12 @@ import java.io.File
  */
 class WordStore(private val context: Context, private val langCode: String) {
 
+    /** A scored suggestion candidate. */
+    data class Cand(val word: String, val score: Int, val exact: Boolean, val sameLen: Boolean)
+
     private val learned = HashMap<String, Int>()
     private var seeds: List<String> = emptyList()
+    private var seedSet: HashSet<String> = HashSet()
     private val bigrams = HashMap<String, HashMap<String, Int>>()
     private var loaded = false
     private var dirty = false
@@ -39,8 +43,10 @@ class WordStore(private val context: Context, private val langCode: String) {
         try {
             seeds = context.assets.open("dict/$langCode.txt")
                 .bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
+            seedSet = HashSet(seeds)
         } catch (_: Exception) {
             seeds = emptyList()
+            seedSet = HashSet()
         }
         try {
             val f = bigramFile()
@@ -119,6 +125,71 @@ class WordStore(private val context: Context, private val langCode: String) {
             }
         }
         return out
+    }
+
+    /** True when the word is an established dictionary word. */
+    fun contains(word: String): Boolean {
+        ensureLoaded()
+        return (learned[word] ?: 0) >= 2 || seedSet.contains(word)
+    }
+
+    /**
+     * Smart prefix suggestions with a layout-aware error model: a typed
+     * character also matches its shift/long-press character (missed
+     * long-press) and physically adjacent keys (fat-finger). E.g. typing
+     * "چط" still finds "چې", and "هفه" finds "هغه".
+     */
+    fun suggestSmart(
+        typed: String,
+        max: Int,
+        useSeeds: Boolean,
+        confusable: Map<Char, Set<Char>>
+    ): List<Cand> {
+        if (typed.isEmpty()) return emptyList()
+        ensureLoaded()
+        val out = ArrayList<Cand>()
+        for ((w, c) in learned) {
+            if (c < 2) continue
+            score(typed, w, c + 20, confusable)?.let { out.add(it) }
+        }
+        if (useSeeds) {
+            for (w in seeds) {
+                score(typed, w, 1, confusable)?.let { out.add(it) }
+            }
+        }
+        return out.asSequence()
+            .sortedByDescending { it.score }
+            .distinctBy { it.word }
+            .take(max)
+            .toList()
+    }
+
+    private fun score(
+        typed: String,
+        w: String,
+        freq: Int,
+        confusable: Map<Char, Set<Char>>
+    ): Cand? {
+        if (w == typed) return null
+        if (w.length < typed.length || w.length > typed.length + 12) return null
+        val maxErr = if (typed.length <= 3) 1 else 2
+        var errors = 0
+        for (i in typed.indices) {
+            val a = typed[i]
+            val b = w[i]
+            if (a == b) continue
+            if (confusable[a]?.contains(b) == true) {
+                errors++
+                if (errors > maxErr) return null
+            } else {
+                return null
+            }
+        }
+        val exact = errors == 0
+        var s = freq
+        s += if (exact) 10000 else 5000 - errors * 1500
+        s -= (w.length - typed.length) * 40
+        return Cand(w, s, exact, w.length == typed.length)
     }
 
     /** Next-word prediction from learned bigrams (repeated pairs only). */

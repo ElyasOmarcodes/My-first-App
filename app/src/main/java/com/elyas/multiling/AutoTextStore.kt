@@ -44,6 +44,20 @@ class AutoTextStore(private val context: Context) {
         return map[shortcut]
     }
 
+    /** Expansions whose shortcut starts with [prefix] — for the suggestion strip. */
+    fun matching(prefix: String, max: Int): List<String> {
+        if (prefix.isEmpty()) return emptyList()
+        ensureLoaded()
+        val out = ArrayList<String>()
+        for ((s, e) in map) {
+            if (s.startsWith(prefix)) {
+                out.add(e)
+                if (out.size >= max) break
+            }
+        }
+        return out
+    }
+
     fun put(shortcut: String, expansion: String) {
         ensureLoaded()
         map[shortcut] = expansion

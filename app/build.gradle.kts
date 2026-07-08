@@ -5,14 +5,14 @@ plugins {
 
 android {
   namespace = "com.elyas.multiling"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.elyas.multiling"
     minSdk = 21
-    targetSdk = 35
-    versionCode = 3
-    versionName = "1.2.0"
+    targetSdk = 36
+    versionCode = 4
+    versionName = "1.3.0"
   }
 
   signingConfigs {
@@ -26,7 +26,9 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = false
+      // shrink hard: R8 + resource shrinking keep the APK small
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("debugConfig")
     }

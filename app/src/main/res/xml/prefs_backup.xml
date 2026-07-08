@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/cat_settings_backup">
+        <Preference android:key="settings_export" android:title="@string/pref_settings_export"
+            android:summary="@string/pref_settings_export_sum" />
+        <Preference android:key="settings_import" android:title="@string/pref_settings_import"
+            android:summary="@string/pref_settings_import_sum" />
+        <Preference android:key="settings_reset" android:title="@string/pref_settings_reset"
+            android:summary="@string/pref_settings_reset_sum" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/cat_dict_backup">
+        <Preference android:key="dict_import" android:title="@string/pref_dict_import"
+            android:summary="@string/pref_dict_import_sum" />
+        <Preference android:key="dict_export" android:title="@string/pref_dict_export"
+            android:summary="@string/pref_dict_export_sum" />
+        <Preference android:key="clear_learned" android:title="@string/pref_clear_learned"
+            android:summary="@string/pref_clear_learned_sum" />
+    </PreferenceCategory>
+</PreferenceScreen>

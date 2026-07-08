@@ -21,13 +21,13 @@ object Layouts {
             k("ح", "څ"), k("ج", "]", "}"), k("چ", "[", "{")
         ),
         listOf(
-            k("ش", "ښ"), k("س", "ۍ"), k("ی", "ي", "ې ئ ے ى"), k("ب", "پ"),
+            k("ش", "ښ"), k("س", "ۍ"), k("ی", "ي", "ې ئ ى"), k("ب", "پ"),
             k("ل", "أ"), k("ا", "آ", "أ إ ء"), k("ت", "ټ"), k("ن", "ڼ", "ں"),
             k("م", "ة"), k("ک", "ك"), k("ګ", "گ")
         ),
         listOf(
             shiftKey(), k("ظ", "ئ"), k("ط", "ې"), k("ز", "ژ"), k("ر", "ء"),
-            k("ذ", "؟"), k("د", "ډ"), k("ړ", "ڑ"), k("و", "ؤ"), k("ږ", "ے"), delKey()
+            k("ذ", "؟"), k("د", "ډ"), k("ړ", "ؤ"), k("و", "،", "ؤ"), k("ږ", "ے"), delKey()
         )
     )
 
@@ -41,7 +41,7 @@ object Layouts {
         listOf(
             k("ش", "ؤ"), k("س", "ئ"), k("ی", "ي", "ې ى ے"), k("ب", "پ"),
             k("ل", "أ"), k("ا", "آ", "أ إ ء"), k("ت", "ة"), k("ن", "«"),
-            k("م", "»"), k("ک", "ك"), k("گ", "ڭ")
+            k("م", "»"), k("ک", "ك"), k("گ")
         ),
         listOf(
             shiftKey(), k("ظ", "ئ"), k("ط", "ي"), k("ز", "ژ"), k("ر", "ٰ"),
@@ -77,7 +77,7 @@ object Layouts {
         listOf(
             k("ش", "ؤ"), k("س", "ئ"), k("ی", "ے", "ي ئ ى"), k("ب", "پ"),
             k("ل", "أ"), k("ا", "آ", "أ إ ء"), k("ت", "ٹ"), k("ن", "ں"),
-            k("م", "ۃ"), k("ک", "ك"), k("گ", "ڭ")
+            k("م", "ۃ"), k("ک", "ك"), k("گ")
         ),
         listOf(
             shiftKey(), k("ظ", "ئ"), k("ط", "ي"), k("ز", "ژ"), k("ر", "ڑ"),
@@ -184,9 +184,9 @@ object Layouts {
         )
     )
 
-    /** Number pad with localized digits. */
+    /** Number pad — always standard Latin digits. */
     fun numPad(lang: Language): List<List<KeyDef>> {
-        val d = lang.digits.map { it.toString() }
+        val d = "0123456789".map { it.toString() }
         return listOf(
             listOf(k(d[1]), k(d[2]), k(d[3]), k("÷", null, "/")),
             listOf(k(d[4]), k(d[5]), k(d[6]), k("×", null, "*")),
@@ -214,6 +214,39 @@ object Layouts {
             KeyDef("↵", code = Keys.ENTER, width = 1.5f)
         )
     )
+
+    /**
+     * Characters a typo could plausibly stand for: the key's own shift/
+     * alternate characters (missed long-press) plus physically adjacent
+     * keys (fat-finger). Built from the layout itself.
+     */
+    fun confusionMap(lang: Language): Map<Char, Set<Char>> {
+        val map = HashMap<Char, HashSet<Char>>()
+        fun add(a: Char, b: Char) {
+            if (a == b) return
+            map.getOrPut(a) { HashSet() }.add(b)
+            map.getOrPut(b) { HashSet() }.add(a)
+        }
+        val rows = lang.rows
+        for ((ri, row) in rows.withIndex()) {
+            val letters = row.filter { it.code == 0 && it.label.length == 1 }
+            for ((li, key) in letters.withIndex()) {
+                val c = key.label[0]
+                key.shifted?.let { if (it.length == 1) add(c, it[0]) }
+                for (alt in key.alternates) if (alt.length == 1) add(c, alt[0])
+                letters.getOrNull(li - 1)?.let { add(c, it.label[0]) }
+                letters.getOrNull(li + 1)?.let { add(c, it.label[0]) }
+                for (nri in intArrayOf(ri - 1, ri + 1)) {
+                    val nrow = rows.getOrNull(nri) ?: continue
+                    val nletters = nrow.filter { it.code == 0 && it.label.length == 1 }
+                    if (nletters.size < 2 || letters.size < 2) continue
+                    val j = (li.toFloat() * (nletters.size - 1) / (letters.size - 1) + 0.5f).toInt()
+                    nletters.getOrNull(j)?.let { add(c, it.label[0]) }
+                }
+            }
+        }
+        return map
+    }
 
     /**
      * Items of the long-press-123 slide-to-select menu popup.
