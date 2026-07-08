@@ -97,14 +97,18 @@ class WordStore(private val context: Context, private val langCode: String) {
         save()
     }
 
-    /** Prefix completions: learned words first (by frequency), then seeds. */
+    /**
+     * Prefix completions: learned words first (by frequency), then seeds.
+     * A word typed only once is NOT suggested yet — this keeps one-off
+     * typos out of the suggestion strip; a word must repeat to qualify.
+     */
     fun suggest(prefix: String, max: Int, useSeeds: Boolean): List<String> {
         if (prefix.isEmpty()) return emptyList()
         ensureLoaded()
         val out = ArrayList<String>()
         learned.entries
             .asSequence()
-            .filter { it.key.startsWith(prefix) && it.key != prefix }
+            .filter { it.value >= 2 && it.key.startsWith(prefix) && it.key != prefix }
             .sortedByDescending { it.value }
             .take(max)
             .forEach { out.add(it.key) }
@@ -117,22 +121,39 @@ class WordStore(private val context: Context, private val langCode: String) {
         return out
     }
 
-    /** Next-word prediction from learned bigrams. */
+    /** Next-word prediction from learned bigrams (repeated pairs only). */
     fun suggestNext(prev: String, max: Int): List<String> {
         if (prev.isEmpty()) return emptyList()
         ensureLoaded()
         val m = bigrams[prev] ?: return emptyList()
-        return m.entries.sortedByDescending { it.value }.take(max).map { it.key }
+        return m.entries
+            .filter { it.value >= 2 }
+            .sortedByDescending { it.value }
+            .take(max)
+            .map { it.key }
     }
 
-    /** Merge an imported plain-text word list. Returns how many words were added. */
+    /**
+     * Merge an imported plain-text word list. Imported words get a count of
+     * at least 2 so they are suggested immediately (unlike one-off typos).
+     * Returns how many words were added.
+     */
     fun importText(text: String): Int {
         ensureLoaded()
         val before = learned.size
+        val imported = ArrayList<String>()
         for (line in text.lineSequence()) {
             val t = line.trim()
             if (t.isEmpty() || t.length > 48) continue
+            val idx = t.indexOf('\t')
+            val w = (if (idx > 0) t.substring(0, idx) else t).trim()
+            if (w.isEmpty()) continue
             parseWordLine(t)
+            imported.add(w)
+        }
+        for (w in imported) {
+            val c = learned[w]
+            if (c != null && c < 2) learned[w] = 2
         }
         dirty = true
         save()

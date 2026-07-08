@@ -30,6 +30,15 @@
         <item>green</item>
     </string-array>
 
+    <string-array name="sound_type_names">
+        <item>نرم (Pop)</item>
+        <item>د سیسټم غږ</item>
+    </string-array>
+    <string-array name="sound_type_values">
+        <item>pop</item>
+        <item>system</item>
+    </string-array>
+
     <string-array name="longpress_names">
         <item>ډېر چټک (200ms)</item>
         <item>چټک (250ms)</item>

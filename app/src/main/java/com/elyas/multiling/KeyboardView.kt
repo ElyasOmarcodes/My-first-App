@@ -75,6 +75,9 @@ class KeyboardView(context: Context) : View(context) {
 
     var keyHeightDp: Int = 52
     var fontScale: Float = 1f
+    var hintScale: Float = 1f
+    var cornerRadiusDp: Int = 6
+    var keyGapDp: Float = 1.5f
     var showHints: Boolean = true
     var showPreview: Boolean = true
     var keyBorder: Boolean = false
@@ -155,6 +158,17 @@ class KeyboardView(context: Context) : View(context) {
     private var altPopupLeftInView = 0f
     private var altCellWidth = 0f
 
+    // slide-to-select grid menu (long-press on 123)
+    private var gridPopup: PopupWindow? = null
+    private var gridViews: List<TextView> = emptyList()
+    private var gridCodes: List<Int> = emptyList()
+    private var gridCols = 3
+    private var gridIndex = -1
+    private var gridLeftInView = 0f
+    private var gridTopInView = 0f
+    private var gridCellW = 0f
+    private var gridCellH = 0f
+
     // ------------------------------------------------------------- measure
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
@@ -171,8 +185,8 @@ class KeyboardView(context: Context) : View(context) {
         placed = ArrayList()
         if (rows.isEmpty() || width == 0) return
         val rowH = keyHeightDp * density
-        val gap = 1.5f * density
-        val sidePad = 1.5f * density
+        val gap = keyGapDp * density
+        val sidePad = keyGapDp * density
         var y = paddingTop.toFloat()
         for ((ri, row) in rows.withIndex()) {
             val totalW = row.sumOf { it.width.toDouble() }.toFloat()
@@ -192,7 +206,7 @@ class KeyboardView(context: Context) : View(context) {
     // ---------------------------------------------------------------- draw
     override fun onDraw(canvas: Canvas) {
         canvas.drawColor(theme.background)
-        val radius = 6f * density
+        val radius = cornerRadiusDp * density
         val pressedKeys = HashSet<PlacedKey>()
         for (st in pointers.values) {
             if (!st.cancelled) st.key?.let { pressedKeys.add(it) }
@@ -228,11 +242,18 @@ class KeyboardView(context: Context) : View(context) {
             val cy = pk.rect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2
             canvas.drawText(pk.displayLabel, cx, cy, textPaint)
 
-            // hint (top corner)
-            if (showHints && (key.code == 0 || key.hint != null)) {
+            // hint (top corner): drawn icon or small text
+            if (key.hintIcon == Keys.ICON_MIC) {
+                drawMicIcon(
+                    canvas,
+                    pk.rect.right - 10 * density,
+                    pk.rect.top + 10 * density,
+                    pk.rect.height() * 0.16f
+                )
+            } else if (showHints && (key.code == 0 || key.hint != null)) {
                 val hint = key.hint ?: key.shifted ?: key.alternates.firstOrNull()
                 if (hint != null && (shiftState == 0 || key.code != 0)) {
-                    hintPaint.textSize = pk.rect.height() * 0.24f * fontScale
+                    hintPaint.textSize = pk.rect.height() * 0.24f * fontScale * hintScale
                     hintPaint.color = theme.hint
                     canvas.drawText(
                         hint,
@@ -243,6 +264,28 @@ class KeyboardView(context: Context) : View(context) {
                 }
             }
         }
+    }
+
+    /** Small microphone glyph drawn with primitives (no emoji). */
+    private fun drawMicIcon(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        p.color = theme.hint
+        p.style = Paint.Style.FILL
+        // capsule body
+        canvas.drawRoundRect(
+            RectF(cx - s * 0.32f, cy - s * 0.95f, cx + s * 0.32f, cy + s * 0.15f),
+            s * 0.32f, s * 0.32f, p
+        )
+        // cradle arc
+        p.style = Paint.Style.STROKE
+        p.strokeWidth = s * 0.16f
+        canvas.drawArc(
+            RectF(cx - s * 0.62f, cy - s * 0.55f, cx + s * 0.62f, cy + s * 0.55f),
+            20f, 140f, false, p
+        )
+        // stem + base
+        canvas.drawLine(cx, cy + s * 0.55f, cx, cy + s * 0.85f, p)
+        canvas.drawLine(cx - s * 0.35f, cy + s * 0.9f, cx + s * 0.35f, cy + s * 0.9f, p)
     }
 
     // --------------------------------------------------------------- touch
@@ -320,6 +363,10 @@ class KeyboardView(context: Context) : View(context) {
         val key = st.key ?: return
         if (st.cancelled || st.committed) return
 
+        if (gridPopup != null && id == longPressPointerId) {
+            updateGridSelection(x, y)
+            return
+        }
         if (altPopup != null && id == longPressPointerId) {
             updateAltSelection(x)
             return
@@ -369,7 +416,9 @@ class KeyboardView(context: Context) : View(context) {
         dismissPreview()
 
         val key = st.key
-        if (altPopup != null && st.longPressFired) {
+        if (gridPopup != null && st.longPressFired) {
+            commitGridSelection()
+        } else if (altPopup != null && st.longPressFired) {
             commitAltSelection()
         } else if (key != null && !st.longPressFired && !st.committed && !st.cancelled) {
             if (key.def.code == Keys.SPACE && st.spaceSwiped) {
@@ -425,6 +474,7 @@ class KeyboardView(context: Context) : View(context) {
         }
         if (key.def.code == Keys.SYM) {
             st.longPressFired = true
+            longPressPointerId = id // keep tracking this pointer for the grid
             dismissPreview()
             listener?.onSymLongPress()
             return
@@ -442,6 +492,9 @@ class KeyboardView(context: Context) : View(context) {
         val cellH = key.rect.height()
         val container = LinearLayout(context)
         container.orientation = LinearLayout.HORIZONTAL
+        // force LTR so cell order always matches the finger's direction,
+        // even when the system locale is RTL
+        container.layoutDirection = View.LAYOUT_DIRECTION_LTR
         val bg = GradientDrawable()
         bg.setColor(theme.keyPressed)
         bg.cornerRadius = 8 * density
@@ -461,7 +514,9 @@ class KeyboardView(context: Context) : View(context) {
         altChars = chars
         altCellWidth = cellW
         val totalW = cellW * chars.size
-        var left = key.rect.centerX() - totalW / 2
+        // put the FIRST cell (the hint character) right above the pressed key,
+        // so the initial highlight sits on the character the key advertises
+        var left = key.rect.centerX() - cellW / 2
         left = min(max(4 * density, left), width - totalW - 4 * density)
         altPopupLeftInView = left
         altIndex = 0
@@ -474,6 +529,106 @@ class KeyboardView(context: Context) : View(context) {
         val yInWindow = loc[1] + key.rect.top - cellH - 8 * density
         popup.showAtLocation(this, Gravity.NO_GRAVITY, (loc[0] + left).toInt(), yInWindow.toInt())
         altPopup = popup
+    }
+
+    /**
+     * Slide-to-select menu grid shown while the finger is still down on the
+     * 123 key: move over an item and release to activate it — no second tap.
+     */
+    fun showGridMenu(items: List<Pair<String, Int>>, cols: Int = 3) {
+        dismissPopups()
+        gridCols = cols
+        val rowsCount = (items.size + cols - 1) / cols
+        gridCellW = (width * 0.9f) / cols
+        gridCellH = keyHeightDp * density
+        val totalW = gridCellW * cols
+        val totalH = gridCellH * rowsCount
+
+        val container = LinearLayout(context)
+        container.orientation = LinearLayout.VERTICAL
+        container.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val bg = GradientDrawable()
+        bg.setColor(theme.keyPressed)
+        bg.cornerRadius = 10 * density
+        container.background = bg
+
+        val views = ArrayList<TextView>()
+        val codes = ArrayList<Int>()
+        var i = 0
+        for (r in 0 until rowsCount) {
+            val rowLayout = LinearLayout(context)
+            rowLayout.orientation = LinearLayout.HORIZONTAL
+            rowLayout.layoutDirection = View.LAYOUT_DIRECTION_LTR
+            for (c in 0 until cols) {
+                if (i >= items.size) break
+                val (label, code) = items[i]
+                val tv = TextView(context)
+                tv.text = label
+                tv.gravity = Gravity.CENTER
+                tv.setTextColor(theme.text)
+                tv.textSize = 17f
+                tv.layoutParams =
+                    LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
+                rowLayout.addView(tv)
+                views.add(tv)
+                codes.add(code)
+                i++
+            }
+            container.addView(rowLayout)
+        }
+        gridViews = views
+        gridCodes = codes
+        gridIndex = -1
+
+        gridLeftInView = (width - totalW) / 2
+        gridTopInView = max(4 * density, height - totalH - (keyHeightDp * density) * 2.2f)
+
+        val popup = PopupWindow(container, totalW.toInt(), totalH.toInt(), false)
+        popup.isClippingEnabled = false
+        val loc = IntArray(2)
+        getLocationInWindow(loc)
+        popup.showAtLocation(
+            this, Gravity.NO_GRAVITY,
+            (loc[0] + gridLeftInView).toInt(), (loc[1] + gridTopInView).toInt()
+        )
+        gridPopup = popup
+    }
+
+    private fun updateGridSelection(x: Float, y: Float) {
+        if (gridCodes.isEmpty()) return
+        val col = ((x - gridLeftInView) / gridCellW).toInt()
+        val row = ((y - gridTopInView) / gridCellH).toInt()
+        gridIndex = if (
+            x < gridLeftInView || y < gridTopInView ||
+            col !in 0 until gridCols || row < 0
+        ) -1 else {
+            val idx = row * gridCols + col
+            if (idx in gridCodes.indices) idx else -1
+        }
+        for ((i, tv) in gridViews.withIndex()) {
+            if (i == gridIndex) {
+                val d = GradientDrawable()
+                d.setColor(theme.accent)
+                d.cornerRadius = 10 * density
+                tv.background = d
+            } else {
+                tv.background = null
+            }
+        }
+    }
+
+    private fun commitGridSelection() {
+        val code = gridCodes.getOrNull(gridIndex)
+        dismissGridPopup()
+        if (code != null) listener?.onSpecial(code)
+    }
+
+    private fun dismissGridPopup() {
+        gridPopup?.dismiss()
+        gridPopup = null
+        gridViews = emptyList()
+        gridCodes = emptyList()
+        gridIndex = -1
     }
 
     private fun updateAltSelection(x: Float) {
@@ -541,6 +696,7 @@ class KeyboardView(context: Context) : View(context) {
     fun dismissPopups() {
         dismissPreview()
         dismissAltPopup()
+        dismissGridPopup()
     }
 
     override fun onDetachedFromWindow() {

@@ -41,6 +41,11 @@
     <string name="pref_hints_sum">د شفټ/اوږد فشار توری د کیلي په سر کې ښکاره کوي</string>
     <string name="pref_preview">د کیلي فشار پاپ اپ</string>
 
+    <string name="pref_corner_radius">د کیلیو د ګوټونو ګردوالی</string>
+    <string name="pref_key_gap">د کیلیو ترمنځ واټن</string>
+    <string name="pref_hint_scale">د کوچنیو تورو کچه (٪)</string>
+    <string name="pref_sugg_font">د وړاندیز پټې د لیکنې کچه</string>
+    <string name="pref_sound_type">د غږ ډول</string>
     <string name="pref_key_height">د کیلیو لوړوالی (Portrait)</string>
     <string name="pref_key_height_land">د کیلیو لوړوالی (Landscape)</string>
     <string name="pref_font_scale">د لیکنې کچه (٪)</string>

@@ -123,12 +123,14 @@ object Layouts {
     fun byCode(code: String): Language = ALL.firstOrNull { it.code == code } ?: PASHTO
 
     // -------------------------------------------------------------- Symbols
-    /** Symbols page 1. Digit row is localized per language. */
+    /** Symbols page 1. Digit row is localized per language, ordered 1…9,0. */
     fun symbols1(lang: Language): List<List<KeyDef>> {
-        val digitRow = lang.digits.mapIndexed { i, c ->
+        val order = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
+        val digitRow = order.map { i ->
+            val c = lang.digits[i].toString()
             val latin = ('0' + i).toString()
-            if (c.toString() == latin) k(latin)
-            else KeyDef(c.toString(), latin, listOf(latin))
+            if (c == latin) k(latin)
+            else KeyDef(c, latin, listOf(latin))
         }
         return listOf(
             digitRow,
@@ -213,20 +215,16 @@ object Layouts {
         )
     )
 
-    /** Long-press-123 menu grid. */
-    fun menuPage(): List<List<KeyDef>> = listOf(
-        listOf(
-            KeyDef("✂ کنټرول", code = Keys.EDIT_PANEL),
-            KeyDef("🔢 شمېرې", code = Keys.NUMPAD),
-            KeyDef("😊 ایموجي", code = Keys.EMOJI)
-        ),
-        listOf(
-            KeyDef("🎤 غږ", code = Keys.MIC),
-            KeyDef("🌐 ژبې", code = Keys.LANGS),
-            KeyDef("⚙ تنظیمات", code = Keys.SETTINGS)
-        ),
-        listOf(
-            KeyDef("↩ بیرته کیبورډ ته", code = Keys.ABC)
-        )
+    /**
+     * Items of the long-press-123 slide-to-select menu popup.
+     * Text labels only — no emoji glyphs in the chrome.
+     */
+    fun menuItems(): List<Pair<String, Int>> = listOf(
+        "کنټرول" to Keys.EDIT_PANEL,
+        "شمېرې" to Keys.NUMPAD,
+        "ایموجي" to Keys.EMOJI,
+        "غږ" to Keys.MIC,
+        "ژبې" to Keys.LANGS,
+        "تنظیمات" to Keys.SETTINGS
     )
 }

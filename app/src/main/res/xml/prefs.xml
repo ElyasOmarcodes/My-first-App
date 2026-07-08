@@ -70,6 +70,34 @@
             android:max="48"
             app:min="0"
             app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="corner_radius"
+            android:title="@string/pref_corner_radius"
+            android:defaultValue="6"
+            android:max="24"
+            app:min="0"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="key_gap"
+            android:title="@string/pref_key_gap"
+            android:defaultValue="2"
+            android:max="8"
+            app:min="0"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="hint_scale"
+            android:title="@string/pref_hint_scale"
+            android:defaultValue="100"
+            android:max="150"
+            app:min="60"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="sugg_font"
+            android:title="@string/pref_sugg_font"
+            android:defaultValue="17"
+            android:max="24"
+            app:min="13"
+            app:showSeekBarValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_cat_typing">
@@ -158,6 +186,14 @@
             android:key="sound"
             android:title="@string/pref_sound"
             android:defaultValue="false" />
+        <ListPreference
+            android:key="sound_type"
+            android:title="@string/pref_sound_type"
+            android:entries="@array/sound_type_names"
+            android:entryValues="@array/sound_type_values"
+            android:defaultValue="pop"
+            android:dependency="sound"
+            app:useSimpleSummaryProvider="true" />
         <SeekBarPreference
             android:key="sound_vol"
             android:title="@string/pref_sound_vol"

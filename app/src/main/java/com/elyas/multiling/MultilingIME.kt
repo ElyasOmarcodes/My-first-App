@@ -28,7 +28,7 @@ import androidx.preference.PreferenceManager
  */
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
-    private enum class Mode { LETTERS, SYM1, SYM2, MENU, EDIT, NUMPAD, EMOJI }
+    private enum class Mode { LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI }
 
     private var keyboardView: KeyboardView? = null
     private var rootView: LinearLayout? = null
@@ -56,6 +56,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var doubleSpacePeriod = true
     private var autoCapsOn = true
     private var arrowsOn = true
+    private var suggFontSp = 17f
+
+    private var soundPool: android.media.SoundPool? = null
+    private var popSoundId = 0
+    private var soundType = "pop"
 
     private val wordStores = HashMap<String, WordStore>()
     private var autoText: AutoTextStore? = null
@@ -116,7 +121,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         applySettings()
-        mode = Mode.LETTERS
+        // number/phone/date fields automatically get the number pad
+        val cls = (info?.inputType ?: 0) and InputType.TYPE_MASK_CLASS
+        mode = when (cls) {
+            InputType.TYPE_CLASS_NUMBER,
+            InputType.TYPE_CLASS_PHONE,
+            InputType.TYPE_CLASS_DATETIME -> Mode.NUMPAD
+            else -> Mode.LETTERS
+        }
         shift = 0
         selectMode = false
         wordBuffer.setLength(0)
@@ -159,6 +171,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.keyHeightDp =
             if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 52)
         kv.fontScale = p.getInt("font_scale", 100) / 100f
+        kv.hintScale = p.getInt("hint_scale", 100) / 100f
+        kv.cornerRadiusDp = p.getInt("corner_radius", 6)
+        kv.keyGapDp = p.getInt("key_gap", 2) / 1.33f
         kv.showHints = p.getBoolean("hints", true)
         kv.showPreview = p.getBoolean("preview", true)
         kv.keyBorder = p.getBoolean("key_border", false)
@@ -171,6 +186,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         vibrateMs = p.getInt("vibrate_ms", 20).toLong()
         soundOn = p.getBoolean("sound", false)
         soundVol = p.getInt("sound_vol", 60) / 100f
+        soundType = p.getString("sound_type", "pop") ?: "pop"
+        if (soundOn && soundType == "pop" && soundPool == null) initSoundPool()
         suggestionsOn = p.getBoolean("suggestions", true)
         learnWordsOn = p.getBoolean("learn_words", true)
         seedDictOn = p.getBoolean("seed_dict", true)
@@ -178,6 +195,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         autotextOn = p.getBoolean("autotext_on", true)
         doubleSpacePeriod = p.getBoolean("double_space", true)
         autoCapsOn = p.getBoolean("autocaps", true)
+        suggFontSp = p.getInt("sugg_font", 17).toFloat()
         arrowsOn = p.getBoolean("arrows", true)
 
         val enabled = p.getStringSet("languages", null)
@@ -194,7 +212,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun buildBottomRow(): List<KeyDef> {
         val symLabel = if (lang.digits[0] == '0') "?123" else "۱۲۳"
         return listOf(
-            KeyDef(symLabel, code = Keys.SYM, width = 1.5f, hint = "🎤"),
+            KeyDef(symLabel, code = Keys.SYM, width = 1.5f, hintIcon = Keys.ICON_MIC),
             lang.extraKey,
             KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
             KeyDef(lang.period, null, lang.periodAlts),
@@ -235,7 +253,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 rows.add(buildSymBottomRow())
                 if (arrowsOn) rows.add(arrowRow())
             }
-            Mode.MENU -> rows.addAll(Layouts.menuPage())
             Mode.EDIT -> {
                 rows.addAll(Layouts.editPanel())
                 rows.add(buildBottomRow())
@@ -394,7 +411,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.ARROW_LEFT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_LEFT) }
             Keys.ARROW_RIGHT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_RIGHT) }
 
-            Keys.MENU -> { feedback(); mode = Mode.MENU; rebuildKeyboard() }
             Keys.EDIT_PANEL -> { feedback(); mode = Mode.EDIT; rebuildKeyboard() }
             Keys.NUMPAD -> { feedback(); mode = Mode.NUMPAD; rebuildKeyboard() }
             Keys.EMOJI -> { feedback(); mode = Mode.EMOJI; rebuildKeyboard() }
@@ -444,8 +460,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onSymLongPress() {
         feedback()
-        mode = Mode.MENU
-        rebuildKeyboard()
+        keyboardView?.showGridMenu(Layouts.menuItems())
     }
 
     // ------------------------------------------------------------ languages
@@ -526,7 +541,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val tv = TextView(this)
             tv.text = word
             tv.setTextColor(if (isAuto) kv.theme.accent else kv.theme.text)
-            tv.textSize = 17f
+            tv.textSize = suggFontSp
             tv.maxLines = 1
             tv.setPadding((14 * density).toInt(), 0, (14 * density).toInt(), 0)
             tv.gravity = android.view.Gravity.CENTER
@@ -574,6 +589,28 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    private fun initSoundPool() {
+        try {
+            val attrs = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            val sp = android.media.SoundPool.Builder()
+                .setMaxStreams(3)
+                .setAudioAttributes(attrs)
+                .build()
+            popSoundId = sp.load(this, R.raw.keypop, 1)
+            soundPool = sp
+        } catch (_: Exception) {
+        }
+    }
+
+    override fun onDestroy() {
+        soundPool?.release()
+        soundPool = null
+        super.onDestroy()
+    }
+
     @Suppress("DEPRECATION")
     private fun feedback() {
         if (vibrateOn) {
@@ -585,8 +622,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
         if (soundOn) {
             try {
-                val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                am.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, soundVol)
+                if (soundType == "pop") {
+                    if (soundPool == null) initSoundPool()
+                    val sp = soundPool
+                    if (sp != null && popSoundId != 0) {
+                        sp.play(popSoundId, soundVol, soundVol, 1, 0, 1f)
+                    }
+                } else {
+                    val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    am.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, soundVol)
+                }
             } catch (_: Exception) {
             }
         }

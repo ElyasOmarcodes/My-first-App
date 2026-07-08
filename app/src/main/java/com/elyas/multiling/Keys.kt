@@ -11,6 +11,8 @@ data class KeyDef(
     val code: Int = 0,
     val width: Float = 1f,
     val hint: String? = null,
+    /** drawn icon in the hint corner instead of text (Keys.ICON_*) */
+    val hintIcon: Int = 0,
     val repeatable: Boolean = false
 ) {
     /** All long-press candidates: shifted char first, then extra alternates. */
@@ -47,6 +49,9 @@ object Keys {
     const val EMOJI = -23
     const val SETTINGS = -24
     const val LANGS = -25
+
+    // drawn icons (KeyDef.hintIcon)
+    const val ICON_MIC = 1
 
     // edit-panel actions
     const val ESC = -30
