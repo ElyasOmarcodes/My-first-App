@@ -39,6 +39,25 @@ object Keys {
     const val ARROW_DOWN = -11
     const val ARROW_LEFT = -12
     const val ARROW_RIGHT = -13
+
+    // pages
+    const val MENU = -20
+    const val EDIT_PANEL = -21
+    const val NUMPAD = -22
+    const val EMOJI = -23
+    const val SETTINGS = -24
+    const val LANGS = -25
+
+    // edit-panel actions
+    const val ESC = -30
+    const val TAB = -31
+    const val COPY = -32
+    const val CUT = -33
+    const val PASTE = -34
+    const val SELECT_ALL = -35
+    const val FWD_DEL = -36
+    const val HOME = -37
+    const val END = -38
 }
 
 /** One language with its letter rows. Rows are defined visually left-to-right. */

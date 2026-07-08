@@ -153,4 +153,80 @@ object Layouts {
             k("©"), k("®"), k("™"), k("✓"), k("["), k("]"), k("«"), k("»"), delKey()
         )
     )
+
+    /**
+     * Edit/control panel, like classic multilingual keyboards:
+     * Esc Paste ▲ Copy Del / Tab ◀ All ▶ Cut / Sel Home ▼ End ⌫
+     */
+    fun editPanel(): List<List<KeyDef>> = listOf(
+        listOf(
+            KeyDef("Esc", code = Keys.ESC),
+            KeyDef("Paste", code = Keys.PASTE),
+            KeyDef("▲", code = Keys.ARROW_UP, repeatable = true),
+            KeyDef("Copy", code = Keys.COPY),
+            KeyDef("Del.", code = Keys.FWD_DEL, repeatable = true)
+        ),
+        listOf(
+            KeyDef("Tab ⇥", code = Keys.TAB),
+            KeyDef("◀", code = Keys.ARROW_LEFT, repeatable = true),
+            KeyDef("All", code = Keys.SELECT_ALL),
+            KeyDef("▶", code = Keys.ARROW_RIGHT, repeatable = true),
+            KeyDef("Cut", code = Keys.CUT)
+        ),
+        listOf(
+            KeyDef("⇧", code = Keys.SHIFT),
+            KeyDef("Home", code = Keys.HOME),
+            KeyDef("▼", code = Keys.ARROW_DOWN, repeatable = true),
+            KeyDef("End", code = Keys.END),
+            KeyDef("⌫", code = Keys.DELETE, repeatable = true)
+        )
+    )
+
+    /** Number pad with localized digits. */
+    fun numPad(lang: Language): List<List<KeyDef>> {
+        val d = lang.digits.map { it.toString() }
+        return listOf(
+            listOf(k(d[1]), k(d[2]), k(d[3]), k("÷", null, "/")),
+            listOf(k(d[4]), k(d[5]), k(d[6]), k("×", null, "*")),
+            listOf(k(d[7]), k(d[8]), k(d[9]), k("-", null, "_")),
+            listOf(k("+"), k(d[0]), k("."), k("=", null, "%")),
+            listOf(
+                KeyDef("ابت", code = Keys.ABC, width = 1.5f),
+                k(","), k(":"),
+                KeyDef("⌫", code = Keys.DELETE, repeatable = true),
+                KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+            )
+        )
+    }
+
+    /** Emoji / smiley page. */
+    fun emojiPage(): List<List<KeyDef>> = listOf(
+        listOf(k("😀"), k("😂"), k("🤣"), k("😊"), k("😍"), k("🥰"), k("😘"), k("😉")),
+        listOf(k("🙏"), k("👍"), k("👏"), k("🤲"), k("💪"), k("🤝"), k("✌️"), k("👌")),
+        listOf(k("❤️"), k("💔"), k("🌹"), k("🌸"), k("⭐"), k("🔥"), k("💯"), k("✅")),
+        listOf(k("😢"), k("😭"), k("😡"), k("🤔"), k("😴"), k("😎"), k("🎉"), k("🎊")),
+        listOf(
+            KeyDef("ابت", code = Keys.ABC, width = 1.5f),
+            k(":-)"), k(";-)"), k("<3"),
+            KeyDef("⌫", code = Keys.DELETE, repeatable = true),
+            KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+        )
+    )
+
+    /** Long-press-123 menu grid. */
+    fun menuPage(): List<List<KeyDef>> = listOf(
+        listOf(
+            KeyDef("✂ کنټرول", code = Keys.EDIT_PANEL),
+            KeyDef("🔢 شمېرې", code = Keys.NUMPAD),
+            KeyDef("😊 ایموجي", code = Keys.EMOJI)
+        ),
+        listOf(
+            KeyDef("🎤 غږ", code = Keys.MIC),
+            KeyDef("🌐 ژبې", code = Keys.LANGS),
+            KeyDef("⚙ تنظیمات", code = Keys.SETTINGS)
+        ),
+        listOf(
+            KeyDef("↩ بیرته کیبورډ ته", code = Keys.ABC)
+        )
+    )
 }

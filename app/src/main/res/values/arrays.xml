@@ -19,21 +19,29 @@
         <item>تور (Dark)</item>
         <item>روښانه (Light)</item>
         <item>بشپړ تور (AMOLED)</item>
+        <item>آبي (Blue)</item>
+        <item>شین (Green)</item>
     </string-array>
     <string-array name="theme_values">
         <item>dark</item>
         <item>light</item>
         <item>black</item>
+        <item>blue</item>
+        <item>green</item>
     </string-array>
 
     <string-array name="longpress_names">
+        <item>ډېر چټک (200ms)</item>
         <item>چټک (250ms)</item>
         <item>منځنی (350ms)</item>
         <item>ورو (500ms)</item>
+        <item>ډېر ورو (700ms)</item>
     </string-array>
     <string-array name="longpress_values">
+        <item>200</item>
         <item>250</item>
         <item>350</item>
         <item>500</item>
+        <item>700</item>
     </string-array>
 </resources>

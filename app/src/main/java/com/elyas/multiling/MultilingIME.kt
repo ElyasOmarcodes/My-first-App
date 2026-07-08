@@ -2,11 +2,12 @@ package com.elyas.multiling
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
+import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
 import android.os.SystemClock
 import android.os.Vibrator
-import androidx.preference.PreferenceManager
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
@@ -17,15 +18,17 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.preference.PreferenceManager
 
 /**
  * The input method service: builds rows for the current language/mode,
- * commits text, and implements shift, symbols, language switching,
- * suggestions, double-space period, arrow keys and vibration.
+ * commits text, and implements shift, symbols, edit/control panel, numpad,
+ * emoji page, language switching, suggestions with next-word prediction,
+ * AutoText expansion, double-space period, arrow keys and feedback.
  */
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
-    private enum class Mode { LETTERS, SYM1, SYM2 }
+    private enum class Mode { LETTERS, SYM1, SYM2, MENU, EDIT, NUMPAD, EMOJI }
 
     private var keyboardView: KeyboardView? = null
     private var rootView: LinearLayout? = null
@@ -36,23 +39,36 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var langIndex = 0
     private var mode = Mode.LETTERS
     private var shift = 0 // 0 off, 1 once, 2 locked
+    private var selectMode = false // edit panel: arrows extend the selection
     private var lastShiftTime = 0L
     private var lastSpaceTime = 0L
 
     // settings snapshot
     private var vibrateOn = true
+    private var vibrateMs = 20L
     private var soundOn = false
+    private var soundVol = 0.6f
     private var suggestionsOn = true
+    private var learnWordsOn = true
+    private var seedDictOn = true
+    private var bigramsOn = true
+    private var autotextOn = true
     private var doubleSpacePeriod = true
+    private var autoCapsOn = true
     private var arrowsOn = true
 
     private val wordStores = HashMap<String, WordStore>()
+    private var autoText: AutoTextStore? = null
     private val wordBuffer = StringBuilder()
+    private var lastWord = ""
 
     private val lang: Language get() = languages[langIndex]
 
     private fun store(): WordStore =
         wordStores.getOrPut(lang.code) { WordStore(this, lang.code) }
+
+    private fun autoTextStore(): AutoTextStore =
+        autoText ?: AutoTextStore(this).also { autoText = it }
 
     // ------------------------------------------------------------ lifecycle
     override fun onCreateInputView(): View {
@@ -102,7 +118,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         applySettings()
         mode = Mode.LETTERS
         shift = 0
+        selectMode = false
         wordBuffer.setLength(0)
+        lastWord = ""
         updateAutoCaps()
         rebuildKeyboard()
         updateSuggestions()
@@ -110,8 +128,23 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         for (s in wordStores.values) s.save()
+        autoText?.save()
         keyboardView?.dismissPopups()
         super.onFinishInputView(finishingInput)
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int,
+        candidatesStart: Int, candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd
+        )
+        // if the user selected text or tapped elsewhere, drop the word buffer
+        if (newSelStart != newSelEnd) {
+            wordBuffer.setLength(0)
+            updateSuggestions()
+        }
     }
 
     override fun onEvaluateFullscreenMode(): Boolean = false
@@ -121,15 +154,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         val kv = keyboardView ?: return
         kv.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
-        kv.keyHeightDp = p.getInt("key_height", 52)
+        val landscape =
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        kv.keyHeightDp =
+            if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 52)
         kv.fontScale = p.getInt("font_scale", 100) / 100f
         kv.showHints = p.getBoolean("hints", true)
         kv.showPreview = p.getBoolean("preview", true)
+        kv.keyBorder = p.getBoolean("key_border", false)
+        kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.longPressTimeout = (p.getString("longpress", "350") ?: "350").toLong()
+        val density = resources.displayMetrics.density
+        kv.setPadding(0, 0, 0, (p.getInt("bottom_gap", 0) * density).toInt())
+
         vibrateOn = p.getBoolean("vibrate", true)
+        vibrateMs = p.getInt("vibrate_ms", 20).toLong()
         soundOn = p.getBoolean("sound", false)
+        soundVol = p.getInt("sound_vol", 60) / 100f
         suggestionsOn = p.getBoolean("suggestions", true)
+        learnWordsOn = p.getBoolean("learn_words", true)
+        seedDictOn = p.getBoolean("seed_dict", true)
+        bigramsOn = p.getBoolean("bigrams", true)
+        autotextOn = p.getBoolean("autotext_on", true)
         doubleSpacePeriod = p.getBoolean("double_space", true)
+        autoCapsOn = p.getBoolean("autocaps", true)
         arrowsOn = p.getBoolean("arrows", true)
 
         val enabled = p.getStringSet("languages", null)
@@ -170,14 +218,31 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     )
 
     private fun currentRows(): List<List<KeyDef>> {
-        val body = when (mode) {
-            Mode.LETTERS -> lang.rows
-            Mode.SYM1 -> Layouts.symbols1(lang)
-            Mode.SYM2 -> Layouts.symbols2()
+        val rows = ArrayList<List<KeyDef>>()
+        when (mode) {
+            Mode.LETTERS -> {
+                rows.addAll(lang.rows)
+                rows.add(buildBottomRow())
+                if (arrowsOn) rows.add(arrowRow())
+            }
+            Mode.SYM1 -> {
+                rows.addAll(Layouts.symbols1(lang))
+                rows.add(buildSymBottomRow())
+                if (arrowsOn) rows.add(arrowRow())
+            }
+            Mode.SYM2 -> {
+                rows.addAll(Layouts.symbols2())
+                rows.add(buildSymBottomRow())
+                if (arrowsOn) rows.add(arrowRow())
+            }
+            Mode.MENU -> rows.addAll(Layouts.menuPage())
+            Mode.EDIT -> {
+                rows.addAll(Layouts.editPanel())
+                rows.add(buildBottomRow())
+            }
+            Mode.NUMPAD -> rows.addAll(Layouts.numPad(lang))
+            Mode.EMOJI -> rows.addAll(Layouts.emojiPage())
         }
-        val rows = ArrayList<List<KeyDef>>(body)
-        rows.add(if (mode == Mode.LETTERS) buildBottomRow() else buildSymBottomRow())
-        if (arrowsOn) rows.add(arrowRow())
         return rows
     }
 
@@ -189,7 +254,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     key.code != 0 -> key.label
                     lang.code == "en" && mode == Mode.LETTERS ->
                         if (shift > 0) key.label.uppercase() else key.label
-                    shift > 0 && key.shifted != null -> key.shifted
+                    shift > 0 && key.shifted != null && mode == Mode.LETTERS -> key.shifted
                     else -> key.label
                 }
             }
@@ -199,7 +264,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun rebuildKeyboard() {
         val kv = keyboardView ?: return
         val rows = currentRows()
-        kv.shiftState = shift
+        kv.shiftState = if (mode == Mode.EDIT) (if (selectMode) 2 else 0) else shift
         kv.setKeyboard(rows, displayFor(rows))
     }
 
@@ -207,10 +272,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onChar(text: String) {
         feedback()
         val ic = currentInputConnection ?: return
-        ic.commitText(text, 1)
 
         val isLetter = text.length == 1 && Character.isLetter(text[0])
-        if (isLetter) wordBuffer.append(text) else finishWord(text)
+        if (isLetter) {
+            ic.commitText(text, 1)
+            wordBuffer.append(text)
+        } else {
+            handleSeparator(text)
+        }
 
         if (shift == 1) {
             shift = 0
@@ -219,10 +288,43 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         updateSuggestions()
     }
 
+    /**
+     * A separator (space, punctuation, emoji, newline) ends the current word:
+     * AutoText expansion happens here, then learning, then the separator
+     * itself is committed.
+     */
+    private fun handleSeparator(sep: String, commitSep: Boolean = true) {
+        val ic = currentInputConnection
+        val word = wordBuffer.toString()
+        wordBuffer.setLength(0)
+
+        if (word.isNotEmpty() && ic != null) {
+            val expansion = if (autotextOn) autoTextStore().expansionFor(word) else null
+            if (expansion != null) {
+                ic.deleteSurroundingText(word.length, 0)
+                ic.commitText(expansion, 1)
+            } else if (word.length >= 2) {
+                if (suggestionsOn && learnWordsOn) store().learn(word)
+                if (suggestionsOn && bigramsOn && lastWord.isNotEmpty()) {
+                    store().learnBigram(lastWord, word)
+                }
+            }
+            lastWord = expansion ?: word
+        }
+        if (commitSep && sep.isNotEmpty()) ic?.commitText(sep, 1)
+        updateAutoCaps()
+    }
+
     override fun onSpecial(code: Int) {
         val ic = currentInputConnection
         when (code) {
             Keys.SHIFT -> {
+                feedback()
+                if (mode == Mode.EDIT) {
+                    selectMode = !selectMode
+                    rebuildKeyboard()
+                    return
+                }
                 val now = SystemClock.uptimeMillis()
                 shift = when {
                     shift == 0 && now - lastShiftTime < 350 -> 2
@@ -231,7 +333,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     else -> 0
                 }
                 lastShiftTime = now
-                feedback()
                 rebuildKeyboard()
             }
             Keys.DELETE -> {
@@ -242,10 +343,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             Keys.SYM -> { feedback(); mode = Mode.SYM1; shift = 0; rebuildKeyboard() }
             Keys.SYM2 -> { feedback(); mode = Mode.SYM2; rebuildKeyboard() }
-            Keys.ABC -> { feedback(); mode = Mode.LETTERS; rebuildKeyboard() }
+            Keys.ABC -> {
+                feedback()
+                mode = Mode.LETTERS
+                selectMode = false
+                rebuildKeyboard()
+            }
             Keys.ENTER -> {
                 feedback()
-                finishWord("\n")
+                handleSeparator("", commitSep = false)
                 val info = currentInputEditorInfo
                 val action = info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)
                     ?: EditorInfo.IME_ACTION_NONE
@@ -258,6 +364,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
                 }
+                lastWord = ""
                 updateAutoCaps()
                 updateSuggestions()
             }
@@ -278,16 +385,52 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     }
                 }
                 lastSpaceTime = now
-                finishWord(" ")
-                ic?.commitText(" ", 1)
-                updateAutoCaps()
+                handleSeparator(" ")
                 updateSuggestions()
             }
             Keys.MIC -> startVoiceInput()
-            Keys.ARROW_UP -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP) }
-            Keys.ARROW_DOWN -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN) }
-            Keys.ARROW_LEFT -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_LEFT) }
-            Keys.ARROW_RIGHT -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_RIGHT) }
+            Keys.ARROW_UP -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_UP) }
+            Keys.ARROW_DOWN -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_DOWN) }
+            Keys.ARROW_LEFT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_LEFT) }
+            Keys.ARROW_RIGHT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_RIGHT) }
+
+            Keys.MENU -> { feedback(); mode = Mode.MENU; rebuildKeyboard() }
+            Keys.EDIT_PANEL -> { feedback(); mode = Mode.EDIT; rebuildKeyboard() }
+            Keys.NUMPAD -> { feedback(); mode = Mode.NUMPAD; rebuildKeyboard() }
+            Keys.EMOJI -> { feedback(); mode = Mode.EMOJI; rebuildKeyboard() }
+            Keys.LANGS -> { feedback(); showLanguageMenu() }
+            Keys.SETTINGS -> {
+                feedback()
+                try {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                } catch (_: Exception) {
+                }
+            }
+
+            Keys.ESC -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ESCAPE) }
+            Keys.TAB -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_TAB) }
+            Keys.COPY -> { feedback(); ic?.performContextMenuAction(android.R.id.copy) }
+            Keys.CUT -> { feedback(); ic?.performContextMenuAction(android.R.id.cut) }
+            Keys.PASTE -> { feedback(); ic?.performContextMenuAction(android.R.id.paste) }
+            Keys.SELECT_ALL -> { feedback(); ic?.performContextMenuAction(android.R.id.selectAll) }
+            Keys.FWD_DEL -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_FORWARD_DEL) }
+            Keys.HOME -> { feedback(); sendArrow(KeyEvent.KEYCODE_MOVE_HOME) }
+            Keys.END -> { feedback(); sendArrow(KeyEvent.KEYCODE_MOVE_END) }
+        }
+    }
+
+    /** Arrows honour edit-panel select mode by holding Shift. */
+    private fun sendArrow(keyCode: Int) {
+        val ic = currentInputConnection ?: return
+        if (mode == Mode.EDIT && selectMode) {
+            val now = SystemClock.uptimeMillis()
+            val meta = KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON
+            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta))
+            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta))
+        } else {
+            sendDownUpKeyEvents(keyCode)
         }
     }
 
@@ -299,6 +442,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         showLanguageMenu()
     }
 
+    override fun onSymLongPress() {
+        feedback()
+        mode = Mode.MENU
+        rebuildKeyboard()
+    }
+
     // ------------------------------------------------------------ languages
     private fun switchLanguage(delta: Int) {
         if (languages.size < 2) return
@@ -306,6 +455,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         mode = Mode.LETTERS
         shift = 0
         wordBuffer.setLength(0)
+        lastWord = ""
         feedback()
         rebuildKeyboard()
         updateSuggestions()
@@ -336,7 +486,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun startVoiceInput() {
         try {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            @Suppress("DEPRECATION")
             val voice = imm.enabledInputMethodList.firstOrNull {
                 it.id.contains("voice", ignoreCase = true)
             }
@@ -344,34 +493,41 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 @Suppress("DEPRECATION")
                 switchInputMethod(voice.id)
             } else {
-                Toast.makeText(this, "Voice IME نشته — ګوګل غږیز ټایپینګ فعال کړئ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Voice IME نشته — ګوګل غږیز ټایپینګ فعال کړئ",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         } catch (_: Exception) {
         }
     }
 
     // -------------------------------------------------------- suggestions
-    private fun finishWord(sep: String) {
-        val word = wordBuffer.toString()
-        wordBuffer.setLength(0)
-        if (suggestionsOn && word.length >= 2 && sep != "") {
-            store().learn(word)
-        }
-    }
-
     private fun updateSuggestions() {
         val bar = suggestionBar ?: return
         bar.removeAllViews()
         if (!suggestionsOn) return
         val kv = keyboardView ?: return
         val prefix = wordBuffer.toString()
-        val items = store().suggest(prefix, 5)
+
+        val items = ArrayList<Pair<String, Boolean>>() // text to isAutotext
+        if (prefix.isNotEmpty()) {
+            if (autotextOn) {
+                autoTextStore().expansionFor(prefix)?.let { items.add(it to true) }
+            }
+            for (w in store().suggest(prefix, 6, seedDictOn)) items.add(w to false)
+        } else if (bigramsOn && lastWord.isNotEmpty()) {
+            for (w in store().suggestNext(lastWord, 4)) items.add(w to false)
+        }
+
         val density = resources.displayMetrics.density
-        for (word in items) {
+        for ((word, isAuto) in items) {
             val tv = TextView(this)
             tv.text = word
-            tv.setTextColor(kv.theme.text)
+            tv.setTextColor(if (isAuto) kv.theme.accent else kv.theme.text)
             tv.textSize = 17f
+            tv.maxLines = 1
             tv.setPadding((14 * density).toInt(), 0, (14 * density).toInt(), 0)
             tv.gravity = android.view.Gravity.CENTER
             tv.layoutParams = LinearLayout.LayoutParams(
@@ -379,10 +535,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 LinearLayout.LayoutParams.MATCH_PARENT
             )
             tv.setOnClickListener { commitSuggestion(word) }
-            tv.setOnLongClickListener {
-                store().forget(word)
-                updateSuggestions()
-                true
+            if (!isAuto) {
+                tv.setOnLongClickListener {
+                    store().forget(word)
+                    updateSuggestions()
+                    true
+                }
             }
             bar.addView(tv)
         }
@@ -393,7 +551,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val prefix = wordBuffer.toString()
         if (prefix.isNotEmpty()) ic.deleteSurroundingText(prefix.length, 0)
         ic.commitText("$word ", 1)
-        store().learn(word)
+        if (learnWordsOn) store().learn(word)
+        if (bigramsOn && lastWord.isNotEmpty()) store().learnBigram(lastWord, word)
+        lastWord = word
         wordBuffer.setLength(0)
         feedback()
         updateSuggestions()
@@ -401,7 +561,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     // ------------------------------------------------------------- helpers
     private fun updateAutoCaps() {
-        if (lang.code != "en" || mode != Mode.LETTERS) return
+        if (!autoCapsOn || lang.code != "en" || mode != Mode.LETTERS) return
         val ic = currentInputConnection ?: return
         val info = currentInputEditorInfo ?: return
         if (info.inputType and InputType.TYPE_CLASS_TEXT == 0) return
@@ -419,14 +579,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (vibrateOn) {
             try {
                 val v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                v.vibrate(20)
+                v.vibrate(vibrateMs)
             } catch (_: Exception) {
             }
         }
         if (soundOn) {
             try {
                 val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                am.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, 0.6f)
+                am.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, soundVol)
             } catch (_: Exception) {
             }
         }

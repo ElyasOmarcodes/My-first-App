@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">ملټي کیبورډ</string>
     <string name="settings_title">د کیبورډ تنظیمات</string>
+    <string name="done">ترسره شو ✔</string>
+    <string name="imported_n_words">%1$d نوي توکي ورزیات شول ✔</string>
 
     <string name="lang_ps">پښتو</string>
     <string name="lang_fa">دري / فارسی</string>
@@ -17,23 +19,78 @@
     <string name="btn_pick">کیبورډ ټاکل (Select)</string>
     <string name="btn_settings">تنظیمات (Settings)</string>
     <string name="test_hint">دلته لیکل وازمایئ…</string>
-    <string name="setup_features">✔ پښتو، دري/فارسي، عربي، اردو او انګلیسي\n✔ اوږد فشار = اضافي توري او اعراب\n✔ په سپیس بار ښي/چپ ګوته چلول = ژبه بدلول\n✔ د تیرو (Arrow) کیلیو قطار\n✔ د کلمو وړاندیز او زده کول\n✔ بشپړ آفلاین — د انټرنیټ اجازه نه لري</string>
+    <string name="setup_features">✔ پښتو، دري/فارسي، عربي، اردو او انګلیسي\n✔ اوږد فشار = اضافي توري او اعراب\n✔ په سپیس بار ګوته چلول = ژبه بدلول\n✔ د ۱۲۳ اوږد فشار = مینو (کنټرول پینل، شمېرې، ایموجي…)\n✔ د کلمو وړاندیز، وړاندوینه او زده کول\n✔ AutoText — لنډیز ولیکئ، بشپړه جمله به ولیکل شي\n✔ چټک ټایپ (Multi-touch)\n✔ بشپړ آفلاین — د انټرنیټ اجازه نه لري</string>
 
-    <string name="pref_cat_look">بڼه او ښکلا</string>
-    <string name="pref_cat_typing">لیکل</string>
     <string name="pref_cat_langs">ژبې</string>
+    <string name="pref_cat_look">بڼه او تم</string>
+    <string name="pref_cat_sizes">اندازې</string>
+    <string name="pref_cat_typing">لیکل او وړاندیز</string>
+    <string name="pref_cat_autotext">AutoText (لنډیزونه)</string>
+    <string name="pref_cat_control">کنټرول</string>
     <string name="pref_cat_feedback">غبرګون</string>
+    <string name="pref_cat_dict">لغتنامه او شاتړ (Backup)</string>
+
+    <string name="pref_languages">فعالې ژبې</string>
+    <string name="pref_languages_sum">کومې ژبې چې کیبورډ کې فعالې وي</string>
+    <string name="pref_space_swipe">په سپیس بار سوایپ = ژبه بدلول</string>
+    <string name="pref_space_swipe_sum">ښي/چپ ګوته چلول ژبه بدلوي؛ اوږد فشار مینو راوړي</string>
 
     <string name="pref_theme">تم (Theme)</string>
-    <string name="pref_key_height">د کیلیو لوړوالی</string>
+    <string name="pref_key_border">د کیلیو حاشیه ښودل</string>
+    <string name="pref_hints">د کیلیو پر سر کوچني توري</string>
+    <string name="pref_hints_sum">د شفټ/اوږد فشار توری د کیلي په سر کې ښکاره کوي</string>
+    <string name="pref_preview">د کیلي فشار پاپ اپ</string>
+
+    <string name="pref_key_height">د کیلیو لوړوالی (Portrait)</string>
+    <string name="pref_key_height_land">د کیلیو لوړوالی (Landscape)</string>
     <string name="pref_font_scale">د لیکنې کچه (٪)</string>
-    <string name="pref_arrows">د تیرو کیلیو قطار ښودل</string>
-    <string name="pref_hints">د کیلیو پر سر کوچني توري ښودل</string>
-    <string name="pref_preview">د کیلي فشار پاپ اپ ښودل</string>
-    <string name="pref_suggestions">د کلمو وړاندیز او زده کول</string>
+    <string name="pref_bottom_gap">لاندینی واټن (Bottom gap)</string>
+    <string name="pref_bottom_gap_sum">د کیبورډ او د سیسټم تڼیو ترمنځ واټن (dp)</string>
+
+    <string name="pref_suggestions">د کلمو وړاندیز</string>
+    <string name="pref_suggestions_sum">د لیکلو پر مهال د کلمو وړاندیز پټه ښودل</string>
+    <string name="pref_learn_words">نوې کلمې زده کول</string>
+    <string name="pref_learn_words_sum">ستاسو لیکل شوې کلمې لغتنامې ته ورزیاتوي</string>
+    <string name="pref_seed_dict">جوړه شوې لغتنامه کارول</string>
+    <string name="pref_seed_dict_sum">د اپ دننه عامې کلمې هم وړاندیز کوي</string>
+    <string name="pref_bigrams">د راتلونکې کلمې وړاندوینه</string>
+    <string name="pref_bigrams_sum">د مخکینۍ کلمې پر بنسټ بله کلمه وړاندیز کوي</string>
     <string name="pref_double_space">دوه ځله سپیس = نقطه + سپیس</string>
-    <string name="pref_vibrate">لړزول (Vibration)</string>
-    <string name="pref_sound">د کیلي غږ</string>
-    <string name="pref_languages">فعالې ژبې</string>
+    <string name="pref_autocaps">Auto-capitalization (English)</string>
+    <string name="pref_autocaps_sum">د جملې په پیل کې لومړی توری لوی کوي</string>
     <string name="pref_longpress">د اوږد فشار وخت</string>
+
+    <string name="pref_autotext_on">AutoText فعال</string>
+    <string name="pref_autotext_on_sum">لنډیز + سپیس = بشپړه جمله</string>
+    <string name="pref_autotext_manage">لنډیزونه مدیریت کول</string>
+    <string name="pref_autotext_manage_sum">نوي لنډیزونه زیاتول، لیدل او ړنګول</string>
+    <string name="pref_autotext_import">AutoText راوړل (Import)</string>
+    <string name="pref_autotext_import_sum">له متن فایل نه — د MultiLing له export سره جوړ فورمټ</string>
+    <string name="pref_autotext_export">AutoText خوندي کول (Export)</string>
+
+    <string name="pref_arrows">د تیرو کیلیو قطار (▲▼◀▶)</string>
+    <string name="pref_arrows_sum">د کیبورډ لاندې د کرسر د خوځولو کیلۍ</string>
+
+    <string name="pref_vibrate">لړزول (Vibration)</string>
+    <string name="pref_vibrate_ms">د لړزولو موده (ms)</string>
+    <string name="pref_sound">د کیلي غږ</string>
+    <string name="pref_sound_vol">د غږ کچه (٪)</string>
+
+    <string name="pref_dict_import">لغتنامه راوړل (Import)</string>
+    <string name="pref_dict_import_sum">له متن فایل نه کلمې ورزیاتول — هره کرښه یوه کلمه (یا کلمه+شمېر)</string>
+    <string name="pref_dict_export">لغتنامه خوندي کول (Export)</string>
+    <string name="pref_dict_export_sum">زده شوې کلمې متن فایل ته</string>
+    <string name="pref_clear_learned">زده شوې کلمې پاکول</string>
+    <string name="pref_clear_learned_sum">ټولې زده شوې کلمې او وړاندوینې ړنګوي</string>
+    <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
+
+    <string name="autotext_title">AutoText لنډیزونه</string>
+    <string name="autotext_desc">لنډیز ولیکئ او بشپړه جمله یې مقابل کې — بیا په کیبورډ کې لنډیز + سپیس ولیکئ، بشپړه جمله به ځای پر ځای شي.</string>
+    <string name="autotext_shortcut_hint">لنډیز (مثلاً: سلام)</string>
+    <string name="autotext_expansion_hint">بشپړه جمله (مثلاً: السلام علیکم ورحمة الله وبرکاته)</string>
+    <string name="autotext_add">زیاتول ➕</string>
+    <string name="autotext_list_hint">د ړنګولو لپاره پر یوه توکي اوږد فشار ورکړئ</string>
+    <string name="autotext_fill_both">دواړه برخې ډکې کړئ</string>
+    <string name="autotext_no_space">لنډیز باید سپیس ونه لري</string>
+    <string name="autotext_delete_q">دا لنډیز ړنګ شي؟</string>
 </resources>

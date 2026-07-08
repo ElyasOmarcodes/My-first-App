@@ -6,9 +6,15 @@
         <MultiSelectListPreference
             android:key="languages"
             android:title="@string/pref_languages"
+            android:summary="@string/pref_languages_sum"
             android:entries="@array/lang_names"
             android:entryValues="@array/lang_codes"
             android:defaultValue="@array/lang_codes" />
+        <SwitchPreferenceCompat
+            android:key="space_swipe"
+            android:title="@string/pref_space_swipe"
+            android:summary="@string/pref_space_swipe_sum"
+            android:defaultValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_cat_look">
@@ -19,12 +25,35 @@
             android:entryValues="@array/theme_values"
             android:defaultValue="dark"
             app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            android:key="key_border"
+            android:title="@string/pref_key_border"
+            android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            android:key="hints"
+            android:title="@string/pref_hints"
+            android:summary="@string/pref_hints_sum"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="preview"
+            android:title="@string/pref_preview"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_sizes">
         <SeekBarPreference
             android:key="key_height"
             android:title="@string/pref_key_height"
             android:defaultValue="52"
-            android:max="70"
+            android:max="72"
             app:min="36"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="key_height_land"
+            android:title="@string/pref_key_height_land"
+            android:defaultValue="42"
+            android:max="60"
+            app:min="30"
             app:showSeekBarValue="true" />
         <SeekBarPreference
             android:key="font_scale"
@@ -33,28 +62,48 @@
             android:max="140"
             app:min="70"
             app:showSeekBarValue="true" />
-        <SwitchPreferenceCompat
-            android:key="hints"
-            android:title="@string/pref_hints"
-            android:defaultValue="true" />
-        <SwitchPreferenceCompat
-            android:key="arrows"
-            android:title="@string/pref_arrows"
-            android:defaultValue="true" />
-        <SwitchPreferenceCompat
-            android:key="preview"
-            android:title="@string/pref_preview"
-            android:defaultValue="true" />
+        <SeekBarPreference
+            android:key="bottom_gap"
+            android:title="@string/pref_bottom_gap"
+            android:summary="@string/pref_bottom_gap_sum"
+            android:defaultValue="0"
+            android:max="48"
+            app:min="0"
+            app:showSeekBarValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_cat_typing">
         <SwitchPreferenceCompat
             android:key="suggestions"
             android:title="@string/pref_suggestions"
+            android:summary="@string/pref_suggestions_sum"
             android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="learn_words"
+            android:title="@string/pref_learn_words"
+            android:summary="@string/pref_learn_words_sum"
+            android:defaultValue="true"
+            android:dependency="suggestions" />
+        <SwitchPreferenceCompat
+            android:key="seed_dict"
+            android:title="@string/pref_seed_dict"
+            android:summary="@string/pref_seed_dict_sum"
+            android:defaultValue="true"
+            android:dependency="suggestions" />
+        <SwitchPreferenceCompat
+            android:key="bigrams"
+            android:title="@string/pref_bigrams"
+            android:summary="@string/pref_bigrams_sum"
+            android:defaultValue="true"
+            android:dependency="suggestions" />
         <SwitchPreferenceCompat
             android:key="double_space"
             android:title="@string/pref_double_space"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="autocaps"
+            android:title="@string/pref_autocaps"
+            android:summary="@string/pref_autocaps_sum"
             android:defaultValue="true" />
         <ListPreference
             android:key="longpress"
@@ -65,14 +114,72 @@
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_cat_autotext">
+        <SwitchPreferenceCompat
+            android:key="autotext_on"
+            android:title="@string/pref_autotext_on"
+            android:summary="@string/pref_autotext_on_sum"
+            android:defaultValue="true" />
+        <Preference
+            android:key="autotext_manage"
+            android:title="@string/pref_autotext_manage"
+            android:summary="@string/pref_autotext_manage_sum" />
+        <Preference
+            android:key="autotext_import"
+            android:title="@string/pref_autotext_import"
+            android:summary="@string/pref_autotext_import_sum" />
+        <Preference
+            android:key="autotext_export"
+            android:title="@string/pref_autotext_export" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_control">
+        <SwitchPreferenceCompat
+            android:key="arrows"
+            android:title="@string/pref_arrows"
+            android:summary="@string/pref_arrows_sum"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/pref_cat_feedback">
         <SwitchPreferenceCompat
             android:key="vibrate"
             android:title="@string/pref_vibrate"
             android:defaultValue="true" />
+        <SeekBarPreference
+            android:key="vibrate_ms"
+            android:title="@string/pref_vibrate_ms"
+            android:defaultValue="20"
+            android:max="80"
+            app:min="5"
+            app:showSeekBarValue="true"
+            android:dependency="vibrate" />
         <SwitchPreferenceCompat
             android:key="sound"
             android:title="@string/pref_sound"
             android:defaultValue="false" />
+        <SeekBarPreference
+            android:key="sound_vol"
+            android:title="@string/pref_sound_vol"
+            android:defaultValue="60"
+            android:max="100"
+            app:min="10"
+            app:showSeekBarValue="true"
+            android:dependency="sound" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_dict">
+        <Preference
+            android:key="dict_import"
+            android:title="@string/pref_dict_import"
+            android:summary="@string/pref_dict_import_sum" />
+        <Preference
+            android:key="dict_export"
+            android:title="@string/pref_dict_export"
+            android:summary="@string/pref_dict_export_sum" />
+        <Preference
+            android:key="clear_learned"
+            android:title="@string/pref_clear_learned"
+            android:summary="@string/pref_clear_learned_sum" />
     </PreferenceCategory>
 </PreferenceScreen>

@@ -21,9 +21,10 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Custom keyboard view: draws the key grid, handles taps, long-press popups
- * with slide-to-select alternates, key repeat, key preview and space-bar
- * swipes for language switching.
+ * Custom keyboard view: draws the key grid, handles multi-touch typing
+ * (rollover — a second finger can press before the first lifts, so fast
+ * typing never drops letters), long-press popups with slide-to-select
+ * alternates, key repeat, key preview and space-bar swipes.
  */
 class KeyboardView(context: Context) : View(context) {
 
@@ -32,6 +33,7 @@ class KeyboardView(context: Context) : View(context) {
         fun onSpecial(code: Int)
         fun onLangSwipe(forward: Boolean)
         fun onSpaceLongPress()
+        fun onSymLongPress()
     }
 
     var listener: Listener? = null
@@ -54,10 +56,16 @@ class KeyboardView(context: Context) : View(context) {
             0xFFBFC5CC.toInt(), 0xFF202124.toInt(), 0xFF6B7280.toInt(), 0xFF1A73E8.toInt())
         val BLACK = Theme(0xFF000000.toInt(), 0xFF141414.toInt(), 0xFF0A0A0A.toInt(),
             0xFF333333.toInt(), Color.WHITE, 0xFF8899AA.toInt(), 0xFF4FA3FF.toInt())
+        val BLUE = Theme(0xFF0D1B2A.toInt(), 0xFF1B3A5C.toInt(), 0xFF122A44.toInt(),
+            0xFF2E5F94.toInt(), Color.WHITE, 0xFF9FC2E8.toInt(), 0xFF64B5F6.toInt())
+        val GREEN = Theme(0xFF0F1A12.toInt(), 0xFF1E3A26.toInt(), 0xFF16291B.toInt(),
+            0xFF346644.toInt(), Color.WHITE, 0xFFA5D6A7.toInt(), 0xFF66BB6A.toInt())
 
         fun themeByName(name: String): Theme = when (name) {
             "light" -> LIGHT
             "black" -> BLACK
+            "blue" -> BLUE
+            "green" -> GREEN
             else -> DARK
         }
     }
@@ -69,6 +77,8 @@ class KeyboardView(context: Context) : View(context) {
     var fontScale: Float = 1f
     var showHints: Boolean = true
     var showPreview: Boolean = true
+    var keyBorder: Boolean = false
+    var spaceSwipeEnabled: Boolean = true
     var longPressTimeout: Long = 350
     var shiftState: Int = 0 // 0 off, 1 once, 2 locked
 
@@ -84,7 +94,7 @@ class KeyboardView(context: Context) : View(context) {
     fun setKeyboard(rows: List<List<KeyDef>>, displayRows: List<List<String>>) {
         this.rows = rows
         this.displayRows = displayRows
-        pressedKey = null
+        pointers.clear()
         dismissPopups()
         requestLayout()
         layoutKeys()
@@ -93,6 +103,10 @@ class KeyboardView(context: Context) : View(context) {
 
     // -------------------------------------------------------------- paints
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1f
+    }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         typeface = Typeface.DEFAULT
@@ -101,20 +115,31 @@ class KeyboardView(context: Context) : View(context) {
         textAlign = Paint.Align.RIGHT
     }
 
-    // --------------------------------------------------------------- state
-    private var pressedKey: PlacedKey? = null
-    private var downX = 0f
-    private var downY = 0f
-    private var spaceSwiped = false
-    private var swipeDir = 0
-    private var longPressFired = false
+    // --------------------------------------------------- multi-touch state
+    private class PointerState(
+        val id: Int,
+        var key: PlacedKey?,
+        val downX: Float,
+        val downY: Float
+    ) {
+        var committed = false      // already emitted (rollover flush)
+        var longPressFired = false
+        var spaceSwiped = false
+        var swipeDir = 0
+        var cancelled = false
+    }
+
+    private val pointers = HashMap<Int, PointerState>()
+    private var longPressPointerId = -1
+    private var repeatPointerId = -1
 
     private val handler = Handler(Looper.getMainLooper())
     private val longPressRunnable = Runnable { onLongPress() }
     private val repeatRunnable = object : Runnable {
         override fun run() {
-            val key = pressedKey ?: return
-            if (key.def.repeatable) {
+            val st = pointers[repeatPointerId] ?: return
+            val key = st.key ?: return
+            if (key.def.repeatable && !st.cancelled) {
                 emit(key)
                 handler.postDelayed(this, 50)
             }
@@ -123,7 +148,6 @@ class KeyboardView(context: Context) : View(context) {
 
     // -------------------------------------------------------------- popups
     private var previewPopup: PopupWindow? = null
-    private var previewText: TextView? = null
     private var altPopup: PopupWindow? = null
     private var altViews: List<TextView> = emptyList()
     private var altChars: List<String> = emptyList()
@@ -169,9 +193,13 @@ class KeyboardView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         canvas.drawColor(theme.background)
         val radius = 6f * density
+        val pressedKeys = HashSet<PlacedKey>()
+        for (st in pointers.values) {
+            if (!st.cancelled) st.key?.let { pressedKeys.add(it) }
+        }
         for (pk in placed) {
             val key = pk.def
-            val isPressed = pk === pressedKey
+            val isPressed = pressedKeys.contains(pk)
             fillPaint.color = when {
                 isPressed -> theme.keyPressed
                 key.code == Keys.SHIFT && shiftState > 0 -> theme.accent
@@ -179,11 +207,21 @@ class KeyboardView(context: Context) : View(context) {
                 else -> theme.keyFill
             }
             canvas.drawRoundRect(pk.rect, radius, radius, fillPaint)
+            if (keyBorder) {
+                borderPaint.color = theme.hint and 0x60FFFFFF
+                canvas.drawRoundRect(pk.rect, radius, radius, borderPaint)
+            }
 
-            // main label
+            // main label — shrink to fit wide labels (menu keys etc.)
             val isSpecial = key.code != 0
-            val base = pk.rect.height() * (if (isSpecial) 0.38f else 0.46f)
+            var base = pk.rect.height() * (if (isSpecial) 0.36f else 0.46f)
             textPaint.textSize = base * fontScale
+            val maxW = pk.rect.width() * 0.9f
+            var measured = textPaint.measureText(pk.displayLabel)
+            if (measured > maxW && measured > 0) {
+                base *= maxW / measured
+                textPaint.textSize = base * fontScale
+            }
             textPaint.color =
                 if (key.code == Keys.SHIFT && shiftState == 2) theme.background else theme.text
             val cx = pk.rect.centerX()
@@ -211,77 +249,150 @@ class KeyboardView(context: Context) : View(context) {
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                downX = event.x
-                downY = event.y
-                spaceSwiped = false
-                longPressFired = false
-                val key = keyAt(event.x, event.y) ?: return true
-                pressedKey = key
-                invalidate()
-                if (key.def.repeatable) {
-                    emit(key)
-                    handler.postDelayed(repeatRunnable, 400)
-                } else {
-                    handler.postDelayed(longPressRunnable, longPressTimeout)
-                    if (showPreview && key.def.code == 0) showPreview(key)
-                }
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                val index = event.actionIndex
+                val id = event.getPointerId(index)
+                onPointerDown(id, event.getX(index), event.getY(index))
             }
             MotionEvent.ACTION_MOVE -> {
-                val key = pressedKey ?: return true
-                if (altPopup != null) {
-                    updateAltSelection(event.x)
-                    return true
-                }
-                if (key.def.code == Keys.SPACE) {
-                    val dx = event.x - downX
-                    if (abs(dx) > 40 * density) {
-                        spaceSwiped = true
-                        swipeDir = if (dx < 0) -1 else 1
-                        handler.removeCallbacks(longPressRunnable)
-                    }
-                } else if (!key.rect.contains(event.x, event.y)) {
-                    // finger slid off the key: cancel pending actions
-                    handler.removeCallbacks(longPressRunnable)
-                    handler.removeCallbacks(repeatRunnable)
-                    dismissPreview()
-                    pressedKey = null
-                    invalidate()
+                for (i in 0 until event.pointerCount) {
+                    val id = event.getPointerId(i)
+                    onPointerMove(id, event.getX(i), event.getY(i))
                 }
             }
-            MotionEvent.ACTION_UP -> {
-                handler.removeCallbacks(longPressRunnable)
-                handler.removeCallbacks(repeatRunnable)
-                val key = pressedKey
-                if (altPopup != null) {
-                    commitAltSelection()
-                } else if (key != null && !longPressFired) {
-                    if (key.def.code == Keys.SPACE && spaceSwiped) {
-                        listener?.onLangSwipe(swipeDir < 0)
-                    } else if (!key.def.repeatable) {
-                        emit(key)
-                    }
-                }
-                dismissPreview()
-                pressedKey = null
-                invalidate()
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                val index = event.actionIndex
+                val id = event.getPointerId(index)
+                onPointerUp(id)
             }
             MotionEvent.ACTION_CANCEL -> {
-                handler.removeCallbacks(longPressRunnable)
-                handler.removeCallbacks(repeatRunnable)
+                cancelTimers()
+                pointers.clear()
                 dismissPopups()
-                pressedKey = null
                 invalidate()
             }
         }
         return true
     }
 
+    private fun onPointerDown(id: Int, x: Float, y: Float) {
+        // Rollover: a new finger flushes any still-held character keys so
+        // fast typing never loses the previous letter.
+        if (altPopup != null) {
+            // a second tap while the alternates popup is open commits nothing
+            dismissAltPopup()
+        }
+        for (st in pointers.values) {
+            val k = st.key ?: continue
+            if (!st.committed && !st.longPressFired && !st.cancelled &&
+                k.def.code == 0 && !st.spaceSwiped
+            ) {
+                emit(k)
+                st.committed = true
+            }
+        }
+        if (longPressPointerId != -1) {
+            handler.removeCallbacks(longPressRunnable)
+            longPressPointerId = -1
+            dismissPreview()
+        }
+
+        val key = keyAt(x, y)
+        val st = PointerState(id, key, x, y)
+        pointers[id] = st
+        if (key == null) return
+        invalidate()
+
+        if (key.def.repeatable) {
+            emit(key)
+            st.committed = true
+            repeatPointerId = id
+            handler.postDelayed(repeatRunnable, 400)
+        } else {
+            longPressPointerId = id
+            handler.postDelayed(longPressRunnable, longPressTimeout)
+            if (showPreview && key.def.code == 0) showPreview(key)
+        }
+    }
+
+    private fun onPointerMove(id: Int, x: Float, y: Float) {
+        val st = pointers[id] ?: return
+        val key = st.key ?: return
+        if (st.cancelled || st.committed) return
+
+        if (altPopup != null && id == longPressPointerId) {
+            updateAltSelection(x)
+            return
+        }
+        if (key.def.code == Keys.SPACE && spaceSwipeEnabled) {
+            val dx = x - st.downX
+            if (abs(dx) > 40 * density) {
+                st.spaceSwiped = true
+                st.swipeDir = if (dx < 0) -1 else 1
+                if (id == longPressPointerId) {
+                    handler.removeCallbacks(longPressRunnable)
+                    longPressPointerId = -1
+                }
+            }
+            return
+        }
+        // Cancel only when the finger really leaves the key area — small
+        // slides during fast typing must not drop the letter.
+        val slack = keyHeightDp * density * 0.7f
+        val dx = max(0f, max(key.rect.left - x, x - key.rect.right))
+        val dy = max(0f, max(key.rect.top - y, y - key.rect.bottom))
+        if (dx > slack || dy > slack) {
+            st.cancelled = true
+            if (id == longPressPointerId) {
+                handler.removeCallbacks(longPressRunnable)
+                longPressPointerId = -1
+                dismissPreview()
+            }
+            if (id == repeatPointerId) {
+                handler.removeCallbacks(repeatRunnable)
+                repeatPointerId = -1
+            }
+            invalidate()
+        }
+    }
+
+    private fun onPointerUp(id: Int) {
+        val st = pointers.remove(id) ?: return
+        if (id == longPressPointerId) {
+            handler.removeCallbacks(longPressRunnable)
+            longPressPointerId = -1
+        }
+        if (id == repeatPointerId) {
+            handler.removeCallbacks(repeatRunnable)
+            repeatPointerId = -1
+        }
+        dismissPreview()
+
+        val key = st.key
+        if (altPopup != null && st.longPressFired) {
+            commitAltSelection()
+        } else if (key != null && !st.longPressFired && !st.committed && !st.cancelled) {
+            if (key.def.code == Keys.SPACE && st.spaceSwiped) {
+                listener?.onLangSwipe(st.swipeDir < 0)
+            } else {
+                emit(key)
+            }
+        }
+        invalidate()
+    }
+
+    private fun cancelTimers() {
+        handler.removeCallbacks(longPressRunnable)
+        handler.removeCallbacks(repeatRunnable)
+        longPressPointerId = -1
+        repeatPointerId = -1
+    }
+
     private fun keyAt(x: Float, y: Float): PlacedKey? {
         for (pk in placed) {
             if (pk.rect.contains(x, y)) return pk
         }
-        // be forgiving: allow touches in the gaps
+        // be forgiving: snap touches in the gaps to the nearest key
         var best: PlacedKey? = null
         var bestDist = Float.MAX_VALUE
         for (pk in placed) {
@@ -290,7 +401,7 @@ class KeyboardView(context: Context) : View(context) {
             val d = dx * dx + dy * dy
             if (d < bestDist) { bestDist = d; best = pk }
         }
-        return if (bestDist < (12 * density) * (12 * density)) best else null
+        return if (bestDist < (16 * density) * (16 * density)) best else null
     }
 
     private fun emit(key: PlacedKey) {
@@ -300,23 +411,28 @@ class KeyboardView(context: Context) : View(context) {
 
     // ---------------------------------------------------------- long press
     private fun onLongPress() {
-        val key = pressedKey ?: return
+        val id = longPressPointerId
+        longPressPointerId = -1
+        val st = pointers[id] ?: return
+        val key = st.key ?: return
+        if (st.cancelled || st.committed || st.spaceSwiped) return
+
         if (key.def.code == Keys.SPACE) {
-            longPressFired = true
+            st.longPressFired = true
             dismissPreview()
             listener?.onSpaceLongPress()
             return
         }
         if (key.def.code == Keys.SYM) {
-            // long-press on "123" opens voice input, like the mic hint shows
-            longPressFired = true
+            st.longPressFired = true
             dismissPreview()
-            listener?.onSpecial(Keys.MIC)
+            listener?.onSymLongPress()
             return
         }
         val chars = key.def.popupChars(shiftState > 0)
         if (chars.isEmpty()) return
-        longPressFired = true
+        st.longPressFired = true
+        longPressPointerId = id // keep tracking this pointer for the popup
         dismissPreview()
         showAltPopup(key, chars)
     }
@@ -382,7 +498,7 @@ class KeyboardView(context: Context) : View(context) {
 
     private fun commitAltSelection() {
         val c = altChars.getOrNull(altIndex)
-        dismissPopups()
+        dismissAltPopup()
         if (c != null) listener?.onChar(c)
     }
 
@@ -408,21 +524,23 @@ class KeyboardView(context: Context) : View(context) {
         val y = loc[1] + key.rect.top - h - 6 * density
         popup.showAtLocation(this, Gravity.NO_GRAVITY, x.toInt(), y.toInt())
         previewPopup = popup
-        previewText = tv
     }
 
     private fun dismissPreview() {
         previewPopup?.dismiss()
         previewPopup = null
-        previewText = null
     }
 
-    fun dismissPopups() {
-        dismissPreview()
+    private fun dismissAltPopup() {
         altPopup?.dismiss()
         altPopup = null
         altViews = emptyList()
         altChars = emptyList()
+    }
+
+    fun dismissPopups() {
+        dismissPreview()
+        dismissAltPopup()
     }
 
     override fun onDetachedFromWindow() {
