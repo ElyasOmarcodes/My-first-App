@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="@string/pref_cat_langs">
+        <MultiSelectListPreference
+            android:key="languages"
+            android:title="@string/pref_languages"
+            android:entries="@array/lang_names"
+            android:entryValues="@array/lang_codes"
+            android:defaultValue="@array/lang_codes" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_look">
+        <ListPreference
+            android:key="theme"
+            android:title="@string/pref_theme"
+            android:entries="@array/theme_names"
+            android:entryValues="@array/theme_values"
+            android:defaultValue="dark"
+            app:useSimpleSummaryProvider="true" />
+        <SeekBarPreference
+            android:key="key_height"
+            android:title="@string/pref_key_height"
+            android:defaultValue="52"
+            android:max="70"
+            app:min="36"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="font_scale"
+            android:title="@string/pref_font_scale"
+            android:defaultValue="100"
+            android:max="140"
+            app:min="70"
+            app:showSeekBarValue="true" />
+        <SwitchPreferenceCompat
+            android:key="hints"
+            android:title="@string/pref_hints"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="arrows"
+            android:title="@string/pref_arrows"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="preview"
+            android:title="@string/pref_preview"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_typing">
+        <SwitchPreferenceCompat
+            android:key="suggestions"
+            android:title="@string/pref_suggestions"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="double_space"
+            android:title="@string/pref_double_space"
+            android:defaultValue="true" />
+        <ListPreference
+            android:key="longpress"
+            android:title="@string/pref_longpress"
+            android:entries="@array/longpress_names"
+            android:entryValues="@array/longpress_values"
+            android:defaultValue="350"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cat_feedback">
+        <SwitchPreferenceCompat
+            android:key="vibrate"
+            android:title="@string/pref_vibrate"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="sound"
+            android:title="@string/pref_sound"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+</PreferenceScreen>

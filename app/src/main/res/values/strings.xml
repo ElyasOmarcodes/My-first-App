@@ -1,3 +1,39 @@
 <resources>
-    <string name="app_name">Madrasa Manager</string>
+    <string name="app_name">ملټي کیبورډ</string>
+    <string name="settings_title">د کیبورډ تنظیمات</string>
+
+    <string name="lang_ps">پښتو</string>
+    <string name="lang_fa">دري / فارسی</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_ur">اردو</string>
+    <string name="lang_en">English</string>
+
+    <string name="setup_title">ملټي کیبورډ ته ښه راغلاست 🎉</string>
+    <string name="setup_desc">د کارولو لپاره دا درې ګامونه بشپړ کړئ:</string>
+    <string name="setup_step1">۱. کیبورډ د سیسټم په تنظیماتو کې فعال کړئ</string>
+    <string name="setup_step2">۲. ملټي کیبورډ د اوسني کیبورډ په توګه وټاکئ</string>
+    <string name="setup_step3">۳. دلته یې وازمایئ</string>
+    <string name="btn_enable">فعالول (Enable)</string>
+    <string name="btn_pick">کیبورډ ټاکل (Select)</string>
+    <string name="btn_settings">تنظیمات (Settings)</string>
+    <string name="test_hint">دلته لیکل وازمایئ…</string>
+    <string name="setup_features">✔ پښتو، دري/فارسي، عربي، اردو او انګلیسي\n✔ اوږد فشار = اضافي توري او اعراب\n✔ په سپیس بار ښي/چپ ګوته چلول = ژبه بدلول\n✔ د تیرو (Arrow) کیلیو قطار\n✔ د کلمو وړاندیز او زده کول\n✔ بشپړ آفلاین — د انټرنیټ اجازه نه لري</string>
+
+    <string name="pref_cat_look">بڼه او ښکلا</string>
+    <string name="pref_cat_typing">لیکل</string>
+    <string name="pref_cat_langs">ژبې</string>
+    <string name="pref_cat_feedback">غبرګون</string>
+
+    <string name="pref_theme">تم (Theme)</string>
+    <string name="pref_key_height">د کیلیو لوړوالی</string>
+    <string name="pref_font_scale">د لیکنې کچه (٪)</string>
+    <string name="pref_arrows">د تیرو کیلیو قطار ښودل</string>
+    <string name="pref_hints">د کیلیو پر سر کوچني توري ښودل</string>
+    <string name="pref_preview">د کیلي فشار پاپ اپ ښودل</string>
+    <string name="pref_suggestions">د کلمو وړاندیز او زده کول</string>
+    <string name="pref_double_space">دوه ځله سپیس = نقطه + سپیس</string>
+    <string name="pref_vibrate">لړزول (Vibration)</string>
+    <string name="pref_sound">د کیلي غږ</string>
+    <string name="pref_languages">فعالې ژبې</string>
+    <string name="pref_longpress">د اوږد فشار وخت</string>
 </resources>

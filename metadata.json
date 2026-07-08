@@ -1,6 +1,5 @@
 {
-  "name": "جامع Madrasa",
-  "description": "Comprehensive Islamic Madrasa Management System managing students, teachers, finance, and attendance.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "ملټي کیبورډ",
+  "description": "Multilingual Android keyboard (IME) with Pashto, Dari, Arabic, Urdu and English — offline, private, customizable.",
+  "requestFramePermissions": []
 }

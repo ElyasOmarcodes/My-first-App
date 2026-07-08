@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="lang_names">
+        <item>پښتو</item>
+        <item>دري / فارسی</item>
+        <item>العربية</item>
+        <item>اردو</item>
+        <item>English</item>
+    </string-array>
+    <string-array name="lang_codes">
+        <item>ps</item>
+        <item>fa</item>
+        <item>ar</item>
+        <item>ur</item>
+        <item>en</item>
+    </string-array>
+
+    <string-array name="theme_names">
+        <item>تور (Dark)</item>
+        <item>روښانه (Light)</item>
+        <item>بشپړ تور (AMOLED)</item>
+    </string-array>
+    <string-array name="theme_values">
+        <item>dark</item>
+        <item>light</item>
+        <item>black</item>
+    </string-array>
+
+    <string-array name="longpress_names">
+        <item>چټک (250ms)</item>
+        <item>منځنی (350ms)</item>
+        <item>ورو (500ms)</item>
+    </string-array>
+    <string-array name="longpress_values">
+        <item>250</item>
+        <item>350</item>
+        <item>500</item>
+    </string-array>
+</resources>
