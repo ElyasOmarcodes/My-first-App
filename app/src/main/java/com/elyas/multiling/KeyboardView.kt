@@ -573,6 +573,119 @@ class KeyboardView(context: Context) : View(context) {
         altPopup = popup
     }
 
+    /**
+     * Slide-to-select menu grid: while the finger that opened it is still
+     * down, glide over an item and release to activate it (the [initial]
+     * item is pre-highlighted, so releasing in place activates it).
+     * The cells are also tappable, so the same grid works after the
+     * finger has lifted (e.g. the language menu opened from this menu).
+     */
+    fun showGridMenu(labels: List<String>, initial: Int = 0, cols: Int = 3, onSelect: (Int) -> Unit) {
+        dismissPopups()
+        gridCols = cols
+        gridHandler = onSelect
+        val rowsCount = (labels.size + cols - 1) / cols
+        gridCellW = (width * (if (cols == 1) 0.45f else 0.9f)) / cols
+        gridCellH = keyHeightDp * density * (if (cols == 1) 0.72f else 1f)
+        val totalW = gridCellW * cols
+        val totalH = gridCellH * rowsCount
+
+        val container = LinearLayout(context)
+        container.orientation = LinearLayout.VERTICAL
+        container.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val bg = GradientDrawable()
+        bg.setColor(theme.keyPressed)
+        bg.cornerRadius = 10 * density
+        container.background = bg
+
+        val views = ArrayList<TextView>()
+        var i = 0
+        for (r in 0 until rowsCount) {
+            val rowLayout = LinearLayout(context)
+            rowLayout.orientation = LinearLayout.HORIZONTAL
+            rowLayout.layoutDirection = View.LAYOUT_DIRECTION_LTR
+            for (c in 0 until cols) {
+                if (i >= labels.size) break
+                val idx = i
+                val tv = TextView(context)
+                tv.text = labels[i]
+                tv.gravity = Gravity.CENTER
+                tv.setTextColor(theme.text)
+                tv.textSize = if (cols == 1) 14f else 17f
+                tv.layoutParams =
+                    LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
+                tv.setOnClickListener {
+                    val h = gridHandler
+                    dismissGridPopup()
+                    h?.invoke(idx)
+                }
+                rowLayout.addView(tv)
+                views.add(tv)
+                i++
+            }
+            container.addView(rowLayout)
+        }
+        gridViews = views
+        gridCount = labels.size
+        gridIndex = if (initial in labels.indices) initial else -1
+        highlightGrid()
+
+        gridLeftInView = (width - totalW) / 2
+        gridTopInView = max(4 * density, height - totalH - (keyHeightDp * density) * 2.2f)
+
+        val popup = PopupWindow(container, totalW.toInt(), totalH.toInt(), false)
+        popup.isClippingEnabled = false
+        popup.isTouchable = true
+        val loc = IntArray(2)
+        getLocationInWindow(loc)
+        popup.showAtLocation(
+            this, Gravity.NO_GRAVITY,
+            (loc[0] + gridLeftInView).toInt(), (loc[1] + gridTopInView).toInt()
+        )
+        gridPopup = popup
+    }
+
+    private fun updateGridSelection(x: Float, y: Float) {
+        if (gridCount == 0) return
+        val col = ((x - gridLeftInView) / gridCellW).toInt()
+        val row = ((y - gridTopInView) / gridCellH).toInt()
+        if (x >= gridLeftInView && y >= gridTopInView && col in 0 until gridCols && row >= 0) {
+            val idx = row * gridCols + col
+            // outside the item range keeps the current selection
+            if (idx in 0 until gridCount) gridIndex = idx
+        }
+        highlightGrid()
+    }
+
+    private fun highlightGrid() {
+        for ((i, tv) in gridViews.withIndex()) {
+            if (i == gridIndex) {
+                val d = GradientDrawable()
+                d.setColor(theme.accent)
+                d.cornerRadius = 10 * density
+                tv.background = d
+            } else {
+                tv.background = null
+            }
+        }
+    }
+
+    private fun commitGridSelection() {
+        val idx = gridIndex
+        val h = gridHandler
+        dismissGridPopup()
+        if (idx >= 0) h?.invoke(idx)
+    }
+
+    private fun dismissGridPopup() {
+        gridPopup?.dismiss()
+        gridPopup = null
+        gridViews = emptyList()
+        gridCount = 0
+        gridIndex = -1
+        gridHandler = null
+    }
+
     private fun updateAltSelection(x: Float, y: Float) {
         if (altChars.isEmpty()) return
         val rowsCount = (altChars.size + altCols - 1) / altCols
