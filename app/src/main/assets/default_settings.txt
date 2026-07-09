@@ -5,9 +5,9 @@ font_scale	i	70
 hint_scale	i	96
 corner_radius	i	6
 key_gap	i	2
-bottom_gap	i	43
+bottom_gap	i	10
 sugg_font	i	17
-arrow_height	i	100
+arrow_height	i	69
 key_border	b	false
 hints	b	true
 preview	b	true

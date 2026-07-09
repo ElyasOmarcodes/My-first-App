@@ -283,6 +283,7 @@ object Layouts {
         "کنټرول" to Keys.EDIT_PANEL,
         "شمېرې" to Keys.NUMPAD,
         "ایموجي" to Keys.EMOJI,
+        "کلیپ بورډ" to Keys.CLIPBOARD,
         "غږ" to Keys.MIC,
         "ژبې" to Keys.LANGS,
         "تنظیمات" to Keys.SETTINGS

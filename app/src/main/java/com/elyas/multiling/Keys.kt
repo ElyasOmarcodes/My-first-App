@@ -49,6 +49,7 @@ object Keys {
     const val EMOJI = -23
     const val SETTINGS = -24
     const val LANGS = -25
+    const val CLIPBOARD = -26
 
     // drawn icons (KeyDef.hintIcon)
     const val ICON_MIC = 1

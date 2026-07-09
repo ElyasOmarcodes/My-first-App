@@ -121,8 +121,9 @@
     <string name="autotext_shortcut_hint">لنډیز (مثلاً: سلام)</string>
     <string name="autotext_expansion_hint">بشپړه جمله (مثلاً: السلام علیکم ورحمة الله وبرکاته)</string>
     <string name="autotext_add">زیاتول ➕</string>
-    <string name="autotext_list_hint">د ړنګولو لپاره پر یوه توکي اوږد فشار ورکړئ</string>
+    <string name="autotext_list_hint">سمول = کلیک، ړنګول = اوږد فشار</string>
     <string name="autotext_fill_both">دواړه برخې ډکې کړئ</string>
     <string name="autotext_no_space">لنډیز باید سپیس ونه لري</string>
+    <string name="autotext_edit">لنډیز سمول</string>
     <string name="autotext_delete_q">دا لنډیز ړنګ شي؟</string>
 </resources>

@@ -4,6 +4,6 @@
         android:summary="@string/pref_arrows_sum" android:defaultValue="true" />
     <SeekBarPreference xmlns:app="http://schemas.android.com/apk/res-auto"
         android:key="arrow_height" android:title="@string/pref_arrow_height"
-        android:defaultValue="100" android:max="150" app:min="50"
+        android:defaultValue="69" android:max="150" app:min="50"
         app:showSeekBarValue="true" android:dependency="arrows" />
 </PreferenceScreen>

@@ -26,7 +26,7 @@ import androidx.preference.PreferenceManager
  */
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
-    private enum class Mode { LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI, EMOJI_SEARCH }
+    private enum class Mode { LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI, EMOJI_SEARCH, CLIPBOARD }
 
     private var keyboardView: KeyboardView? = null
     private var emojiPanel: EmojiPanel? = null
@@ -75,6 +75,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var bestCandidate: WordStore.Cand? = null
     private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
 
+    private var clipStore: ClipboardStore? = null
+
     private val wordStores = HashMap<String, WordStore>()
     private var autoText: AutoTextStore? = null
     private val wordBuffer = StringBuilder()
@@ -91,16 +93,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun confusion(): Map<Char, Set<Char>> =
         confusionMaps.getOrPut(lang.code) { Layouts.confusionMap(lang) }
 
+    private fun clipboardStore(): ClipboardStore =
+        clipStore ?: ClipboardStore(this).also { clipStore = it }
+
     // ------------------------------------------------------------ lifecycle
     override fun onCreate() {
         super.onCreate()
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
-                pendingClip = try {
+                val text = try {
                     cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
-                        ?.trim()?.take(500)?.ifEmpty { null }
+                        ?.trim()?.ifEmpty { null }
                 } catch (_: Exception) { null }
+                pendingClip = text
+                if (text != null) clipboardStore().add(text)
             }
         } catch (_: Exception) {
         }
@@ -238,7 +245,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         baseKeyHeightDp =
             if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
         kv.keyHeightDp = baseKeyHeightDp
-        kv.arrowRowScale = p.getInt("arrow_height", 100) / 100f
+        kv.arrowRowScale = p.getInt("arrow_height", 69) / 100f
         kv.fontScale = p.getInt("font_scale", 70) / 100f
         kv.hintScale = p.getInt("hint_scale", 96) / 100f
         kv.cornerRadiusDp = p.getInt("corner_radius", 6)
@@ -249,7 +256,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.longPressTimeout = (p.getString("longpress", "350") ?: "350").toLong()
         val density = resources.displayMetrics.density
-        kv.setPadding(0, 0, 0, (p.getInt("bottom_gap", 43) * density).toInt())
+        kv.setPadding(0, 0, 0, (p.getInt("bottom_gap", 10) * density).toInt())
 
         vibrateOn = p.getBoolean("vibrate", true)
         vibrateMs = p.getInt("vibrate_ms", 20).toLong()
@@ -351,6 +358,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             Mode.NUMPAD -> rows.addAll(Layouts.numPad(lang, enterLabel()))
             Mode.EMOJI -> {}
+            Mode.CLIPBOARD -> {}
             Mode.EMOJI_SEARCH -> {
                 rows.addAll(Layouts.ENGLISH.rows)
                 rows.add(
@@ -392,6 +400,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             showEmojiPanel()
             return
         }
+        if (mode == Mode.CLIPBOARD) {
+            showClipboardPanel()
+            return
+        }
         emojiHolder?.visibility = View.GONE
         kv.visibility = View.VISIBLE
 
@@ -408,6 +420,105 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
         kv.shiftState = if (mode == Mode.EDIT) (if (selectMode) 2 else 0) else shift
         kv.setKeyboard(rows, displayFor(rows))
+    }
+
+    private fun showClipboardPanel() {
+        val kv = keyboardView ?: return
+        val holder = emojiHolder ?: return
+        kv.visibility = View.GONE
+        val density = resources.displayMetrics.density
+        val theme = kv.theme
+
+        val root = LinearLayout(this)
+        root.orientation = LinearLayout.VERTICAL
+        root.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        root.setBackgroundColor(theme.background)
+
+        // header: title + clear-all
+        val header = LinearLayout(this)
+        header.orientation = LinearLayout.HORIZONTAL
+        fun headerBtn(text: String, weight: Float, click: () -> Unit): TextView {
+            val tv = TextView(this)
+            tv.text = text
+            tv.gravity = android.view.Gravity.CENTER
+            tv.textSize = 15f
+            tv.setTextColor(theme.text)
+            tv.setOnClickListener { click() }
+            header.addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight))
+            return tv
+        }
+        headerBtn("↩ بیرته", 1f) { mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions() }
+        val title = headerBtn("کلیپ بورډ", 2f) {}
+        title.setTextColor(theme.hint)
+        headerBtn("🗑 پاکول", 1f) {
+            clipboardStore().clear()
+            pendingClip = null
+            mode = Mode.CLIPBOARD
+            rebuildKeyboard()
+        }
+        root.addView(header, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, (42 * density).toInt()))
+
+        // items
+        val scroll = android.widget.ScrollView(this)
+        val list = LinearLayout(this)
+        list.orientation = LinearLayout.VERTICAL
+        val items = clipboardStore().all()
+        if (items.isEmpty()) {
+            val tv = TextView(this)
+            tv.text = "کلیپ بورډ تش دی — یو متن کاپي کړئ"
+            tv.setTextColor(theme.hint)
+            tv.textSize = 15f
+            tv.gravity = android.view.Gravity.CENTER
+            tv.setPadding(0, (30 * density).toInt(), 0, 0)
+            list.addView(tv, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
+        for ((i, item) in items.withIndex()) {
+            val tv = TextView(this)
+            tv.text = item.take(120)
+            tv.maxLines = 2
+            tv.ellipsize = android.text.TextUtils.TruncateAt.END
+            tv.setTextColor(theme.text)
+            tv.textSize = 14f
+            tv.setPadding((12 * density).toInt(), (10 * density).toInt(),
+                (12 * density).toInt(), (10 * density).toInt())
+            val bg = android.graphics.drawable.GradientDrawable()
+            bg.setColor(theme.keyFill)
+            bg.cornerRadius = 10 * density
+            tv.background = bg
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT)
+            lp.setMargins((8 * density).toInt(), (3 * density).toInt(),
+                (8 * density).toInt(), (3 * density).toInt())
+            tv.layoutParams = lp
+            tv.setOnClickListener {
+                currentInputConnection?.commitText(item, 1)
+                feedback()
+                mode = Mode.LETTERS
+                rebuildKeyboard()
+                updateSuggestions()
+            }
+            tv.setOnLongClickListener {
+                clipboardStore().removeAt(i)
+                mode = Mode.CLIPBOARD
+                rebuildKeyboard()
+                true
+            }
+            list.addView(tv)
+        }
+        scroll.addView(list)
+        root.addView(scroll, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+
+        holder.removeAllViews()
+        val lettersUnits = heightUnits(lang.rows.size + 1, arrowsOn)
+        val h = (baseKeyHeightDp * lettersUnits * density).toInt()
+        holder.addView(root, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT, h))
+        holder.visibility = View.VISIBLE
     }
 
     private fun showEmojiPanel() {
@@ -646,6 +757,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.EDIT_PANEL -> { feedback(); mode = Mode.EDIT; rebuildKeyboard() }
             Keys.NUMPAD -> { feedback(); mode = Mode.NUMPAD; rebuildKeyboard() }
             Keys.EMOJI -> { feedback(); mode = Mode.EMOJI; rebuildKeyboard() }
+            Keys.CLIPBOARD -> { feedback(); mode = Mode.CLIPBOARD; rebuildKeyboard() }
             Keys.LANGS -> { feedback(); showLanguageMenu() }
             Keys.SETTINGS -> {
                 feedback()
@@ -880,19 +992,39 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         val density = resources.displayMetrics.density
+        // a lone clipboard chip is centered, Samsung-style
+        bar.minimumWidth =
+            if (items.size == 1 && items[0].third) (suggestionScroll?.width ?: 0) else 0
+        bar.gravity = android.view.Gravity.CENTER
         for ((text, style, isClip) in items) {
             val tv = TextView(this)
-            tv.text = if (isClip) getString(R.string.clip_prefix) + " " + text.take(40) else text
+            tv.text = if (isClip) text.take(40) else text
             tv.setTextColor(if (style == STYLE_ACCENT) kv.theme.accent else kv.theme.text)
+            if (isClip) {
+                // rounded pill with an accent stroke and soft glow fill
+                val pill = android.graphics.drawable.GradientDrawable()
+                pill.setColor(kv.theme.accent and 0x22FFFFFF)
+                pill.setStroke((1.5f * density).toInt(), kv.theme.accent)
+                pill.cornerRadius = 14 * density
+                tv.background = pill
+                tv.setTextColor(kv.theme.text)
+            }
             if (style == STYLE_ACCENT) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
             tv.textSize = suggFontSp
             tv.maxLines = 1
             tv.setPadding((14 * density).toInt(), 0, (14 * density).toInt(), 0)
             tv.gravity = android.view.Gravity.CENTER
-            tv.layoutParams = LinearLayout.LayoutParams(
+            val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
             )
+            if (isClip) {
+                lp.setMargins(
+                    (8 * density).toInt(), (5 * density).toInt(),
+                    (8 * density).toInt(), (5 * density).toInt()
+                )
+            }
+            tv.layoutParams = lp
             when {
                 isClip -> {
                     tv.setOnClickListener {

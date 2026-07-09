@@ -42,6 +42,11 @@ class AutoTextActivity : AppCompatActivity() {
             }
         }
 
+        list.setOnItemClickListener { _, _, position, _ ->
+            val entry = entries.getOrNull(position) ?: return@setOnItemClickListener
+            showEditDialog(entry.first, entry.second)
+        }
+
         list.setOnItemLongClickListener { _, _, position, _ ->
             val entry = entries.getOrNull(position) ?: return@setOnItemLongClickListener true
             AlertDialog.Builder(this)
@@ -57,6 +62,41 @@ class AutoTextActivity : AppCompatActivity() {
         }
 
         refresh()
+    }
+
+    /** Edit an existing shortcut/expansion pair in place. */
+    private fun showEditDialog(oldShortcut: String, oldExpansion: String) {
+        val density = resources.displayMetrics.density
+        val box = android.widget.LinearLayout(this)
+        box.orientation = android.widget.LinearLayout.VERTICAL
+        box.setPadding((20 * density).toInt(), (10 * density).toInt(),
+            (20 * density).toInt(), 0)
+        val shortIn = EditText(this)
+        shortIn.setText(oldShortcut)
+        shortIn.hint = getString(R.string.autotext_shortcut_hint)
+        val fullIn = EditText(this)
+        fullIn.setText(oldExpansion)
+        fullIn.hint = getString(R.string.autotext_expansion_hint)
+        box.addView(shortIn)
+        box.addView(fullIn)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.autotext_edit)
+            .setView(box)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val ns = shortIn.text.toString().trim()
+                val ne = fullIn.text.toString().trim()
+                if (ns.isEmpty() || ne.isEmpty()) {
+                    Toast.makeText(this, R.string.autotext_fill_both, Toast.LENGTH_SHORT).show()
+                } else if (ns.contains(' ')) {
+                    Toast.makeText(this, R.string.autotext_no_space, Toast.LENGTH_SHORT).show()
+                } else {
+                    if (ns != oldShortcut) store.remove(oldShortcut)
+                    store.put(ns, ne)
+                    refresh()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun refresh() {

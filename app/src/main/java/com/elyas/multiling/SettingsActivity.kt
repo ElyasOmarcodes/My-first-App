@@ -110,7 +110,7 @@ class SettingsActivity : AppCompatActivity() {
         preview.showHints = p.getBoolean("hints", true)
         preview.keyBorder = p.getBoolean("key_border", false)
         val density = resources.displayMetrics.density
-        preview.setPadding(0, 0, 0, (p.getInt("bottom_gap", 43) * density).toInt())
+        preview.setPadding(0, 0, 0, (p.getInt("bottom_gap", 10) * density).toInt())
         val rows = ArrayList<List<KeyDef>>(Layouts.PASHTO.rows)
         rows.add(
             listOf(

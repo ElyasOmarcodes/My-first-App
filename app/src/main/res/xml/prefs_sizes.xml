@@ -15,7 +15,7 @@
         android:defaultValue="2" android:max="8" app:min="0" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="bottom_gap" android:title="@string/pref_bottom_gap"
         android:summary="@string/pref_bottom_gap_sum"
-        android:defaultValue="43" android:max="48" app:min="0" app:showSeekBarValue="true" />
+        android:defaultValue="10" android:max="48" app:min="0" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="sugg_font" android:title="@string/pref_sugg_font"
         android:defaultValue="17" android:max="24" app:min="13" app:showSeekBarValue="true" />
 </PreferenceScreen>
