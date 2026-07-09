@@ -954,6 +954,20 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** True when the line the cursor is on has no characters at all. */
+    private fun isCurrentLineEmpty(): Boolean {
+        val ic = currentInputConnection ?: return true
+        val before = try {
+            ic.getTextBeforeCursor(64, 0)?.toString()
+        } catch (_: Exception) { null } ?: ""
+        val after = try {
+            ic.getTextAfterCursor(64, 0)?.toString()
+        } catch (_: Exception) { null } ?: ""
+        val lineBefore = before.substringAfterLast('\n')
+        val lineAfter = after.substringBefore('\n')
+        return lineBefore.isBlank() && lineAfter.isBlank()
+    }
+
     // -------------------------------------------------------- suggestions
     private fun updateSuggestions() {
         bestCandidate = null
@@ -970,7 +984,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val STYLE_TYPED = 2
 
         if (prefix.isEmpty()) {
-            pendingClip?.let { items.add(Triple(it, STYLE_ACCENT, true)) }
+            if (isCurrentLineEmpty()) {
+                pendingClip?.let { items.add(Triple(it, STYLE_ACCENT, true)) }
+            }
             if (bigramsOn && lastWord.isNotEmpty()) {
                 for (w in store().suggestNext(lastWord, 4)) {
                     items.add(Triple(w, STYLE_NORMAL, false))
@@ -998,7 +1014,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         bar.gravity = android.view.Gravity.CENTER
         for ((text, style, isClip) in items) {
             val tv = TextView(this)
-            tv.text = if (isClip) text.take(40) else text
+            tv.text = if (isClip) text.take(60) else text
             tv.setTextColor(if (style == STYLE_ACCENT) kv.theme.accent else kv.theme.text)
             if (isClip) {
                 // rounded pill with an accent stroke and soft glow fill
@@ -1008,9 +1024,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 pill.cornerRadius = 14 * density
                 tv.background = pill
                 tv.setTextColor(kv.theme.text)
+                tv.maxWidth = (150 * density).toInt()
+                tv.ellipsize = android.text.TextUtils.TruncateAt.END
             }
             if (style == STYLE_ACCENT) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
-            tv.textSize = suggFontSp
+            tv.textSize = if (isClip) 12.5f else suggFontSp
             tv.maxLines = 1
             tv.setPadding((14 * density).toInt(), 0, (14 * density).toInt(), 0)
             tv.gravity = android.view.Gravity.CENTER
