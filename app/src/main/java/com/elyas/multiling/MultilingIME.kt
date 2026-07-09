@@ -72,6 +72,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private val rejectedWords = HashSet<String>()
     private var lastDataVersion = -1
     private var pendingClip: String? = null
+    private var pendingClipImage: String? = null
+    private var screenshotObserver: ScreenshotObserver? = null
     private var bestCandidate: WordStore.Cand? = null
     private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
 
@@ -102,15 +104,43 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
+                val clip = try { cm.primaryClip } catch (_: Exception) { null }
+                val item = clip?.getItemAt(0)
                 val text = try {
-                    cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
-                        ?.trim()?.ifEmpty { null }
+                    item?.coerceToText(this)?.toString()?.trim()?.ifEmpty { null }
                 } catch (_: Exception) { null }
-                pendingClip = text
-                if (text != null) clipboardStore().add(text)
+                val imageUri = item?.uri
+                if (imageUri != null && isImageUri(imageUri)) {
+                    pendingClipImage = imageUri.toString()
+                    clipboardStore().addImage(imageUri.toString())
+                } else if (text != null) {
+                    pendingClip = text
+                    clipboardStore().add(text)
+                }
             }
         } catch (_: Exception) {
         }
+        setupScreenshotObserver()
+    }
+
+    private fun isImageUri(uri: android.net.Uri): Boolean {
+        return try {
+            contentResolver.getType(uri)?.startsWith("image/") == true
+        } catch (_: Exception) { false }
+    }
+
+    /** Watch for screenshots and drop them into the clipboard, like Samsung. */
+    private fun setupScreenshotObserver() {
+        val p = PreferenceManager.getDefaultSharedPreferences(this)
+        if (!p.getBoolean("screenshot_clip", true)) return
+        if (screenshotObserver != null) return
+        val obs = ScreenshotObserver(this) { uri ->
+            pendingClipImage = uri.toString()
+            clipboardStore().addImage(uri.toString())
+            if (keyboardView?.visibility == View.VISIBLE) updateSuggestions()
+        }
+        obs.register()
+        screenshotObserver = obs
     }
 
     override fun onCreateInputView(): View {
@@ -466,7 +496,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val items = clipboardStore().all()
         if (items.isEmpty()) {
             val tv = TextView(this)
-            tv.text = "کلیپ بورډ تش دی — یو متن کاپي کړئ"
+            tv.text = "کلیپ بورډ تش دی — یو متن کاپي کړئ یا سکرین شاټ واخلئ"
             tv.setTextColor(theme.hint)
             tv.textSize = 15f
             tv.gravity = android.view.Gravity.CENTER
@@ -476,38 +506,62 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 LinearLayout.LayoutParams.WRAP_CONTENT))
         }
         for ((i, item) in items.withIndex()) {
-            val tv = TextView(this)
-            tv.text = item.take(120)
-            tv.maxLines = 2
-            tv.ellipsize = android.text.TextUtils.TruncateAt.END
-            tv.setTextColor(theme.text)
-            tv.textSize = 14f
-            tv.setPadding((12 * density).toInt(), (10 * density).toInt(),
-                (12 * density).toInt(), (10 * density).toInt())
             val bg = android.graphics.drawable.GradientDrawable()
             bg.setColor(theme.keyFill)
             bg.cornerRadius = 10 * density
-            tv.background = bg
             val lp = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT)
             lp.setMargins((8 * density).toInt(), (3 * density).toInt(),
                 (8 * density).toInt(), (3 * density).toInt())
-            tv.layoutParams = lp
-            tv.setOnClickListener {
-                currentInputConnection?.commitText(item, 1)
-                feedback()
-                mode = Mode.LETTERS
-                rebuildKeyboard()
-                updateSuggestions()
+
+            val itemView: View
+            if (item.isImage) {
+                val iv = android.widget.ImageView(this)
+                try { iv.setImageURI(android.net.Uri.parse(item.imageUri)) } catch (_: Exception) {}
+                iv.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                iv.background = bg
+                iv.setPadding((4 * density).toInt(), (4 * density).toInt(),
+                    (4 * density).toInt(), (4 * density).toInt())
+                iv.layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, (110 * density).toInt()
+                ).also { it.setMargins((8 * density).toInt(), (3 * density).toInt(),
+                    (8 * density).toInt(), (3 * density).toInt()) }
+                iv.setOnClickListener {
+                    val u = item.imageUri ?: return@setOnClickListener
+                    mode = Mode.LETTERS
+                    rebuildKeyboard()
+                    pasteImage(u)
+                    updateSuggestions()
+                }
+                itemView = iv
+            } else {
+                val tv = TextView(this)
+                tv.text = (item.text ?: "").take(120)
+                tv.maxLines = 2
+                tv.ellipsize = android.text.TextUtils.TruncateAt.END
+                tv.setTextColor(theme.text)
+                tv.textSize = 14f
+                tv.setPadding((12 * density).toInt(), (10 * density).toInt(),
+                    (12 * density).toInt(), (10 * density).toInt())
+                tv.background = bg
+                tv.layoutParams = lp
+                tv.setOnClickListener {
+                    item.text?.let { currentInputConnection?.commitText(it, 1) }
+                    feedback()
+                    mode = Mode.LETTERS
+                    rebuildKeyboard()
+                    updateSuggestions()
+                }
+                itemView = tv
             }
-            tv.setOnLongClickListener {
+            itemView.setOnLongClickListener {
                 clipboardStore().removeAt(i)
                 mode = Mode.CLIPBOARD
                 rebuildKeyboard()
                 true
             }
-            list.addView(tv)
+            list.addView(itemView)
         }
         scroll.addView(list)
         root.addView(scroll, LinearLayout.LayoutParams(
@@ -1008,10 +1062,44 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         val density = resources.displayMetrics.density
+        // screenshot / clipboard image chip (only on an empty line)
+        val showImageChip = prefix.isEmpty() && pendingClipImage != null && isCurrentLineEmpty()
+
         // a lone clipboard chip is centered, Samsung-style
-        bar.minimumWidth =
-            if (items.size == 1 && items[0].third) (suggestionScroll?.width ?: 0) else 0
+        val onlyChip = (items.isEmpty() && showImageChip) ||
+            (items.size == 1 && items[0].third && !showImageChip)
+        bar.minimumWidth = if (onlyChip) (suggestionScroll?.width ?: 0) else 0
         bar.gravity = android.view.Gravity.CENTER
+
+        if (showImageChip) {
+            val uriStr = pendingClipImage!!
+            val iv = android.widget.ImageView(this)
+            try { iv.setImageURI(android.net.Uri.parse(uriStr)) } catch (_: Exception) {}
+            iv.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            val frame = android.graphics.drawable.GradientDrawable()
+            frame.setColor(kv.theme.accent and 0x22FFFFFF)
+            frame.setStroke((1.5f * density).toInt(), kv.theme.accent)
+            frame.cornerRadius = 8 * density
+            iv.background = frame
+            iv.setPadding(
+                (2 * density).toInt(), (2 * density).toInt(),
+                (2 * density).toInt(), (2 * density).toInt()
+            )
+            val ilp = LinearLayout.LayoutParams((44 * density).toInt(), (32 * density).toInt())
+            ilp.setMargins(
+                (8 * density).toInt(), (3 * density).toInt(),
+                (8 * density).toInt(), (3 * density).toInt()
+            )
+            ilp.gravity = android.view.Gravity.CENTER_VERTICAL
+            iv.layoutParams = ilp
+            iv.setOnClickListener {
+                pasteImage(uriStr)
+                pendingClipImage = null
+                updateSuggestions()
+            }
+            bar.addView(iv)
+        }
+
         for ((text, style, isClip) in items) {
             val tv = TextView(this)
             tv.text = if (isClip) text.take(60) else text
@@ -1135,7 +1223,49 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onDestroy() {
         soundPool?.release()
         soundPool = null
+        screenshotObserver?.unregister()
+        screenshotObserver = null
         super.onDestroy()
+    }
+
+    /**
+     * Paste an image (screenshot / clipboard image) into the current field
+     * via rich-content commit, or fall back to the system clipboard so the
+     * user can long-press-paste it in apps that accept images.
+     */
+    private fun pasteImage(uriStr: String) {
+        val uri = try { android.net.Uri.parse(uriStr) } catch (_: Exception) { null } ?: return
+        val ic = currentInputConnection
+        val info = currentInputEditorInfo
+        val mime = try { contentResolver.getType(uri) } catch (_: Exception) { null } ?: "image/*"
+        var committed = false
+        if (ic != null && info != null) {
+            try {
+                val content = androidx.core.view.inputmethod.InputContentInfoCompat(
+                    uri,
+                    android.content.ClipDescription("image", arrayOf(mime)),
+                    null
+                )
+                val flags =
+                    androidx.core.view.inputmethod.InputConnectionCompat
+                        .INPUT_CONTENT_GRANT_READ_URI_PERMISSION
+                committed = androidx.core.view.inputmethod.InputConnectionCompat
+                    .commitContent(ic, info, content, flags, null)
+            } catch (_: Exception) {
+            }
+        }
+        if (!committed) {
+            try {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE)
+                    as android.content.ClipboardManager
+                cm.setPrimaryClip(
+                    android.content.ClipData.newUri(contentResolver, "image", uri)
+                )
+                Toast.makeText(this, R.string.image_copied, Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {
+            }
+        }
+        feedback()
     }
 
     @Suppress("DEPRECATION")

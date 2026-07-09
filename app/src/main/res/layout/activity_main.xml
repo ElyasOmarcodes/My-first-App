@@ -194,6 +194,18 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnMedia"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_button_outline"
+                android:text="@string/btn_grant_media"
+                android:textColor="#4FA3FF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:stateListAnimator="@null" />
         </LinearLayout>
 
         <!-- footer credit -->
