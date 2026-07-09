@@ -1,0 +1,204 @@
+smile	😀 😃 😄 😁 🙂 😊
+laugh	😆 😂 🤣 😹
+happy	😀 😊 😁 🥳 😄
+joy	😂 😊 🥳
+love	❤️ 😍 🥰 😘 💕 💖 💗
+heart	❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 💕 💖
+kiss	😘 😗 😚 💋 💏
+wink	😉 😜
+cool	😎 🆒
+sad	😢 😭 🙁 😞 😔
+cry	😢 😭 😿
+tears	😢 😭 🥲
+angry	😡 😠 🤬 💢
+mad	😡 🤬
+fear	😨 😰 😱
+scared	😱 😨 👻
+shock	😲 😮 😯 🤯
+surprise	😮 😲 🎉
+think	🤔 💭 🧐
+sleep	😴 💤 🛌
+tired	🥱 😪 😫
+sick	🤒 🤕 😷 🤢 🤮
+hot	🥵 🔥 ☀️
+cold	🥶 ❄️ ☃️ 🧊
+party	🥳 🎉 🎊 🎈
+celebrate	🎉 🎊 🥳 🏆
+devil	😈 👿
+ghost	👻 💀
+skull	💀 ☠️
+alien	👽 🛸
+robot	🤖
+poop	💩
+cat	🐱 🐈 😺 😸
+dog	🐶 🐕 🐩
+ok	👌 🆗 ✅
+yes	✅ 👍 ✔️
+no	❌ 👎 🚫
+thumbs	👍 👎
+clap	👏
+pray	🙏 🤲
+hands	🙌 👐 🤝 👏
+handshake	🤝
+muscle	💪 🦾
+victory	✌️ 🏆
+point	👉 👈 👆 👇 ☝️
+wave	👋
+fist	✊ 👊 🤛 🤜
+write	✍️ 📝 ✏️
+eye	👀 👁️
+ear	👂
+nose	👃
+mouth	👄 👅
+brain	🧠
+baby	👶 🍼
+boy	👦 🧒
+girl	👧
+man	👨 🧔
+woman	👩
+family	👪 👫
+old	👴 👵
+doctor	👨‍⚕️ 🩺 💉 💊
+police	👮 🚓 🚨
+king	🤴 👑
+queen	👸 👑
+bride	👰 💒
+run	🏃
+walk	🚶
+dance	💃 🕺
+flower	🌸 🌺 🌻 🌹 🌷 🌼 💐
+rose	🌹 🥀
+tree	🌲 🌳 🌴 🎄
+plant	🌱 🌿 ☘️ 🍀
+leaf	🍁 🍂 🌿
+sun	☀️ 🌞 🌅
+moon	🌙 🌕 🌛
+star	⭐ 🌟 ✨ 💫
+sky	☁️ 🌈 🌌
+rain	🌧️ ☔ ⛈️
+snow	❄️ ☃️ 🌨️
+fire	🔥 🧯 🚒
+water	💧 💦 🌊 🚰
+lightning	⚡ ⛈️
+rainbow	🌈
+earth	🌍 🌎 🌏
+mountain	⛰️ 🏔️ 🗻
+bird	🐦 🐤 🦅 🦉 🕊️
+fish	🐟 🐠 🐬 🐳 🦈
+horse	🐴 🐎 🏇
+lion	🦁
+tiger	🐯 🐅
+bear	🐻 🐼
+monkey	🐵 🐒 🙈 🙉 🙊
+cow	🐮 🐄
+sheep	🐑 🐏
+goat	🐐
+camel	🐪 🐫
+snake	🐍
+bee	🐝
+butterfly	🦋
+spider	🕷️
+apple	🍏 🍎
+banana	🍌
+orange	🍊
+grape	🍇
+watermelon	🍉
+mango	🥭
+fruit	🍎 🍌 🍊 🍇 🍓 🍑
+bread	🍞 🥖 🥐
+egg	🥚 🍳
+meat	🥩 🍖 🍗
+chicken	🍗 🐔
+burger	🍔
+pizza	🍕
+fries	🍟
+rice	🍚 🍛
+cake	🎂 🍰 🧁
+sweet	🍬 🍭 🍫 🍩
+tea	🍵 ☕ 🫖
+coffee	☕
+milk	🥛 🍼
+food	🍔 🍕 🍲 🍽️ 🍛
+ball	⚽ 🏀 🏈 ⚾ 🎾 🏐
+football	⚽ 🏈
+cricket	🏏
+game	🎮 🎲 🕹️ 🧩
+win	🏆 🥇 🎖️
+trophy	🏆
+medal	🥇 🥈 🥉 🏅
+music	🎵 🎶 🎼 🎤 🎧
+sing	🎤 🎶
+guitar	🎸
+drum	🥁
+art	🎨 🖌️
+movie	🎬 🎥 🍿
+camera	📷 📸 📹
+car	🚗 🚕 🚙 🏎️
+bus	🚌 🚍
+truck	🚚 🚛
+bike	🚲 🏍️ 🛵
+train	🚆 🚄 🚂
+plane	✈️ 🛫 🛩️
+rocket	🚀
+ship	🚢 ⛵ 🛳️
+helicopter	🚁
+home	🏠 🏡
+house	🏠 🏡 🏘️
+mosque	🕌 🕋
+church	⛪
+school	🏫 🎒 📚
+hospital	🏥 🚑
+hotel	🏨
+shop	🏪 🛍️ 🛒
+bank	🏦 💰
+city	🏙️ 🌃
+beach	🏖️ ⛱️ 🏝️
+tent	⛺ 🏕️
+phone	📱 📞 ☎️
+computer	💻 🖥️ ⌨️
+watch	⌚ ⏰
+tv	📺
+radio	📻
+battery	🔋
+light	💡 🔦
+money	💰 💵 💸 💳
+gift	🎁 🎀
+key	🔑 🗝️
+lock	🔒 🔓 🔐
+tools	🔧 🔨 🛠️ ⚙️
+knife	🔪 🗡️
+gun	🔫
+bomb	💣 🧨
+book	📖 📚 📕 📗
+pen	🖊️ ✒️ 🖋️ ✏️
+letter	✉️ 💌 📩
+mail	📧 📨 📮
+news	📰 🗞️
+calendar	📅 📆 🗓️
+chart	📊 📈 📉
+search	🔍 🔎
+scissors	✂️
+pin	📌 📍
+flag	🏳️ 🏴 🚩 🏁
+afghanistan	🇦🇫
+pakistan	🇵🇰
+iran	🇮🇷
+india	🇮🇳
+saudi	🇸🇦
+america	🇺🇸
+usa	🇺🇸
+china	🇨🇳
+turkey	🇹🇷
+warning	⚠️ 🚸
+stop	🛑 ⛔ ✋
+check	✅ ✔️ ☑️
+cross	❌ ✗ ❎
+question	❓ ❔ ⁉️
+exclaim	❗ ❕ ‼️
+hundred	💯
+recycle	♻️
+peace	☮️ ✌️ 🕊️
+islam	☪️ 🕌 🕋 📿
+sleep2	🛌 😴 💤
+time	⏰ ⌚ ⏳ 🕰️
+clock	🕐 ⏰ ⌚

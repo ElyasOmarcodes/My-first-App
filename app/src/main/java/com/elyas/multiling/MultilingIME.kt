@@ -26,9 +26,14 @@ import androidx.preference.PreferenceManager
  */
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
-    private enum class Mode { LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI }
+    private enum class Mode { LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI, EMOJI_SEARCH }
 
     private var keyboardView: KeyboardView? = null
+    private var emojiPanel: EmojiPanel? = null
+    private var emojiHolder: android.widget.FrameLayout? = null
+    private val emojiQuery = StringBuilder()
+    private var emojiKeywords: List<Pair<String, List<String>>>? = null
+    private var baseKeyHeightDp = 72
     private var rootView: LinearLayout? = null
     private var suggestionBar: LinearLayout? = null
     private var suggestionScroll: HorizontalScrollView? = null
@@ -137,6 +142,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
+        val holder = android.widget.FrameLayout(this)
+        holder.visibility = View.GONE
+        emojiHolder = holder
+        root.addView(
+            holder,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
         rootView = root
         applySettings()
         rebuildKeyboard()
@@ -220,8 +235,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
         val landscape =
             resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        kv.keyHeightDp =
+        baseKeyHeightDp =
             if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
+        kv.keyHeightDp = baseKeyHeightDp
         kv.arrowRowScale = p.getInt("arrow_height", 100) / 100f
         kv.fontScale = p.getInt("font_scale", 70) / 100f
         kv.hintScale = p.getInt("hint_scale", 96) / 100f
@@ -271,6 +287,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     // ------------------------------------------------------- keyboard build
+    private fun enterLabel(): String {
+        val info = currentInputEditorInfo ?: return "↵"
+        if (info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION != 0) return "↵"
+        return when (info.imeOptions and EditorInfo.IME_MASK_ACTION) {
+            EditorInfo.IME_ACTION_SEARCH -> "لټون"
+            EditorInfo.IME_ACTION_SEND -> "لېږل"
+            EditorInfo.IME_ACTION_NEXT -> "بل ⇥"
+            EditorInfo.IME_ACTION_GO -> "ورتګ"
+            EditorInfo.IME_ACTION_DONE -> "بشپړ"
+            else -> "↵"
+        }
+    }
+
     private fun buildBottomRow(): List<KeyDef> {
         val symLabel = if (lang.digits[0] == '0') "?123" else "۱۲۳"
         return listOf(
@@ -278,7 +307,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             lang.extraKey,
             KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
             KeyDef(lang.period, null, lang.periodAlts),
-            KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+            KeyDef(enterLabel(), code = Keys.ENTER, width = 1.5f)
         )
     }
 
@@ -288,7 +317,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         else KeyDef(",", null, listOf("،", ";")),
         KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
         KeyDef(lang.period, null, lang.periodAlts),
-        KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+        KeyDef(enterLabel(), code = Keys.ENTER, width = 1.5f)
     )
 
     private fun arrowRow(): List<KeyDef> = listOf(
@@ -320,8 +349,20 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 rows.addAll(Layouts.editPanel())
                 rows.add(buildBottomRow())
             }
-            Mode.NUMPAD -> rows.addAll(Layouts.numPad(lang))
-            Mode.EMOJI -> rows.addAll(Layouts.emojiPage())
+            Mode.NUMPAD -> rows.addAll(Layouts.numPad(lang, enterLabel()))
+            Mode.EMOJI -> {}
+            Mode.EMOJI_SEARCH -> {
+                rows.addAll(Layouts.ENGLISH.rows)
+                rows.add(
+                    listOf(
+                        KeyDef("😀", code = Keys.EMOJI, width = 1.5f),
+                        KeyDef(",", null, listOf("'")),
+                        KeyDef("لټون…", code = Keys.SPACE, width = 4f),
+                        KeyDef("."),
+                        KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+                    )
+                )
+            }
         }
         return rows
     }
@@ -341,21 +382,94 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** Total keyboard height stays the same in every layout/mode. */
+    private fun heightUnits(rowsCount: Int, withArrows: Boolean): Float =
+        rowsCount + (if (withArrows) keyboardView?.arrowRowScale ?: 1f else 0f)
+
     private fun rebuildKeyboard() {
         val kv = keyboardView ?: return
+        if (mode == Mode.EMOJI) {
+            showEmojiPanel()
+            return
+        }
+        emojiHolder?.visibility = View.GONE
+        kv.visibility = View.VISIBLE
+
         val rows = currentRows()
+        // scale the key height so control/numbers/symbol layouts occupy the
+        // exact same total height as the letters layout
+        val lettersUnits = heightUnits(lang.rows.size + 1, arrowsOn)
+        val arrowInMode = arrowsOn &&
+            (mode == Mode.LETTERS || mode == Mode.SYM1 || mode == Mode.SYM2 ||
+                mode == Mode.EMOJI_SEARCH)
+        val bodyRows = rows.size - (if (arrowInMode) 1 else 0)
+        val modeUnits = heightUnits(bodyRows, arrowInMode)
+        kv.keyHeightDp = (baseKeyHeightDp * lettersUnits / modeUnits).toInt()
+
         kv.shiftState = if (mode == Mode.EDIT) (if (selectMode) 2 else 0) else shift
         kv.setKeyboard(rows, displayFor(rows))
     }
 
+    private fun showEmojiPanel() {
+        val kv = keyboardView ?: return
+        val holder = emojiHolder ?: return
+        kv.visibility = View.GONE
+        val panel = EmojiPanel(
+            this, kv.theme,
+            onEmoji = { e -> currentInputConnection?.commitText(e, 1); feedback() },
+            onBack = { mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions() },
+            onSearch = {
+                emojiQuery.setLength(0)
+                mode = Mode.EMOJI_SEARCH
+                rebuildKeyboard()
+                updateEmojiSearch()
+            },
+            onDelete = { sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL); feedback() }
+        )
+        emojiPanel = panel
+        holder.removeAllViews()
+        val density = resources.displayMetrics.density
+        val lettersUnits = heightUnits(lang.rows.size + 1, arrowsOn)
+        val h = (baseKeyHeightDp * lettersUnits * density).toInt()
+        holder.addView(
+            panel,
+            android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT, h
+            )
+        )
+        holder.visibility = View.VISIBLE
+    }
+
     // ------------------------------------------------------------ listener
-    override fun onChar(text: String) {
+    override fun onChar(rawText: String) {
         feedback()
         revertOriginal = null
         revertCorrected = null
+
+        if (mode == Mode.EMOJI_SEARCH) {
+            // typing filters emojis instead of committing text
+            if (rawText.length == 1 && Character.isLetter(rawText[0])) {
+                emojiQuery.append(rawText.lowercase())
+                updateEmojiSearch()
+            }
+            return
+        }
+
+        // popup tokens: zwnj joins, date/time insert the current values
+        val text = when (rawText) {
+            "zwnj" -> "\u200C"
+            "date" -> java.text.SimpleDateFormat(
+                "yyyy/MM/dd", java.util.Locale.US
+            ).format(java.util.Date())
+            "time" -> java.text.SimpleDateFormat(
+                "HH:mm", java.util.Locale.US
+            ).format(java.util.Date())
+            else -> rawText
+        }
         val ic = currentInputConnection ?: return
 
-        val isLetter = text.length == 1 && Character.isLetter(text[0])
+        val isLetter = text.length == 1 &&
+            (Character.isLetter(text[0]) || text[0] == '\u200C')
         if (isLetter) {
             ic.commitText(text, 1)
             wordBuffer.append(text)
@@ -420,6 +534,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onSpecial(code: Int) {
         val ic = currentInputConnection
+        if (mode == Mode.EMOJI_SEARCH) {
+            when (code) {
+                Keys.SPACE -> { feedback(); return }
+                Keys.ENTER -> {
+                    feedback()
+                    mode = Mode.EMOJI
+                    rebuildKeyboard()
+                    updateSuggestions()
+                    return
+                }
+                Keys.SHIFT -> return
+            }
+        }
         when (code) {
             Keys.SHIFT -> {
                 feedback()
@@ -439,6 +566,23 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 rebuildKeyboard()
             }
             Keys.DELETE -> {
+                if (mode == Mode.EMOJI_SEARCH) {
+                    feedback()
+                    if (emojiQuery.isNotEmpty()) {
+                        emojiQuery.setLength(emojiQuery.length - 1)
+                        updateEmojiSearch()
+                    } else {
+                        mode = Mode.EMOJI
+                        rebuildKeyboard()
+                    }
+                    return
+                }
+                // an empty field: no delete, no sound, no vibration
+                val hasSelection =
+                    try { ic?.getSelectedText(0)?.isNotEmpty() == true } catch (_: Exception) { false }
+                val hasText =
+                    try { ic?.getTextBeforeCursor(1, 0)?.isNotEmpty() == true } catch (_: Exception) { false }
+                if (!hasText && !hasSelection) return
                 feedback()
                 if (tryRevertAutocorrect()) return
                 if (wordBuffer.isNotEmpty()) wordBuffer.setLength(wordBuffer.length - 1)
@@ -452,6 +596,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 mode = Mode.LETTERS
                 selectMode = false
                 rebuildKeyboard()
+                updateSuggestions()
             }
             Keys.ENTER -> {
                 feedback()
@@ -622,6 +767,78 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 ).show()
             }
         } catch (_: Exception) {
+        }
+    }
+
+    // ------------------------------------------------------- emoji search
+    private fun loadEmojiKeywords(): List<Pair<String, List<String>>> {
+        emojiKeywords?.let { return it }
+        val list = ArrayList<Pair<String, List<String>>>()
+        try {
+            assets.open("emoji_keywords.txt").bufferedReader().forEachLine { line ->
+                val idx = line.indexOf('\t')
+                if (idx > 0) {
+                    val kw = line.substring(0, idx).trim()
+                    val emojis = line.substring(idx + 1).trim()
+                        .split(' ').filter { it.isNotEmpty() }
+                    if (kw.isNotEmpty() && emojis.isNotEmpty()) list.add(kw to emojis)
+                }
+            }
+        } catch (_: Exception) {
+        }
+        emojiKeywords = list
+        return list
+    }
+
+    /** The suggestion strip becomes the emoji-search result row. */
+    private fun updateEmojiSearch() {
+        val bar = suggestionBar ?: return
+        bar.removeAllViews()
+        val kv = keyboardView ?: return
+        val q = emojiQuery.toString()
+        val density = resources.displayMetrics.density
+
+        val label = TextView(this)
+        label.text = if (q.isEmpty()) "🔍…" else "🔍 $q"
+        label.setTextColor(kv.theme.accent)
+        label.textSize = suggFontSp
+        label.maxLines = 1
+        label.gravity = android.view.Gravity.CENTER
+        label.setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
+        bar.addView(
+            label,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+
+        if (q.isEmpty()) return
+        val out = LinkedHashSet<String>()
+        for ((kw, emojis) in loadEmojiKeywords()) {
+            if (kw.startsWith(q) || (q.length >= 3 && kw.contains(q))) {
+                out.addAll(emojis)
+                if (out.size >= 24) break
+            }
+        }
+        for (e in out.take(24)) {
+            val tv = TextView(this)
+            tv.text = e
+            tv.textSize = 24f
+            tv.maxLines = 1
+            tv.gravity = android.view.Gravity.CENTER
+            tv.setPadding((8 * density).toInt(), 0, (8 * density).toInt(), 0)
+            tv.setOnClickListener {
+                currentInputConnection?.commitText(e, 1)
+                feedback()
+            }
+            bar.addView(
+                tv,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                )
+            )
         }
     }
 

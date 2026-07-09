@@ -157,7 +157,10 @@ class KeyboardView(context: Context) : View(context) {
     private var altChars: List<String> = emptyList()
     private var altIndex = 0
     private var altPopupLeftInView = 0f
+    private var altPopupTopInView = 0f
     private var altCellWidth = 0f
+    private var altCellHeight = 0f
+    private var altCols = 1
 
     // slide-to-select grid menu (long-press on 123, language menu)
     private var gridPopup: PopupWindow? = null
@@ -385,7 +388,7 @@ class KeyboardView(context: Context) : View(context) {
             return
         }
         if (altPopup != null && id == longPressPointerId) {
-            updateAltSelection(x)
+            updateAltSelection(x, y)
             return
         }
         if (key.def.code == Keys.SPACE && spaceSwipeEnabled) {
@@ -506,74 +509,21 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     private fun showAltPopup(key: PlacedKey, chars: List<String>) {
-        val cellW = max(key.rect.width(), 46 * density)
-        val cellH = key.rect.height()
-        val container = LinearLayout(context)
-        container.orientation = LinearLayout.HORIZONTAL
-        // force LTR so cell order always matches the finger's direction,
-        // even when the system locale is RTL
-        container.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        val bg = GradientDrawable()
-        bg.setColor(theme.keyPressed)
-        bg.cornerRadius = 8 * density
-        container.background = bg
-        val views = ArrayList<TextView>()
-        for (c in chars) {
-            val tv = TextView(context)
-            tv.text = c
-            tv.gravity = Gravity.CENTER
-            tv.setTextColor(theme.text)
-            tv.textSize = 26f
-            tv.layoutParams = LinearLayout.LayoutParams(cellW.toInt(), cellH.toInt())
-            container.addView(tv)
-            views.add(tv)
-        }
-        altViews = views
-        altChars = chars
-        altCellWidth = cellW
-        val totalW = cellW * chars.size
-        // put the FIRST cell (the hint character) right above the pressed key,
-        // so the initial highlight sits on the character the key advertises
-        var left = key.rect.centerX() - cellW / 2
-        left = min(max(4 * density, left), width - totalW - 4 * density)
-        altPopupLeftInView = left
-        altIndex = 0
-        highlightAlt()
-
-        val popup = PopupWindow(container, totalW.toInt(), cellH.toInt(), false)
-        popup.isClippingEnabled = false
-        val loc = IntArray(2)
-        getLocationInWindow(loc)
-        val yInWindow = loc[1] + key.rect.top - cellH - 8 * density
-        popup.showAtLocation(this, Gravity.NO_GRAVITY, (loc[0] + left).toInt(), yInWindow.toInt())
-        altPopup = popup
-    }
-
-    /**
-     * Slide-to-select menu grid: while the finger that opened it is still
-     * down, glide over an item and release to activate it (the [initial]
-     * item is pre-highlighted, so releasing in place activates it).
-     * The cells are also tappable, so the same grid works after the
-     * finger has lifted (e.g. the language menu opened from this menu).
-     */
-    fun showGridMenu(labels: List<String>, initial: Int = 0, cols: Int = 3, onSelect: (Int) -> Unit) {
-        dismissPopups()
-        gridCols = cols
-        gridHandler = onSelect
-        val rowsCount = (labels.size + cols - 1) / cols
-        gridCellW = (width * (if (cols == 1) 0.45f else 0.9f)) / cols
-        gridCellH = keyHeightDp * density * (if (cols == 1) 0.72f else 1f)
-        val totalW = gridCellW * cols
-        val totalH = gridCellH * rowsCount
+        // multi-row grid popup, like classic multilingual keyboards:
+        // slide over any cell (also up/down between rows) and release
+        val cols = min(chars.size, 6)
+        val rowsCount = (chars.size + cols - 1) / cols
+        var cellW = max(key.rect.width(), 46 * density)
+        cellW = min(cellW, (width - 8 * density) / cols)
+        val cellH = min(key.rect.height(), keyHeightDp * density)
 
         val container = LinearLayout(context)
         container.orientation = LinearLayout.VERTICAL
         container.layoutDirection = View.LAYOUT_DIRECTION_LTR
         val bg = GradientDrawable()
         bg.setColor(theme.keyPressed)
-        bg.cornerRadius = 10 * density
+        bg.cornerRadius = 8 * density
         container.background = bg
-
         val views = ArrayList<TextView>()
         var i = 0
         for (r in 0 until rowsCount) {
@@ -581,91 +531,54 @@ class KeyboardView(context: Context) : View(context) {
             rowLayout.orientation = LinearLayout.HORIZONTAL
             rowLayout.layoutDirection = View.LAYOUT_DIRECTION_LTR
             for (c in 0 until cols) {
-                if (i >= labels.size) break
-                val idx = i
+                if (i >= chars.size) break
                 val tv = TextView(context)
-                tv.text = labels[i]
+                tv.text = chars[i]
                 tv.gravity = Gravity.CENTER
                 tv.setTextColor(theme.text)
-                tv.textSize = if (cols == 1) 14f else 17f
-                tv.layoutParams =
-                    LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
-                tv.setOnClickListener {
-                    val h = gridHandler
-                    dismissGridPopup()
-                    h?.invoke(idx)
-                }
+                tv.textSize = if (chars[i].length > 2) 14f else 22f
+                tv.maxLines = 1
+                tv.layoutParams = LinearLayout.LayoutParams(cellW.toInt(), cellH.toInt())
                 rowLayout.addView(tv)
                 views.add(tv)
                 i++
             }
             container.addView(rowLayout)
         }
-        gridViews = views
-        gridCount = labels.size
-        gridIndex = if (initial in labels.indices) initial else -1
-        highlightGrid()
-
-        gridLeftInView = (width - totalW) / 2
-        gridTopInView = max(4 * density, height - totalH - (keyHeightDp * density) * 2.2f)
+        altViews = views
+        altChars = chars
+        altCellWidth = cellW
+        altCellHeight = cellH
+        altCols = cols
+        val totalW = cellW * cols
+        val totalH = cellH * rowsCount
+        // first cell starts above the pressed key so the initial highlight
+        // sits on the advertised hint character
+        var left = key.rect.centerX() - cellW / 2
+        left = min(max(4 * density, left), width - totalW - 4 * density)
+        altPopupLeftInView = left
+        val top = max(4 * density - totalH + cellH, key.rect.top - totalH - 8 * density)
+        altPopupTopInView = top
+        altIndex = 0
+        highlightAlt()
 
         val popup = PopupWindow(container, totalW.toInt(), totalH.toInt(), false)
         popup.isClippingEnabled = false
-        popup.isTouchable = true
         val loc = IntArray(2)
         getLocationInWindow(loc)
         popup.showAtLocation(
             this, Gravity.NO_GRAVITY,
-            (loc[0] + gridLeftInView).toInt(), (loc[1] + gridTopInView).toInt()
+            (loc[0] + left).toInt(), (loc[1] + top).toInt()
         )
-        gridPopup = popup
+        altPopup = popup
     }
 
-    private fun updateGridSelection(x: Float, y: Float) {
-        if (gridCount == 0) return
-        val col = ((x - gridLeftInView) / gridCellW).toInt()
-        val row = ((y - gridTopInView) / gridCellH).toInt()
-        if (x >= gridLeftInView && y >= gridTopInView && col in 0 until gridCols && row >= 0) {
-            val idx = row * gridCols + col
-            // outside the item range keeps the current selection
-            if (idx in 0 until gridCount) gridIndex = idx
-        }
-        highlightGrid()
-    }
-
-    private fun highlightGrid() {
-        for ((i, tv) in gridViews.withIndex()) {
-            if (i == gridIndex) {
-                val d = GradientDrawable()
-                d.setColor(theme.accent)
-                d.cornerRadius = 10 * density
-                tv.background = d
-            } else {
-                tv.background = null
-            }
-        }
-    }
-
-    private fun commitGridSelection() {
-        val idx = gridIndex
-        val h = gridHandler
-        dismissGridPopup()
-        if (idx >= 0) h?.invoke(idx)
-    }
-
-    private fun dismissGridPopup() {
-        gridPopup?.dismiss()
-        gridPopup = null
-        gridViews = emptyList()
-        gridCount = 0
-        gridIndex = -1
-        gridHandler = null
-    }
-
-    private fun updateAltSelection(x: Float) {
+    private fun updateAltSelection(x: Float, y: Float) {
         if (altChars.isEmpty()) return
-        val idx = ((x - altPopupLeftInView) / altCellWidth).toInt()
-        altIndex = min(max(0, idx), altChars.size - 1)
+        val rowsCount = (altChars.size + altCols - 1) / altCols
+        val col = min(max(0, ((x - altPopupLeftInView) / altCellWidth).toInt()), altCols - 1)
+        val row = min(max(0, ((y - altPopupTopInView) / altCellHeight).toInt()), rowsCount - 1)
+        altIndex = min(row * altCols + col, altChars.size - 1)
         highlightAlt()
     }
 

@@ -105,17 +105,57 @@ object Layouts {
         )
     )
 
-    val PASHTO = Language("ps", "پښتو", psRows, "۰۱۲۳۴۵۶۷۸۹", rtl = true)
-    val DARI = Language("fa", "دري", faRows, "۰۱۲۳۴۵۶۷۸۹", rtl = true)
-    val ARABIC = Language("ar", "العربية", arRows, "٠١٢٣٤٥٦٧٨٩", rtl = true)
+    /** Rich long-press set on the tatweel key: digits, punctuation,
+     *  diacritics and ZWNJ — like classic multilingual keyboards. */
+    private fun rtlExtraKey(digits: String): KeyDef {
+        val alts = ArrayList<String>()
+        for (i in listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) alts.add(digits[i].toString())
+        alts.addAll(
+            listOf(
+                "؛", "٪", "،", "ـ", "ً", "ٌ", "ٍ", "َ", "ُ", "ِ",
+                "ّ", "ْ", "ٔ", "ٰ", "«", "»", "zwnj"
+            )
+        )
+        return KeyDef("ـ", null, alts)
+    }
+
+    /** Rich period-key long-press set (RTL). */
+    private val rtlPeriodAlts = listOf(
+        "،", "؟", "!", ":", "؛", "…", "\"", "'", "@", "&", "#",
+        "(", ")", "-", "_", "+", "=", "/", "\\", "«", "»", "<", ">",
+        "{", "}", "°", "❤"
+    )
+
+    val PASHTO = Language(
+        "ps", "پښتو", psRows, "۰۱۲۳۴۵۶۷۸۹", rtl = true,
+        periodAlts = rtlPeriodAlts, extraKey = rtlExtraKey("۰۱۲۳۴۵۶۷۸۹")
+    )
+    val DARI = Language(
+        "fa", "دري", faRows, "۰۱۲۳۴۵۶۷۸۹", rtl = true,
+        periodAlts = rtlPeriodAlts, extraKey = rtlExtraKey("۰۱۲۳۴۵۶۷۸۹")
+    )
+    val ARABIC = Language(
+        "ar", "العربية", arRows, "٠١٢٣٤٥٦٧٨٩", rtl = true,
+        periodAlts = rtlPeriodAlts, extraKey = rtlExtraKey("٠١٢٣٤٥٦٧٨٩")
+    )
     val URDU = Language(
         "ur", "اردو", urRows, "۰۱۲۳۴۵۶۷۸۹", rtl = true,
-        period = "۔", periodAlts = listOf("،", "؟", "!", ":", "؛", ".")
+        period = "۔", periodAlts = listOf(".") + rtlPeriodAlts,
+        extraKey = rtlExtraKey("۰۱۲۳۴۵۶۷۸۹")
     )
     val ENGLISH = Language(
         "en", "English", enRows, "0123456789", rtl = false,
-        period = ".", periodAlts = listOf(",", "?", "!", ":", ";", "…"),
-        extraKey = KeyDef(",", null, listOf("'", "\"", "-", "_"))
+        period = ".",
+        periodAlts = listOf(
+            ",", "?", "!", ":", ";", "…", "\"", "'", "@", "&", "#",
+            "(", ")", "-", "_", "+", "=", "/", "\\", "<", ">", "{", "}", "°", "❤"
+        ),
+        extraKey = KeyDef(
+            ",", null, listOf(
+                "date", "«", "—", "»", "time", "✗", "∴", "※", "∵", "✔",
+                "@", "€", "§", "%", "*", "…", "$", "~", "★", "'", "\"", "-", "_"
+            )
+        )
     )
 
     val ALL = listOf(PASHTO, DARI, ARABIC, URDU, ENGLISH)
@@ -141,7 +181,8 @@ object Layouts {
             listOf(
                 KeyDef("=\\<", code = Keys.SYM2, width = 1.4f),
                 k("*"), k("\""), k("'"), k(":"), k(";"), k("!", null, "¡"),
-                k("?", null, "؟ ¿"), delKey()
+                if (lang.rtl) KeyDef("؟", "?", listOf("¿"))
+                else KeyDef("?", "؟", listOf("¿")), delKey()
             )
         )
     }
@@ -185,7 +226,7 @@ object Layouts {
     )
 
     /** Number pad — always standard Latin digits. */
-    fun numPad(lang: Language): List<List<KeyDef>> {
+    fun numPad(lang: Language, enterLabel: String = "↵"): List<List<KeyDef>> {
         val d = "0123456789".map { it.toString() }
         return listOf(
             listOf(k(d[1]), k(d[2]), k(d[3]), k("÷", null, "/")),
@@ -196,24 +237,10 @@ object Layouts {
                 KeyDef("ابت", code = Keys.ABC, width = 1.5f),
                 k(","), k(":"),
                 KeyDef("⌫", code = Keys.DELETE, repeatable = true),
-                KeyDef("↵", code = Keys.ENTER, width = 1.5f)
+                KeyDef(enterLabel, code = Keys.ENTER, width = 1.5f)
             )
         )
     }
-
-    /** Emoji / smiley page. */
-    fun emojiPage(): List<List<KeyDef>> = listOf(
-        listOf(k("😀"), k("😂"), k("🤣"), k("😊"), k("😍"), k("🥰"), k("😘"), k("😉")),
-        listOf(k("🙏"), k("👍"), k("👏"), k("🤲"), k("💪"), k("🤝"), k("✌️"), k("👌")),
-        listOf(k("❤️"), k("💔"), k("🌹"), k("🌸"), k("⭐"), k("🔥"), k("💯"), k("✅")),
-        listOf(k("😢"), k("😭"), k("😡"), k("🤔"), k("😴"), k("😎"), k("🎉"), k("🎊")),
-        listOf(
-            KeyDef("ابت", code = Keys.ABC, width = 1.5f),
-            k(":-)"), k(";-)"), k("<3"),
-            KeyDef("⌫", code = Keys.DELETE, repeatable = true),
-            KeyDef("↵", code = Keys.ENTER, width = 1.5f)
-        )
-    )
 
     /**
      * Characters a typo could plausibly stand for: the key's own shift/
