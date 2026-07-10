@@ -105,19 +105,16 @@ object Layouts {
         )
     )
 
-    /** Rich long-press set on the tatweel key: Islamic honorifics, digits,
-     *  punctuation, diacritics and ZWNJ — like classic multilingual keyboards. */
-    private fun rtlExtraKey(digits: String): KeyDef {
-        val alts = ArrayList<String>()
-        // Islamic phrase ligatures: ﷲ (Allah), ﷺ (sallallahu…),
-        // ﷻ (jalla jalaluhu), ﷽ (bismillah…)
-        alts.addAll(listOf("ﷲ", "ﷺ", "ﷻ", "﷽"))
-        for (i in listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) alts.add(digits[i].toString())
-        alts.addAll(
-            listOf(
-                "؛", "٪", "،", "ـ", "ً", "ٌ", "ٍ", "َ", "ُ", "ِ",
-                "ّ", "ْ", "ٔ", "ٰ", "«", "»", "zwnj"
-            )
+    /** Rich long-press set on the tatweel key: punctuation, diacritics and
+     *  ZWNJ, with the comma and the Islamic phrase ligatures ﷲ ﷺ ﷻ ﷽ on
+     *  the LAST row — the popup opens above the key, so the last items sit
+     *  closest to the finger. (No digits here: the numpad covers those.) */
+    private fun rtlExtraKey(@Suppress("UNUSED_PARAMETER") digits: String): KeyDef {
+        val alts = listOf(
+            "؛", "٪", "«", "»", "؟", "!",
+            "ً", "ٌ", "ٍ", "َ", "ُ", "ِ",
+            "ّ", "ْ", "ٔ", "ٰ", "zwnj", "ـ",
+            "…", "،", "ﷲ", "ﷺ", "ﷻ", "﷽"
         )
         return KeyDef("ـ", null, alts)
     }

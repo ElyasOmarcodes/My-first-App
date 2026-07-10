@@ -91,9 +91,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updatePreviewVisibility(screen: String = currentScreen()) {
-        val show = screen == "look" || screen == "sizes" || screen == "colors"
+        val show = screen == "look" || screen == "sizes" || screen == "colors" ||
+            screen.startsWith("col_")
         previewHolder.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
         if (screen == "main") supportActionBar?.setTitle(R.string.settings_title)
+        if (screen == "colors") supportActionBar?.setTitle(R.string.pref_cat_colors)
         if (show) refreshPreview()
     }
 
@@ -120,6 +122,7 @@ class SettingsActivity : AppCompatActivity() {
             preview.colSpecialGradDir = p.getString("col_special_grad_dir", "v") ?: "v"
             preview.colTextColor = p.getInt("col_text", t.text)
             preview.colHintColor = p.getInt("col_hint", t.hint)
+            preview.colBg = p.getInt("col_bg", t.background)
         }
         preview.keyHeightDp = p.getInt("key_height", 72)
         preview.fontScale = p.getInt("font_scale", 70) / 100f
@@ -154,6 +157,9 @@ class SettingsActivity : AppCompatActivity() {
                 "langs" -> R.xml.prefs_langs
                 "look" -> R.xml.prefs_look
                 "colors" -> R.xml.prefs_colors
+                "col_keys" -> R.xml.prefs_col_keys
+                "col_special" -> R.xml.prefs_col_special
+                "col_text" -> R.xml.prefs_col_text
                 "sizes" -> R.xml.prefs_sizes
                 "typing" -> R.xml.prefs_typing
                 "autotext" -> R.xml.prefs_autotext
@@ -166,6 +172,8 @@ class SettingsActivity : AppCompatActivity() {
             if (screen == "main") wireMain() else if (screen == "autotext") wireAutoText()
             if (screen == "backup") wireBackup()
             if (screen == "colors") wireColors()
+            if (screen == "col_keys") wireColorGroup("col_key", "col_key_grad_on")
+            if (screen == "col_special") wireColorGroup("col_special", "col_special_grad_on")
         }
 
         private fun wireMain() {
@@ -196,32 +204,39 @@ class SettingsActivity : AppCompatActivity() {
                 openDocument(REQ_THEME_IMPORT)
                 true
             }
-            // gradient options only show in "two colours" mode; the direction
-            // only applies to the linear style
-            val refresh = Preference.OnPreferenceChangeListener { _, _ ->
-                view?.post { updateColorVisibility() }
-                true
+            // colour sub-pages: letter keys / special keys / text colours
+            val subs = listOf(
+                "screen_col_keys" to "col_keys",
+                "screen_col_special" to "col_special",
+                "screen_col_text" to "col_text"
+            )
+            for ((key, screen) in subs) {
+                findPreference<Preference>(key)?.setOnPreferenceClickListener { pref ->
+                    (activity as? SettingsActivity)?.openScreen(screen, pref.title ?: "")
+                    true
+                }
             }
-            for (k in listOf(
-                "col_key_mode", "col_key_grad_style",
-                "col_special_mode", "col_special_grad_style"
-            )) {
-                findPreference<Preference>(k)?.onPreferenceChangeListener = refresh
-            }
-            updateColorVisibility()
         }
 
-        private fun updateColorVisibility() {
-            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            fun group(modeKey: String, legacyKey: String, prefix: String) {
-                val two = KeyboardView.gradientOn(p, modeKey, legacyKey)
-                findPreference<Preference>("${prefix}_grad")?.isVisible = two
-                findPreference<Preference>("${prefix}_grad_style")?.isVisible = two
-                val linear = (p.getString("${prefix}_grad_style", "linear") ?: "linear") == "linear"
-                findPreference<Preference>("${prefix}_grad_dir")?.isVisible = two && linear
+        /** One colour group page: gradient options only show in "two colours"
+         *  mode; the direction only applies to the linear style. */
+        private fun wireColorGroup(prefix: String, legacyKey: String) {
+            val refresh = Preference.OnPreferenceChangeListener { _, _ ->
+                view?.post { applyColorGroupVisibility(prefix, legacyKey) }
+                true
             }
-            group("col_key_mode", "col_key_grad_on", "col_key")
-            group("col_special_mode", "col_special_grad_on", "col_special")
+            findPreference<Preference>("${prefix}_mode")?.onPreferenceChangeListener = refresh
+            findPreference<Preference>("${prefix}_grad_style")?.onPreferenceChangeListener = refresh
+            applyColorGroupVisibility(prefix, legacyKey)
+        }
+
+        private fun applyColorGroupVisibility(prefix: String, legacyKey: String) {
+            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val two = KeyboardView.gradientOn(p, "${prefix}_mode", legacyKey)
+            findPreference<Preference>("${prefix}_grad")?.isVisible = two
+            findPreference<Preference>("${prefix}_grad_style")?.isVisible = two
+            val linear = (p.getString("${prefix}_grad_style", "linear") ?: "linear") == "linear"
+            findPreference<Preference>("${prefix}_grad_dir")?.isVisible = two && linear
         }
 
         private fun wireAutoText() {
@@ -304,7 +319,8 @@ class SettingsActivity : AppCompatActivity() {
         /** Only the visual keys (theme, colours, sizes) — for theme.txt. */
         private fun exportTheme(): String {
             val visual = setOf(
-                "theme", "col_custom", "col_key", "col_key_grad_on", "col_key_grad",
+                "theme", "col_custom", "col_bg",
+                "col_key", "col_key_grad_on", "col_key_grad",
                 "col_key_mode", "col_key_grad_style", "col_key_grad_dir",
                 "col_special", "col_special_grad_on", "col_special_grad",
                 "col_special_mode", "col_special_grad_style", "col_special_grad_dir",

@@ -202,6 +202,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             kv.colSpecialGradDir = p.getString("col_special_grad_dir", "v") ?: "v"
             kv.colTextColor = p.getInt("col_text", t.text)
             kv.colHintColor = p.getInt("col_hint", t.hint)
+            kv.colBg = p.getInt("col_bg", t.background)
         }
     }
 
@@ -238,13 +239,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         } catch (_: Exception) { 0 }
     }
 
-    /** Bottom padding under the keys: auto = nav-bar overlap, else manual. */
+    /** Bottom padding under the keys: auto = nav-bar overlap, else manual.
+     *  Applied to the emoji/clipboard holder too so those panels keep the
+     *  same gap above the system bar. */
     private fun applyBottomGap() {
         val kv = keyboardView ?: return
         val density = resources.displayMetrics.density
         val dp = if (navGapAuto) autoGapDp() else manualBottomGapDp
-        kv.setPadding(0, 0, 0, (dp * density).toInt())
+        val pad = (dp * density).toInt()
+        kv.setPadding(0, 0, 0, pad)
         kv.requestLayout()
+        emojiHolder?.setPadding(0, 0, 0, pad)
+        emojiHolder?.requestLayout()
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -398,7 +404,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }.start()
         }
 
-        rootView?.setBackgroundColor(kv.theme.background)
+        rootView?.setBackgroundColor(kv.resolvedBackground)
         suggestionScroll?.visibility = if (suggestionsOn) View.VISIBLE else View.GONE
     }
 
@@ -641,8 +647,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val kv = keyboardView ?: return
         val holder = emojiHolder ?: return
         kv.visibility = View.GONE
+        val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        val custom = p.getBoolean("col_custom", false)
         val panel = EmojiPanel(
             this, kv.theme,
+            bgColor = kv.resolvedBackground,
+            keyColor = if (custom) p.getInt("col_key", kv.theme.keyFill) else kv.theme.keyFill,
+            specialColor = if (custom) p.getInt("col_special", kv.theme.specialFill)
+                else kv.theme.specialFill,
             onEmoji = { e -> currentInputConnection?.commitText(e, 1); feedback() },
             onBack = { mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions() },
             onSearch = {
@@ -1033,6 +1045,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onSpaceLongPress() {
         showLanguageMenu()
+    }
+
+    override fun onShiftLongPress() {
+        if (mode == Mode.EDIT) return
+        feedback()
+        shift = 2 // caps lock
+        lastShiftTime = 0L
+        rebuildKeyboard()
     }
 
     override fun onSymLongPress() {

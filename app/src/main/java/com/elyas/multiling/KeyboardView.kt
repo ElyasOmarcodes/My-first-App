@@ -34,6 +34,7 @@ class KeyboardView(context: Context) : View(context) {
         fun onLangSwipe(forward: Boolean)
         fun onSpaceLongPress()
         fun onSymLongPress()
+        fun onShiftLongPress()
     }
 
     var listener: Listener? = null
@@ -91,6 +92,7 @@ class KeyboardView(context: Context) : View(context) {
     var colSpecialFill2: Int = 0
     var colTextColor: Int = 0
     var colHintColor: Int = 0
+    var colBg: Int = 0              // 0 = use the theme background
     // gradient shape: "linear" | "radial" | "sweep"; direction (linear only):
     // "v" top→bottom, "h" side→side, "d1" ↘ diagonal, "d2" ↗ diagonal
     var colKeyGradStyle: String = "linear"
@@ -104,6 +106,10 @@ class KeyboardView(context: Context) : View(context) {
     private val specialFillColor2 get() = if (customColors) colSpecialFill2 else 0
     private val labelColor get() = if (customColors) colTextColor else theme.text
     private val hintColorNow get() = if (customColors) colHintColor else theme.hint
+
+    /** Background behind/between the keys (custom colour aware). */
+    val resolvedBackground: Int
+        get() = if (customColors && colBg != 0) colBg else theme.background
 
     /** Two-colour key gradient with selectable shape and direction. */
     private fun makeGradient(
@@ -276,7 +282,7 @@ class KeyboardView(context: Context) : View(context) {
 
     // ---------------------------------------------------------------- draw
     override fun onDraw(canvas: Canvas) {
-        canvas.drawColor(theme.background)
+        canvas.drawColor(resolvedBackground)
         val radius = cornerRadiusDp * density
         val pressedKeys = HashSet<PlacedKey>()
         for (st in pointers.values) {
@@ -291,7 +297,6 @@ class KeyboardView(context: Context) : View(context) {
             var fill2 = 0
             when {
                 isPressed -> fill1 = theme.keyPressed
-                key.code == Keys.SHIFT && shiftState > 0 -> fill1 = theme.accent
                 isSpecialFill -> { fill1 = specialFillColor; fill2 = specialFillColor2 }
                 else -> { fill1 = keyFillColor; fill2 = keyFillColor2 }
             }
@@ -313,8 +318,10 @@ class KeyboardView(context: Context) : View(context) {
             }
 
             val cx = pk.rect.centerX()
+            // active shift: only the shift ICON turns accent-blue; caps lock
+            // additionally shows a small "lamp" dot in the key corner
             val textColor =
-                if (key.code == Keys.SHIFT && shiftState == 2) theme.background else labelColor
+                if (key.code == Keys.SHIFT && shiftState > 0) theme.accent else labelColor
 
             // draw a round-fill icon for glyph keys, else the text label
             val iconRes = iconForKey(pk)
@@ -342,6 +349,17 @@ class KeyboardView(context: Context) : View(context) {
                 textPaint.color = textColor
                 val cy = pk.rect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2
                 canvas.drawText(pk.displayLabel, cx, cy, textPaint)
+            }
+
+            if (key.code == Keys.SHIFT && shiftState == 2) {
+                fillPaint.shader = null
+                fillPaint.color = theme.accent
+                canvas.drawCircle(
+                    pk.rect.right - 8 * density,
+                    pk.rect.top + 8 * density,
+                    3f * density,
+                    fillPaint
+                )
             }
 
             // hint (top corner): drawn icon or small text
@@ -608,6 +626,13 @@ class KeyboardView(context: Context) : View(context) {
             longPressPointerId = id // keep tracking this pointer for the grid
             dismissPreview()
             listener?.onSymLongPress()
+            return
+        }
+        if (key.def.code == Keys.SHIFT) {
+            // holding shift = caps lock
+            st.longPressFired = true
+            dismissPreview()
+            listener?.onShiftLongPress()
             return
         }
         val chars = key.def.popupChars(shiftState > 0)

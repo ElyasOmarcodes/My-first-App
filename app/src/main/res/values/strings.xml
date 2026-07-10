@@ -112,8 +112,14 @@
     <string name="pref_col_cat_special_group">ځانګړې کیلۍ (شفټ/بیک/تیر/انټر)</string>
     <string name="pref_col_mode">د رنګ ډول</string>
     <string name="pref_col_first">لومړی رنګ</string>
+    <string name="pref_col_second">دوهم رنګ (د ګرادینټ)</string>
     <string name="pref_col_grad_style">د ګرادینټ سټایل</string>
     <string name="pref_col_grad_dir">د ګرادینټ جهت</string>
+    <string name="pref_col_cat_general">عمومي</string>
+    <string name="pref_col_cat_sections">برخې</string>
+    <string name="pref_col_bg">د شالید رنګ (د کیلیو تر شا او تر منځ)</string>
+    <string name="pref_col_group_sum">یو رنګ / دوه رنګه — ګرادینټ، سټایل او جهت</string>
+    <string name="pref_col_text_sum">د حروفو او د کوچنیو تورو رنګ</string>
     <string name="pref_col_text">د حروفو/کرکټرونو رنګ</string>
     <string name="pref_col_hint">د شاته تورو (hint) رنګ</string>
     <string name="pref_theme_export">ټم خوندي کول (theme.txt)</string>

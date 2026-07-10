@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <com.elyas.multiling.ColorPreference android:key="col_text"
+        android:title="@string/pref_col_text" android:defaultValue="#FFFFFF" />
+    <com.elyas.multiling.ColorPreference android:key="col_hint"
+        android:title="@string/pref_col_hint" android:defaultValue="#9AA7C7" />
+</PreferenceScreen>
