@@ -1,26 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <SwitchPreferenceCompat android:key="col_custom"
         android:title="@string/pref_col_custom"
         android:summary="@string/pref_col_custom_sum"
         android:defaultValue="false" />
 
-    <PreferenceCategory android:title="@string/pref_col_cat_keys"
+    <PreferenceCategory android:title="@string/pref_col_cat_key_group"
         android:dependency="col_custom">
+        <ListPreference android:key="col_key_mode"
+            android:title="@string/pref_col_mode"
+            android:entries="@array/col_mode_names"
+            android:entryValues="@array/col_mode_values"
+            android:defaultValue="1"
+            app:useSimpleSummaryProvider="true" />
         <com.elyas.multiling.ColorPreference android:key="col_key"
-            android:title="@string/pref_col_key" android:defaultValue="#272B33" />
-        <SwitchPreferenceCompat android:key="col_key_grad_on"
-            android:title="@string/pref_col_key_grad_on" android:defaultValue="false" />
+            android:title="@string/pref_col_first" android:defaultValue="#272B33" />
         <com.elyas.multiling.ColorPreference android:key="col_key_grad"
-            android:title="@string/pref_col_key_grad" android:defaultValue="#3C4250"
-            android:dependency="col_key_grad_on" />
+            android:title="@string/pref_col_key_grad" android:defaultValue="#3C4250" />
+        <ListPreference android:key="col_key_grad_style"
+            android:title="@string/pref_col_grad_style"
+            android:entries="@array/grad_style_names"
+            android:entryValues="@array/grad_style_values"
+            android:defaultValue="linear"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference android:key="col_key_grad_dir"
+            android:title="@string/pref_col_grad_dir"
+            android:entries="@array/grad_dir_names"
+            android:entryValues="@array/grad_dir_values"
+            android:defaultValue="v"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_col_cat_special_group"
+        android:dependency="col_custom">
+        <ListPreference android:key="col_special_mode"
+            android:title="@string/pref_col_mode"
+            android:entries="@array/col_mode_names"
+            android:entryValues="@array/col_mode_values"
+            android:defaultValue="1"
+            app:useSimpleSummaryProvider="true" />
         <com.elyas.multiling.ColorPreference android:key="col_special"
-            android:title="@string/pref_col_special" android:defaultValue="#1D2026" />
-        <SwitchPreferenceCompat android:key="col_special_grad_on"
-            android:title="@string/pref_col_special_grad_on" android:defaultValue="false" />
+            android:title="@string/pref_col_first" android:defaultValue="#1D2026" />
         <com.elyas.multiling.ColorPreference android:key="col_special_grad"
-            android:title="@string/pref_col_special_grad" android:defaultValue="#2E3440"
-            android:dependency="col_special_grad_on" />
+            android:title="@string/pref_col_special_grad" android:defaultValue="#2E3440" />
+        <ListPreference android:key="col_special_grad_style"
+            android:title="@string/pref_col_grad_style"
+            android:entries="@array/grad_style_names"
+            android:entryValues="@array/grad_style_values"
+            android:defaultValue="linear"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference android:key="col_special_grad_dir"
+            android:title="@string/pref_col_grad_dir"
+            android:entries="@array/grad_dir_names"
+            android:entryValues="@array/grad_dir_values"
+            android:defaultValue="v"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_col_cat_text"

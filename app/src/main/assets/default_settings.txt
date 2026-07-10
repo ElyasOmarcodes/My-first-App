@@ -25,7 +25,7 @@ arrows	b	true
 vibrate	b	true
 vibrate_ms	i	20
 sound	b	true
-sound_type	s	wood
+sound_type	s	bubble
 sound_vol	i	15
 languages	ss	ps,fa,ar,en
 nav_gap_auto	b	true

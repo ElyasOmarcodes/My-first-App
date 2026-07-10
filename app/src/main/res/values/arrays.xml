@@ -56,6 +56,39 @@
         <item>system</item>
     </string-array>
 
+    <string-array name="col_mode_names">
+        <item>یو رنګ</item>
+        <item>دوه رنګه (ګرادینټ)</item>
+    </string-array>
+    <string-array name="col_mode_values">
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="grad_style_names">
+        <item>خطي (Linear)</item>
+        <item>شعاعي (Radial)</item>
+        <item>څرخي (Sweep)</item>
+    </string-array>
+    <string-array name="grad_style_values">
+        <item>linear</item>
+        <item>radial</item>
+        <item>sweep</item>
+    </string-array>
+
+    <string-array name="grad_dir_names">
+        <item>عمودي ↓ (له پاسه ښکته)</item>
+        <item>افقي ← (له څنډې څنډې ته)</item>
+        <item>اریب ↘ (کونج په کونج)</item>
+        <item>اریب ↗ (کونج په کونج)</item>
+    </string-array>
+    <string-array name="grad_dir_values">
+        <item>v</item>
+        <item>h</item>
+        <item>d1</item>
+        <item>d2</item>
+    </string-array>
+
     <string-array name="longpress_names">
         <item>ډېر چټک (200ms)</item>
         <item>چټک (250ms)</item>

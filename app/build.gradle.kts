@@ -11,8 +11,8 @@ android {
     applicationId = "com.elyas.multiling"
     minSdk = 21
     targetSdk = 36
-    versionCode = 14
-    versionName = "1.12.0"
+    versionCode = 15
+    versionName = "1.13.0"
   }
 
   signingConfigs {

@@ -255,7 +255,9 @@ class WordStore(private val context: Context, private val langCode: String) {
         if (useSeeds && out.size < max) {
             for (w in seeds) {
                 if (out.size >= max) break
-                if (w != prev && !out.contains(w)) out.add(w)
+                // dictionary files may carry punctuation tokens ("." etc.);
+                // never predict those as next words
+                if (w != prev && !out.contains(w) && w.any { it.isLetter() }) out.add(w)
             }
         }
         return out

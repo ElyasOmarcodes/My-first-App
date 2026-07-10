@@ -61,6 +61,16 @@ class KeyboardView(context: Context) : View(context) {
         val GREEN = Theme(0xFF0F1A12.toInt(), 0xFF1E3A26.toInt(), 0xFF16291B.toInt(),
             0xFF346644.toInt(), Color.WHITE, 0xFFA5D6A7.toInt(), 0xFF66BB6A.toInt())
 
+        /** Colour-mode pref ("1" one colour / "2" gradient), falling back to
+         *  the pre-1.13 boolean switch so older saved themes keep working. */
+        fun gradientOn(
+            p: android.content.SharedPreferences, modeKey: String, legacyKey: String
+        ): Boolean = when (p.getString(modeKey, null)) {
+            "2" -> true
+            "1" -> false
+            else -> p.getBoolean(legacyKey, false)
+        }
+
         fun themeByName(name: String): Theme = when (name) {
             "light" -> LIGHT
             "black" -> BLACK
@@ -81,6 +91,12 @@ class KeyboardView(context: Context) : View(context) {
     var colSpecialFill2: Int = 0
     var colTextColor: Int = 0
     var colHintColor: Int = 0
+    // gradient shape: "linear" | "radial" | "sweep"; direction (linear only):
+    // "v" top→bottom, "h" side→side, "d1" ↘ diagonal, "d2" ↗ diagonal
+    var colKeyGradStyle: String = "linear"
+    var colKeyGradDir: String = "v"
+    var colSpecialGradStyle: String = "linear"
+    var colSpecialGradDir: String = "v"
 
     private val keyFillColor get() = if (customColors) colKeyFill else theme.keyFill
     private val keyFillColor2 get() = if (customColors) colKeyFill2 else 0
@@ -88,6 +104,31 @@ class KeyboardView(context: Context) : View(context) {
     private val specialFillColor2 get() = if (customColors) colSpecialFill2 else 0
     private val labelColor get() = if (customColors) colTextColor else theme.text
     private val hintColorNow get() = if (customColors) colHintColor else theme.hint
+
+    /** Two-colour key gradient with selectable shape and direction. */
+    private fun makeGradient(
+        r: RectF, c1: Int, c2: Int, style: String, dir: String
+    ): android.graphics.Shader = when (style) {
+        "radial" -> android.graphics.RadialGradient(
+            r.centerX(), r.centerY(), max(r.width(), r.height()) * 0.72f,
+            c1, c2, android.graphics.Shader.TileMode.CLAMP
+        )
+        "sweep" -> android.graphics.SweepGradient(
+            r.centerX(), r.centerY(), intArrayOf(c1, c2, c1), null
+        )
+        else -> {
+            val x0: Float; val y0: Float; val x1: Float; val y1: Float
+            when (dir) {
+                "h" -> { x0 = r.left; y0 = r.top; x1 = r.right; y1 = r.top }
+                "d1" -> { x0 = r.left; y0 = r.top; x1 = r.right; y1 = r.bottom }
+                "d2" -> { x0 = r.left; y0 = r.bottom; x1 = r.right; y1 = r.top }
+                else -> { x0 = r.left; y0 = r.top; x1 = r.left; y1 = r.bottom }
+            }
+            android.graphics.LinearGradient(
+                x0, y0, x1, y1, c1, c2, android.graphics.Shader.TileMode.CLAMP
+            )
+        }
+    }
 
     var keyHeightDp: Int = 52
     var arrowRowScale: Float = 1f
@@ -255,10 +296,11 @@ class KeyboardView(context: Context) : View(context) {
                 else -> { fill1 = keyFillColor; fill2 = keyFillColor2 }
             }
             if (fill2 != 0 && !isPressed) {
-                fillPaint.shader = android.graphics.LinearGradient(
-                    pk.rect.left, pk.rect.top, pk.rect.left, pk.rect.bottom,
-                    fill1, fill2, android.graphics.Shader.TileMode.CLAMP
-                )
+                fillPaint.shader = if (isSpecialFill) {
+                    makeGradient(pk.rect, fill1, fill2, colSpecialGradStyle, colSpecialGradDir)
+                } else {
+                    makeGradient(pk.rect, fill1, fill2, colKeyGradStyle, colKeyGradDir)
+                }
             } else {
                 fillPaint.shader = null
                 fillPaint.color = fill1

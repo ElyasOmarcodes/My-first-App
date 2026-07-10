@@ -108,10 +108,16 @@ class SettingsActivity : AppCompatActivity() {
             val t = preview.theme
             preview.colKeyFill = p.getInt("col_key", t.keyFill)
             preview.colKeyFill2 =
-                if (p.getBoolean("col_key_grad_on", false)) p.getInt("col_key_grad", 0) else 0
+                if (KeyboardView.gradientOn(p, "col_key_mode", "col_key_grad_on"))
+                    p.getInt("col_key_grad", 0) else 0
+            preview.colKeyGradStyle = p.getString("col_key_grad_style", "linear") ?: "linear"
+            preview.colKeyGradDir = p.getString("col_key_grad_dir", "v") ?: "v"
             preview.colSpecialFill = p.getInt("col_special", t.specialFill)
             preview.colSpecialFill2 =
-                if (p.getBoolean("col_special_grad_on", false)) p.getInt("col_special_grad", 0) else 0
+                if (KeyboardView.gradientOn(p, "col_special_mode", "col_special_grad_on"))
+                    p.getInt("col_special_grad", 0) else 0
+            preview.colSpecialGradStyle = p.getString("col_special_grad_style", "linear") ?: "linear"
+            preview.colSpecialGradDir = p.getString("col_special_grad_dir", "v") ?: "v"
             preview.colTextColor = p.getInt("col_text", t.text)
             preview.colHintColor = p.getInt("col_hint", t.hint)
         }
@@ -190,6 +196,32 @@ class SettingsActivity : AppCompatActivity() {
                 openDocument(REQ_THEME_IMPORT)
                 true
             }
+            // gradient options only show in "two colours" mode; the direction
+            // only applies to the linear style
+            val refresh = Preference.OnPreferenceChangeListener { _, _ ->
+                view?.post { updateColorVisibility() }
+                true
+            }
+            for (k in listOf(
+                "col_key_mode", "col_key_grad_style",
+                "col_special_mode", "col_special_grad_style"
+            )) {
+                findPreference<Preference>(k)?.onPreferenceChangeListener = refresh
+            }
+            updateColorVisibility()
+        }
+
+        private fun updateColorVisibility() {
+            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            fun group(modeKey: String, legacyKey: String, prefix: String) {
+                val two = KeyboardView.gradientOn(p, modeKey, legacyKey)
+                findPreference<Preference>("${prefix}_grad")?.isVisible = two
+                findPreference<Preference>("${prefix}_grad_style")?.isVisible = two
+                val linear = (p.getString("${prefix}_grad_style", "linear") ?: "linear") == "linear"
+                findPreference<Preference>("${prefix}_grad_dir")?.isVisible = two && linear
+            }
+            group("col_key_mode", "col_key_grad_on", "col_key")
+            group("col_special_mode", "col_special_grad_on", "col_special")
         }
 
         private fun wireAutoText() {
@@ -273,7 +305,9 @@ class SettingsActivity : AppCompatActivity() {
         private fun exportTheme(): String {
             val visual = setOf(
                 "theme", "col_custom", "col_key", "col_key_grad_on", "col_key_grad",
+                "col_key_mode", "col_key_grad_style", "col_key_grad_dir",
                 "col_special", "col_special_grad_on", "col_special_grad",
+                "col_special_mode", "col_special_grad_style", "col_special_grad_dir",
                 "col_text", "col_hint", "key_border", "hints", "preview",
                 "key_height", "key_height_land", "font_scale", "hint_scale",
                 "corner_radius", "key_gap", "bottom_gap", "sugg_font", "arrow_height"

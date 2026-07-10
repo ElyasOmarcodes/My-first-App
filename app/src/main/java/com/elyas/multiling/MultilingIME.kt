@@ -65,7 +65,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private var soundPool: android.media.SoundPool? = null
     private var popSoundId = 0
-    private var soundType = "wood"
+    private var soundType = "bubble"
 
     private var autocorrectOn = true
     private var isPasswordField = false
@@ -190,10 +190,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val t = kv.theme
             kv.colKeyFill = p.getInt("col_key", t.keyFill)
             kv.colKeyFill2 =
-                if (p.getBoolean("col_key_grad_on", false)) p.getInt("col_key_grad", 0) else 0
+                if (KeyboardView.gradientOn(p, "col_key_mode", "col_key_grad_on"))
+                    p.getInt("col_key_grad", 0) else 0
+            kv.colKeyGradStyle = p.getString("col_key_grad_style", "linear") ?: "linear"
+            kv.colKeyGradDir = p.getString("col_key_grad_dir", "v") ?: "v"
             kv.colSpecialFill = p.getInt("col_special", t.specialFill)
             kv.colSpecialFill2 =
-                if (p.getBoolean("col_special_grad_on", false)) p.getInt("col_special_grad", 0) else 0
+                if (KeyboardView.gradientOn(p, "col_special_mode", "col_special_grad_on"))
+                    p.getInt("col_special_grad", 0) else 0
+            kv.colSpecialGradStyle = p.getString("col_special_grad_style", "linear") ?: "linear"
+            kv.colSpecialGradDir = p.getString("col_special_grad_dir", "v") ?: "v"
             kv.colTextColor = p.getInt("col_text", t.text)
             kv.colHintColor = p.getInt("col_hint", t.hint)
         }
@@ -352,7 +358,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         vibrateMs = p.getInt("vibrate_ms", 20).toLong()
         soundOn = p.getBoolean("sound", true)
         soundVol = p.getInt("sound_vol", 15) / 100f
-        soundType = p.getString("sound_type", "wood") ?: "wood"
+        soundType = p.getString("sound_type", "bubble") ?: "bubble"
         if (soundOn && soundType != "system") initSoundPool()
         suggestionsOn = p.getBoolean("suggestions", true)
         learnWordsOn = p.getBoolean("learn_words", true)

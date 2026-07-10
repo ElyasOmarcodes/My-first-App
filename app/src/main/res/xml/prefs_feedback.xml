@@ -10,7 +10,7 @@
         android:defaultValue="true" />
     <ListPreference android:key="sound_type" android:title="@string/pref_sound_type"
         android:entries="@array/sound_type_names" android:entryValues="@array/sound_type_values"
-        android:defaultValue="wood" android:dependency="sound"
+        android:defaultValue="bubble" android:dependency="sound"
         app:useSimpleSummaryProvider="true" />
     <SeekBarPreference android:key="sound_vol" android:title="@string/pref_sound_vol"
         android:defaultValue="15" android:max="100" app:min="5" app:showSeekBarValue="true"
