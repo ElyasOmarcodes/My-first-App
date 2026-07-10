@@ -146,6 +146,13 @@ class KeyboardView(context: Context) : View(context) {
         langFlashAnim = anim
     }
 
+    // the flash must NEVER touch the shared key paints: a translucent alpha
+    // left on fillPaint dims gradient-key shaders (keys turned colourless)
+    private val flashFillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val flashTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+    }
+
     private fun drawLangFlash(canvas: Canvas) {
         val text = langFlashText ?: return
         if (langFlashAlpha <= 0) return
@@ -153,17 +160,16 @@ class KeyboardView(context: Context) : View(context) {
         val r = space.rect
         val cx = r.centerX() + langFlashDx
         val cy = r.centerY()
-        textPaint.textSize = r.height() * 0.42f
-        val tw = textPaint.measureText(text)
+        flashTextPaint.textSize = r.height() * 0.42f
+        val tw = flashTextPaint.measureText(text)
         val pw = tw + 28 * density
         val ph = r.height() * 0.86f
         val pill = RectF(cx - pw / 2, cy - ph / 2, cx + pw / 2, cy + ph / 2)
-        fillPaint.shader = null
-        fillPaint.color = (theme.accent and 0x00FFFFFF) or (langFlashAlpha shl 24)
-        canvas.drawRoundRect(pill, ph / 2, ph / 2, fillPaint)
-        textPaint.color = (theme.background and 0x00FFFFFF) or (langFlashAlpha shl 24)
-        val ty = cy - (textPaint.descent() + textPaint.ascent()) / 2
-        canvas.drawText(text, cx, ty, textPaint)
+        flashFillPaint.color = (theme.accent and 0x00FFFFFF) or (langFlashAlpha shl 24)
+        canvas.drawRoundRect(pill, ph / 2, ph / 2, flashFillPaint)
+        flashTextPaint.color = (theme.background and 0x00FFFFFF) or (langFlashAlpha shl 24)
+        val ty = cy - (flashTextPaint.descent() + flashTextPaint.ascent()) / 2
+        canvas.drawText(text, cx, ty, flashTextPaint)
     }
 
     /** Two-colour key gradient with selectable shape and direction. */
@@ -361,6 +367,9 @@ class KeyboardView(context: Context) : View(context) {
                 } else {
                     makeGradient(pk.rect, fill1, fill2, colKeyGradStyle, colKeyGradDir)
                 }
+                // a Paint's alpha modulates its shader — make sure a stale
+                // translucent alpha never dims gradient keys
+                fillPaint.alpha = 255
             } else {
                 fillPaint.shader = null
                 fillPaint.color = fill1

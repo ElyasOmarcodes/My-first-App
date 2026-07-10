@@ -192,25 +192,43 @@ object Layouts {
         return listOf(
             digitRow,
             listOf(
-                k("@"), k("#"), k("؋", "$", "€ £ ¥ ¢"), k("_"), k("&"),
-                k("-"), k("+"), k("("), k(")"), k("/")
+                k("@", null, "﹫"), k("#", null, "№ ♯"),
+                k("$", "؋", "€ £ ¥ ¢ ₹ ₨ ₽ ₺ ₩ ¤ ₿"),
+                k("_", null, "‾"), k("&", null, "§ ¶"),
+                k("-", null, "– — ±"), k("+", null, "±"),
+                k("(", null, "[ { ⟨ ‹"), k(")", null, "] } ⟩ ›"),
+                k("/", null, "\\ | ÷")
             ),
             listOf(
                 KeyDef("=\\<", code = Keys.SYM2, width = 1.4f),
-                k("*"), k("\""), k("'"), k(":"), k(";"), k("!", null, "¡"),
-                if (lang.rtl) KeyDef("؟", "?", listOf("¿"))
-                else KeyDef("?", "؟", listOf("¿")), delKey()
+                k("*", null, "† ‡ ★ ✱"), k("\"", null, "“ ” „ « »"),
+                k("'", null, "‘ ’ ` ′"), k(":", null, "∶"), k(";"),
+                k("!", null, "¡ ‼"),
+                if (lang.rtl) KeyDef("؟", "?", listOf("¿", "⁇"))
+                else KeyDef("?", "؟", listOf("¿", "⁇")), delKey()
             )
         )
     }
 
     /** Symbols page 2. */
     fun symbols2(): List<List<KeyDef>> = listOf(
-        listOf(k("~"), k("`"), k("|"), k("•"), k("√"), k("π"), k("÷"), k("×"), k("¶"), k("∆")),
-        listOf(k("£"), k("€"), k("¥"), k("^"), k("°"), k("="), k("{"), k("}"), k("\\"), k("%")),
+        listOf(
+            k("~", null, "≈ ≃"), k("`", null, "´ ˝"), k("|", null, "¦"),
+            k("•", null, "· ◦ ▪ ●"), k("√", null, "∛ ∜"),
+            k("π", null, "µ Ω ∞ ∑ ∫ φ"), k("÷", null, "∕"), k("×", null, "∙ ⋅"),
+            k("¶", null, "§"), k("∆", null, "∇ ∂")
+        ),
+        listOf(
+            k("£"), k("€"), k("¥", null, "₹ ₨ ₽ ₺ ₩ ¢ ¤ ₿ ؋"),
+            k("^", null, "ˆ ↑"), k("°", null, "± ‰ ℃ ℉"),
+            k("=", null, "≠ ≡ ≤ ≥"), k("{"), k("}"), k("\\", null, "‖"),
+            k("%", null, "‰ ٪ ‱")
+        ),
         listOf(
             KeyDef("۱۲۳", code = Keys.SYM, width = 1.4f),
-            k("©"), k("®"), k("™"), k("✓"), k("["), k("]"), k("«"), k("»"), delKey()
+            k("©"), k("®"), k("™", null, "℠"), k("✓", null, "✔ ✗ ✘ ☑ ☐"),
+            k("[", null, "⟦"), k("]", null, "⟧"),
+            k("«", null, "< ‹ ≪"), k("»", null, "> › ≫"), delKey()
         )
     )
 
