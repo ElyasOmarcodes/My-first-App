@@ -110,9 +110,14 @@ class AutoTextStore(private val context: Context) {
     fun save() {
         if (!dirty) return
         dirty = false
-        try {
-            file().writeText(exportText())
-        } catch (_: Exception) {
+        // snapshot now, write on the background thread — saves must never
+        // stall the keyboard
+        val data = exportText()
+        Io.writer.execute {
+            try {
+                file().writeText(data)
+            } catch (_: Exception) {
+            }
         }
     }
 }

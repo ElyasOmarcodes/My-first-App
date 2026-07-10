@@ -20,6 +20,13 @@ class ClipboardStore(private val context: Context) {
 
     private fun file(): File = File(context.filesDir, "clipboard.bin")
 
+    /** Read the history file up front (from a background thread) so the
+     *  first copy doesn't block the keyboard. */
+    fun preload() {
+        ensureLoaded()
+    }
+
+    @Synchronized
     private fun ensureLoaded(): ArrayList<String> {
         items?.let { return it }
         val list = ArrayList<String>()
@@ -64,9 +71,15 @@ class ClipboardStore(private val context: Context) {
     }
 
     private fun save() {
-        try {
-            file().writeText(ensureLoaded().joinToString(SEP.toString()))
-        } catch (_: Exception) {
+        // snapshot on the caller's thread, write on the background thread —
+        // clipboard items can total megabytes and froze the UI when written
+        // inline
+        val data = ensureLoaded().joinToString(SEP.toString())
+        Io.writer.execute {
+            try {
+                file().writeText(data)
+            } catch (_: Exception) {
+            }
         }
     }
 }

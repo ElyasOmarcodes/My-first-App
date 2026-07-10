@@ -380,12 +380,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         languages = if (list.isEmpty()) Layouts.ALL else list
         if (langIndex >= languages.size) langIndex = 0
 
-        // decompress + parse the frequency dictionaries off the UI thread so
-        // the first keystroke doesn't stutter
+        // decompress + parse the frequency dictionaries (and the clipboard
+        // history) off the UI thread so the first keystroke doesn't stutter
         val toLoad = languages.filter { preloadedLangs.add(it.code) }
             .map { l -> wordStores.getOrPut(l.code) { WordStore(this, l.code) } }
+        val clips = clipboardStore()
         if (toLoad.isNotEmpty()) {
             Thread {
+                try { clips.preload() } catch (_: Exception) {}
                 for (s in toLoad) try { s.preload() } catch (_: Exception) {}
             }.start()
         }
@@ -705,8 +707,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     /**
      * A separator (space, punctuation, emoji, newline) ends the current word:
-     * AutoText expansion happens here, then learning, then the separator
-     * itself is committed.
+     * autocorrect and learning happen here, then the separator itself is
+     * committed. AutoText never expands automatically — the expansion is
+     * offered on the suggestion strip and inserted only when tapped.
      */
     private fun handleSeparator(sep: String, commitSep: Boolean = true) {
         val ic = currentInputConnection
@@ -714,40 +717,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         wordBuffer.setLength(0)
 
         if (word.isNotEmpty() && ic != null && !isPasswordField) {
-            // AutoText auto-expands only on a real space AND only when
-            // auto-correct is on. With auto-correct off, nothing the user
-            // typed is ever replaced automatically (the expansion still
-            // shows as a tappable suggestion).
-            val expansion =
-                if (autotextOn && autocorrectOn && sep == " ")
-                    autoTextStore().expansionFor(word) else null
             var committed = word
-            if (expansion != null) {
+            // autocorrect: replace an unknown same-length typo with the
+            // highlighted best suggestion (e.g. "چط" → "چې"). AutoText
+            // shortcuts are legitimate words for the user — never
+            // autocorrect them away.
+            val best = bestCandidate
+            if (autocorrectOn && suggestionsOn && sep == " " &&
+                word.length >= 2 && best != null && !best.exact &&
+                best.sameLen && !store().contains(word) &&
+                !rejectedWords.contains(word) &&
+                !(autotextOn && autoTextStore().expansionFor(word) != null)
+            ) {
                 ic.deleteSurroundingText(word.length, 0)
-                ic.commitText(expansion, 1)
-                committed = expansion
-            } else {
-                // autocorrect: replace an unknown same-length typo with the
-                // highlighted best suggestion (e.g. "چط" → "چې")
-                val best = bestCandidate
-                if (autocorrectOn && suggestionsOn && sep == " " &&
-                    word.length >= 2 && best != null && !best.exact &&
-                    best.sameLen && !store().contains(word) &&
-                    !rejectedWords.contains(word)
-                ) {
-                    ic.deleteSurroundingText(word.length, 0)
-                    ic.commitText(best.word, 1)
-                    committed = best.word
-                    // backspace right after this replacement restores the
-                    // original word (Samsung-style revert)
-                    revertOriginal = word
-                    revertCorrected = best.word
-                }
-                if (committed.length >= 2) {
-                    if (suggestionsOn && learnWordsOn) store().learn(committed)
-                    if (suggestionsOn && bigramsOn && lastWord.isNotEmpty()) {
-                        store().learnBigram(lastWord, committed)
-                    }
+                ic.commitText(best.word, 1)
+                committed = best.word
+                // backspace right after this replacement restores the
+                // original word (Samsung-style revert)
+                revertOriginal = word
+                revertCorrected = best.word
+            }
+            if (committed.length >= 2) {
+                if (suggestionsOn && learnWordsOn) store().learn(committed)
+                if (suggestionsOn && bigramsOn && lastWord.isNotEmpty()) {
+                    store().learnBigram(lastWord, committed)
                 }
             }
             lastWord = committed
@@ -930,19 +923,45 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     /**
-     * MOVE_HOME / MOVE_END are VISUAL edge moves in Android (left/right edge
-     * of the line), so on an RTL line they land on the opposite ends. Send
-     * the key that reaches the logical start/end for the line's direction.
+     * Jump to the logical start/end of the current line. MOVE_HOME/MOVE_END
+     * cannot be used for this: they are VISUAL edge moves (left/right edge),
+     * so on RTL lines most apps land the cursor on the wrong end. Instead
+     * the target offset is computed from the text itself and the cursor is
+     * placed there directly — direction-independent, same in every app.
      */
-    private fun sendLineStart() {
-        sendArrow(
-            if (isRtlLine()) KeyEvent.KEYCODE_MOVE_END else KeyEvent.KEYCODE_MOVE_HOME
-        )
-    }
+    private fun sendLineStart() = moveToLineEdge(end = false)
 
-    private fun sendLineEnd() {
+    private fun sendLineEnd() = moveToLineEdge(end = true)
+
+    private fun moveToLineEdge(end: Boolean) {
+        val ic = currentInputConnection ?: return
+        val et = try {
+            ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+        } catch (_: Exception) { null }
+        val text = et?.text
+        if (text != null && et.selectionStart >= 0 && et.selectionEnd <= text.length) {
+            var target = et.selectionEnd
+            if (end) {
+                while (target < text.length && text[target] != '\n') target++
+            } else {
+                while (target > 0 && text[target - 1] != '\n') target--
+            }
+            val abs = et.startOffset + target
+            // in edit-panel select mode the jump extends the selection
+            val anchor = if (mode == Mode.EDIT && selectMode) {
+                et.startOffset + et.selectionStart
+            } else abs
+            try {
+                ic.setSelection(anchor, abs)
+                return
+            } catch (_: Exception) {
+            }
+        }
+        // fallback for fields that don't support text extraction: visual
+        // edge keys, swapped on RTL lines so they reach the logical edge
+        val rtl = isRtlLine()
         sendArrow(
-            if (isRtlLine()) KeyEvent.KEYCODE_MOVE_HOME else KeyEvent.KEYCODE_MOVE_END
+            if (end != rtl) KeyEvent.KEYCODE_MOVE_END else KeyEvent.KEYCODE_MOVE_HOME
         )
     }
 

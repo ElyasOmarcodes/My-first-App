@@ -300,15 +300,16 @@ class WordStore(private val context: Context, private val langCode: String) {
     fun save() {
         if (!dirty) return
         dirty = false
-        try {
+        // snapshot on the caller's thread, write on the background thread so
+        // saving never stalls the keyboard
+        val words = try {
             val sb = StringBuilder()
             // keep the store bounded: drop least-used words beyond 20000
             val entries = learned.entries.sortedByDescending { it.value }.take(20000)
             for ((w, c) in entries) sb.append(w).append('\t').append(c).append('\n')
-            wordFile().writeText(sb.toString())
-        } catch (_: Exception) {
-        }
-        try {
+            sb.toString()
+        } catch (_: Exception) { null }
+        val pairs = try {
             val sb = StringBuilder()
             var n = 0
             outer@ for ((w1, m) in bigrams) {
@@ -317,8 +318,17 @@ class WordStore(private val context: Context, private val langCode: String) {
                     if (++n >= 20000) break@outer
                 }
             }
-            bigramFile().writeText(sb.toString())
-        } catch (_: Exception) {
+            sb.toString()
+        } catch (_: Exception) { null }
+        Io.writer.execute {
+            try {
+                if (words != null) wordFile().writeText(words)
+            } catch (_: Exception) {
+            }
+            try {
+                if (pairs != null) bigramFile().writeText(pairs)
+            } catch (_: Exception) {
+            }
         }
     }
 }
