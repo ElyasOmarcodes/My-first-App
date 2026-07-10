@@ -50,6 +50,8 @@
     <string name="pref_key_height_land">د کیلیو لوړوالی (Landscape)</string>
     <string name="pref_font_scale">د لیکنې کچه (٪)</string>
     <string name="pref_bottom_gap">لاندینی واټن (Bottom gap)</string>
+    <string name="pref_nav_gap_auto">اتومات لاندینی واټن</string>
+    <string name="pref_nav_gap_auto_sum">د موبایل د لاندینیو تڼیو له مخې پخپله مناسب واټن اخلي (که غیرفعال شي، لاندینی سکبار کاریږي)</string>
     <string name="pref_bottom_gap_sum">د کیبورډ او د سیسټم تڼیو ترمنځ واټن (dp)</string>
 
     <string name="pref_suggestions">د کلمو وړاندیز</string>
@@ -91,12 +93,6 @@
     <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
 
     <string name="credit">By : ElyasOmar\n2026</string>
-    <string name="image_copied">انځور کلیپ بورډ ته کاپي شو — اوس یې پیسټ کړئ</string>
-    <string name="pref_screenshot_clip">د سکرین شاټ کلیپ بورډ</string>
-    <string name="pref_screenshot_clip_sum">سکرین شاټ اخیستل کیبورډ ته یې راولي (د انځورونو اجازې ته اړتیا لري)</string>
-    <string name="btn_grant_media">د سکرین شاټ فیچر فعالول</string>
-    <string name="media_denied">اجازه ورنکړل شوه — سکرین شاټونه به نه ښکاري</string>
-    <string name="media_already">اجازه دمخه ورکړل شوې ✔</string>
     <string name="clip_prefix">کاپي شوی:</string>
     <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
 

@@ -6,8 +6,4 @@
         android:key="arrow_height" android:title="@string/pref_arrow_height"
         android:defaultValue="69" android:max="150" app:min="50"
         app:showSeekBarValue="true" android:dependency="arrows" />
-    <SwitchPreferenceCompat android:key="screenshot_clip"
-        android:title="@string/pref_screenshot_clip"
-        android:summary="@string/pref_screenshot_clip_sum"
-        android:defaultValue="true" />
 </PreferenceScreen>

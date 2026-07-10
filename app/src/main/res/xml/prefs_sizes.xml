@@ -13,6 +13,10 @@
         android:defaultValue="6" android:max="24" app:min="0" app:showSeekBarValue="true" />
     <SeekBarPreference android:key="key_gap" android:title="@string/pref_key_gap"
         android:defaultValue="2" android:max="8" app:min="0" app:showSeekBarValue="true" />
+    <SwitchPreferenceCompat android:key="nav_gap_auto"
+        android:title="@string/pref_nav_gap_auto"
+        android:summary="@string/pref_nav_gap_auto_sum"
+        android:defaultValue="true" />
     <SeekBarPreference android:key="bottom_gap" android:title="@string/pref_bottom_gap"
         android:summary="@string/pref_bottom_gap_sum"
         android:defaultValue="10" android:max="48" app:min="0" app:showSeekBarValue="true" />

@@ -28,4 +28,4 @@ sound	b	true
 sound_type	s	wood
 sound_vol	i	15
 languages	ss	ps,fa,ar,en
-screenshot_clip	b	true
+nav_gap_auto	b	true

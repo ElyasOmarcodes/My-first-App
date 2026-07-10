@@ -172,18 +172,30 @@ class EmojiPanel(
         tabScroll.addView(tabs)
         addView(tabScroll, LayoutParams(LayoutParams.MATCH_PARENT, (40 * density).toInt()))
 
-        fun addTab(label: String, cat: Int) {
+        fun addTab(label: String, iconRes: Int, cat: Int) {
             val tv = TextView(context)
             tv.text = label
             tv.gravity = Gravity.CENTER
             tv.textSize = 20f
             tv.setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
+            if (iconRes != 0) {
+                val d = try {
+                    androidx.appcompat.content.res.AppCompatResources
+                        .getDrawable(context, iconRes)?.mutate()
+                } catch (_: Exception) { null }
+                if (d != null) {
+                    androidx.core.graphics.drawable.DrawableCompat.setTint(d, theme.hint)
+                    val sz = (22 * density).toInt()
+                    d.setBounds(0, 0, sz, sz)
+                    tv.setCompoundDrawables(null, d, null, null)
+                }
+            }
             tv.setOnClickListener { showCategory(cat) }
             tabs.addView(tv, LayoutParams((44 * density).toInt(), LayoutParams.MATCH_PARENT))
             tabViews.add(tv)
         }
-        addTab("🕘", -1)
-        for ((i, c) in EmojiData.CATEGORIES.withIndex()) addTab(c.first, i)
+        addTab("", R.drawable.ic_key_recent, -1)
+        for ((i, c) in EmojiData.CATEGORIES.withIndex()) addTab(c.first, 0, i)
 
         // emoji grid
         addView(gridHolder, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
@@ -191,12 +203,25 @@ class EmojiPanel(
         // bottom bar
         val bottom = LinearLayout(context)
         bottom.orientation = HORIZONTAL
-        fun addBtn(label: String, w: Float, click: () -> Unit) {
+        fun addBtn(label: String, iconRes: Int, w: Float, click: () -> Unit) {
             val tv = TextView(context)
             tv.text = label
             tv.gravity = Gravity.CENTER
             tv.textSize = 16f
             tv.setTextColor(theme.text)
+            if (iconRes != 0) {
+                val d = try {
+                    androidx.appcompat.content.res.AppCompatResources
+                        .getDrawable(context, iconRes)?.mutate()
+                } catch (_: Exception) { null }
+                if (d != null) {
+                    androidx.core.graphics.drawable.DrawableCompat.setTint(d, theme.text)
+                    val sz = (20 * density).toInt()
+                    d.setBounds(0, 0, sz, sz)
+                    tv.setCompoundDrawables(d, null, null, null)
+                    tv.compoundDrawablePadding = (4 * density).toInt()
+                }
+            }
             val bg = GradientDrawable()
             bg.setColor(theme.specialFill)
             bg.cornerRadius = 8 * density
@@ -209,9 +234,9 @@ class EmojiPanel(
             )
             bottom.addView(tv, lp)
         }
-        addBtn("ابت", 1.2f) { onBack() }
-        addBtn("لټون 🔍", 1.6f) { onSearch() }
-        addBtn("⌫", 1.2f) { onDelete() }
+        addBtn("ابت", 0, 1.2f) { onBack() }
+        addBtn("لټون", R.drawable.ic_key_search, 1.6f) { onSearch() }
+        addBtn("", R.drawable.ic_key_backspace, 1.2f) { onDelete() }
         addView(bottom, LayoutParams(LayoutParams.MATCH_PARENT, (46 * density).toInt()))
 
         showCategory(if (loadRecents().isEmpty()) 0 else -1)

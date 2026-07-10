@@ -240,21 +240,37 @@ class KeyboardView(context: Context) : View(context) {
                 canvas.drawRoundRect(pk.rect, radius, radius, borderPaint)
             }
 
-            // main label — shrink to fit wide labels (menu keys etc.)
-            val isSpecial = key.code != 0
-            var base = pk.rect.height() * (if (isSpecial) 0.36f else 0.46f)
-            textPaint.textSize = base * fontScale
-            val maxW = pk.rect.width() * 0.9f
-            var measured = textPaint.measureText(pk.displayLabel)
-            if (measured > maxW && measured > 0) {
-                base *= maxW / measured
-                textPaint.textSize = base * fontScale
-            }
-            textPaint.color =
-                if (key.code == Keys.SHIFT && shiftState == 2) theme.background else theme.text
             val cx = pk.rect.centerX()
-            val cy = pk.rect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2
-            canvas.drawText(pk.displayLabel, cx, cy, textPaint)
+            val textColor =
+                if (key.code == Keys.SHIFT && shiftState == 2) theme.background else theme.text
+
+            // draw a round-fill icon for glyph keys, else the text label
+            val iconRes = iconForKey(pk)
+            val iconDrawable = if (iconRes != 0) getIcon(iconRes) else null
+            if (iconDrawable != null) {
+                val size = (pk.rect.height() * 0.44f * fontScale).toInt()
+                val icx = cx.toInt()
+                val icy = pk.rect.centerY().toInt()
+                iconDrawable.setBounds(
+                    icx - size / 2, icy - size / 2, icx + size / 2, icy + size / 2
+                )
+                androidx.core.graphics.drawable.DrawableCompat.setTint(iconDrawable, textColor)
+                iconDrawable.draw(canvas)
+            } else {
+                // main label — shrink to fit wide labels (menu keys etc.)
+                val isSpecial = key.code != 0
+                var base = pk.rect.height() * (if (isSpecial) 0.36f else 0.46f)
+                textPaint.textSize = base * fontScale
+                val maxW = pk.rect.width() * 0.9f
+                val measured = textPaint.measureText(pk.displayLabel)
+                if (measured > maxW && measured > 0) {
+                    base *= maxW / measured
+                    textPaint.textSize = base * fontScale
+                }
+                textPaint.color = textColor
+                val cy = pk.rect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2
+                canvas.drawText(pk.displayLabel, cx, cy, textPaint)
+            }
 
             // hint (top corner): drawn icon or small text
             if (key.hintIcon == Keys.ICON_MIC) {
@@ -278,6 +294,28 @@ class KeyboardView(context: Context) : View(context) {
                 }
             }
         }
+    }
+
+    private val iconCache = HashMap<Int, android.graphics.drawable.Drawable?>()
+
+    private fun getIcon(res: Int): android.graphics.drawable.Drawable? =
+        iconCache.getOrPut(res) {
+            try {
+                androidx.appcompat.content.res.AppCompatResources
+                    .getDrawable(context, res)?.mutate()
+            } catch (_: Exception) { null }
+        }
+
+    /** Map a special key's code to a round-fill icon (0 = draw text label). */
+    private fun iconForKey(pk: PlacedKey): Int = when (pk.def.code) {
+        Keys.SHIFT -> R.drawable.ic_key_shift
+        Keys.DELETE -> R.drawable.ic_key_backspace
+        Keys.ENTER -> if (pk.displayLabel == "↵") R.drawable.ic_key_enter else 0
+        Keys.ARROW_UP -> R.drawable.ic_key_arrow_up
+        Keys.ARROW_DOWN -> R.drawable.ic_key_arrow_down
+        Keys.ARROW_LEFT -> R.drawable.ic_key_arrow_left
+        Keys.ARROW_RIGHT -> R.drawable.ic_key_arrow_right
+        else -> 0
     }
 
     /** Small microphone glyph drawn with primitives (no emoji). */
