@@ -165,10 +165,12 @@ class WordStore(private val context: Context, private val langCode: String) {
         return out
     }
 
-    /** True when the word is an established dictionary word. */
+    /** True when the word is an established dictionary word (any case). */
     fun contains(word: String): Boolean {
         ensureLoaded()
-        return (learned[word] ?: 0) >= 2 || seedSet.contains(word)
+        if ((learned[word] ?: 0) >= 2 || seedSet.contains(word)) return true
+        val lc = word.lowercase()
+        return lc != word && ((learned[lc] ?: 0) >= 2 || seedSet.contains(lc))
     }
 
     /**
@@ -200,7 +202,19 @@ class WordStore(private val context: Context, private val langCode: String) {
             .sortedByDescending { it.score }
             .distinctBy { it.word }
             .take(max)
+            .map { it.copy(word = recase(typed, it.word)) }
             .toList()
+    }
+
+    /** Matching is case-insensitive; give the suggestion the user's case:
+     *  "Hel" → "Hello", "HEL" → "HELLO", "hel" → "hello". */
+    private fun recase(typed: String, w: String): String {
+        val first = typed.first()
+        if (!first.isUpperCase()) return w
+        return if (typed.length > 1 && typed.none { it.isLowerCase() })
+            w.uppercase()
+        else
+            w.replaceFirstChar { it.titlecase() }
     }
 
     /**
@@ -217,13 +231,14 @@ class WordStore(private val context: Context, private val langCode: String) {
         freq: Int,
         confusable: Map<Char, Set<Char>>
     ): Cand? {
-        if (w == typed) return null
+        if (w.equals(typed, ignoreCase = true)) return null
         if (w.length < typed.length || w.length > typed.length + 12) return null
         val maxErr = if (typed.length <= 3) 1 else 2
         var errors = 0
         for (i in typed.indices) {
-            val a = typed[i]
-            val b = w[i]
+            // case-insensitive: "Hel"/"HEL" still finds "hello"
+            val a = typed[i].lowercaseChar()
+            val b = w[i].lowercaseChar()
             if (a == b) continue
             if (confusable[a]?.contains(b) == true) {
                 errors++

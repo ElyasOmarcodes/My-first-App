@@ -47,9 +47,32 @@ class AutoTextStore(private val context: Context) {
         val idx = line.indexOf('\t')
         if (idx > 0 && idx < line.length - 1) {
             val short = line.substring(0, idx).trim()
-            val full = line.substring(idx + 1).trim()
+            val full = unescape(line.substring(idx + 1).trim())
             if (short.isNotEmpty() && full.isNotEmpty()) map[short] = full
         }
+    }
+
+    // multi-line expansions live in a line-based file: newlines are stored
+    // as the two characters \n (and a literal backslash as \\)
+    private fun escape(s: String): String =
+        s.replace("\\", "\\\\").replace("\n", "\\n")
+
+    private fun unescape(s: String): String {
+        if (!s.contains('\\')) return s
+        val sb = StringBuilder(s.length)
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '\\' && i + 1 < s.length) {
+                when (s[i + 1]) {
+                    'n' -> { sb.append('\n'); i += 2; continue }
+                    '\\' -> { sb.append('\\'); i += 2; continue }
+                }
+            }
+            sb.append(c)
+            i++
+        }
+        return sb.toString()
     }
 
     fun expansionFor(shortcut: String): String? {
@@ -103,7 +126,7 @@ class AutoTextStore(private val context: Context) {
     fun exportText(): String {
         ensureLoaded()
         val sb = StringBuilder()
-        for ((s, e) in map) sb.append(s).append('\t').append(e).append('\n')
+        for ((s, e) in map) sb.append(s).append('\t').append(escape(e)).append('\n')
         return sb.toString()
     }
 

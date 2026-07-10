@@ -6,7 +6,7 @@
         android:title="@string/pref_theme"
         android:entries="@array/theme_names"
         android:entryValues="@array/theme_values"
-        android:defaultValue="dark"
+        android:defaultValue="p_multiling"
         app:useSimpleSummaryProvider="true" />
     <SwitchPreferenceCompat
         android:key="key_border"

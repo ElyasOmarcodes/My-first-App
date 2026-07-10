@@ -111,6 +111,61 @@ class KeyboardView(context: Context) : View(context) {
     val resolvedBackground: Int
         get() = if (customColors && colBg != 0) colBg else theme.background
 
+    // --------- language-switch flash (feedback for the space-bar swipe)
+    private var langFlashText: String? = null
+    private var langFlashAlpha = 0
+    private var langFlashDx = 0f
+    private var langFlashAnim: android.animation.ValueAnimator? = null
+
+    /** Slide-in + fade pill over the space bar showing the new language, so
+     *  a space-bar swipe visibly "scrolls" to the next language. */
+    fun flashLanguage(name: String, forward: Boolean) {
+        langFlashAnim?.cancel()
+        langFlashText = name
+        val anim = android.animation.ValueAnimator.ofFloat(0f, 1f)
+        anim.duration = 650
+        anim.addUpdateListener { va ->
+            val t = va.animatedValue as Float
+            // slide in from the swipe side during the first third…
+            val slide = (1f - min(1f, t * 3f))
+            langFlashDx = (if (forward) 1 else -1) * slide * 56f * density
+            // …hold, then fade out over the last third
+            langFlashAlpha =
+                if (t < 0.66f) 255
+                else (255 * (1f - (t - 0.66f) / 0.34f)).toInt().coerceIn(0, 255)
+            invalidate()
+        }
+        anim.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                langFlashText = null
+                langFlashAlpha = 0
+                invalidate()
+            }
+        })
+        anim.start()
+        langFlashAnim = anim
+    }
+
+    private fun drawLangFlash(canvas: Canvas) {
+        val text = langFlashText ?: return
+        if (langFlashAlpha <= 0) return
+        val space = placed.firstOrNull { it.def.code == Keys.SPACE } ?: return
+        val r = space.rect
+        val cx = r.centerX() + langFlashDx
+        val cy = r.centerY()
+        textPaint.textSize = r.height() * 0.42f
+        val tw = textPaint.measureText(text)
+        val pw = tw + 28 * density
+        val ph = r.height() * 0.86f
+        val pill = RectF(cx - pw / 2, cy - ph / 2, cx + pw / 2, cy + ph / 2)
+        fillPaint.shader = null
+        fillPaint.color = (theme.accent and 0x00FFFFFF) or (langFlashAlpha shl 24)
+        canvas.drawRoundRect(pill, ph / 2, ph / 2, fillPaint)
+        textPaint.color = (theme.background and 0x00FFFFFF) or (langFlashAlpha shl 24)
+        val ty = cy - (textPaint.descent() + textPaint.ascent()) / 2
+        canvas.drawText(text, cx, ty, textPaint)
+    }
+
     /** Two-colour key gradient with selectable shape and direction. */
     private fun makeGradient(
         r: RectF, c1: Int, c2: Int, style: String, dir: String
@@ -384,6 +439,8 @@ class KeyboardView(context: Context) : View(context) {
                 }
             }
         }
+
+        drawLangFlash(canvas)
     }
 
     private val iconCache = HashMap<Int, android.graphics.drawable.Drawable?>()

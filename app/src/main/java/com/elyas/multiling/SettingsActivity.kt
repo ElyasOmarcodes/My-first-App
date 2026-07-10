@@ -28,6 +28,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemePresets.bootstrap(this)
 
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
@@ -170,6 +171,7 @@ class SettingsActivity : AppCompatActivity() {
             }
             setPreferencesFromResource(res, rootKey)
             if (screen == "main") wireMain() else if (screen == "autotext") wireAutoText()
+            if (screen == "look") wireLook()
             if (screen == "backup") wireBackup()
             if (screen == "colors") wireColors()
             if (screen == "col_keys") wireColorGroup("col_key", "col_key_grad_on")
@@ -193,6 +195,22 @@ class SettingsActivity : AppCompatActivity() {
                 (activity as? SettingsActivity)?.openScreen("colors", pref.title ?: "")
                 true
             }
+        }
+
+        private fun wireLook() {
+            // preset themes (p_*) apply their bundled theme.txt; picking a
+            // plain theme switches custom colours off so it actually shows
+            findPreference<Preference>("theme")?.onPreferenceChangeListener =
+                Preference.OnPreferenceChangeListener { _, newValue ->
+                    val v = newValue as? String
+                    if (ThemePresets.isPreset(v)) {
+                        ThemePresets.apply(requireContext(), v!!)
+                    } else {
+                        PreferenceManager.getDefaultSharedPreferences(requireContext())
+                            .edit().putBoolean("col_custom", false).apply()
+                    }
+                    true
+                }
         }
 
         private fun wireColors() {
@@ -318,16 +336,7 @@ class SettingsActivity : AppCompatActivity() {
 
         /** Only the visual keys (theme, colours, sizes) — for theme.txt. */
         private fun exportTheme(): String {
-            val visual = setOf(
-                "theme", "col_custom", "col_bg",
-                "col_key", "col_key_grad_on", "col_key_grad",
-                "col_key_mode", "col_key_grad_style", "col_key_grad_dir",
-                "col_special", "col_special_grad_on", "col_special_grad",
-                "col_special_mode", "col_special_grad_style", "col_special_grad_dir",
-                "col_text", "col_hint", "key_border", "hints", "preview",
-                "key_height", "key_height_land", "font_scale", "hint_scale",
-                "corner_radius", "key_gap", "bottom_gap", "sugg_font", "arrow_height"
-            )
+            val visual = ThemePresets.VISUAL_KEYS + "theme"
             val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
             val sb = StringBuilder()
             for ((k, v) in p.all) {

@@ -13,6 +13,6 @@
         android:defaultValue="bubble" android:dependency="sound"
         app:useSimpleSummaryProvider="true" />
     <SeekBarPreference android:key="sound_vol" android:title="@string/pref_sound_vol"
-        android:defaultValue="15" android:max="100" app:min="5" app:showSeekBarValue="true"
+        android:defaultValue="5" android:max="100" app:min="0" app:showSeekBarValue="true"
         android:dependency="sound" />
 </PreferenceScreen>

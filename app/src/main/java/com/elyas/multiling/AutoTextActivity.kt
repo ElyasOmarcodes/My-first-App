@@ -75,6 +75,9 @@ class AutoTextActivity : AppCompatActivity() {
         shortIn.setText(oldShortcut)
         shortIn.hint = getString(R.string.autotext_shortcut_hint)
         val fullIn = EditText(this)
+        fullIn.inputType = android.text.InputType.TYPE_CLASS_TEXT or
+            android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        fullIn.maxLines = 8
         fullIn.setText(oldExpansion)
         fullIn.hint = getString(R.string.autotext_expansion_hint)
         box.addView(shortIn)
@@ -103,7 +106,7 @@ class AutoTextActivity : AppCompatActivity() {
         AutoTextStore.bumpDataVersion(this)
         entries = store.all()
         adapter.clear()
-        for ((s, e) in entries) adapter.add("$s  ←  $e")
+        for ((s, e) in entries) adapter.add("$s  ←  ${e.replace("\n", " ⏎ ")}")
         adapter.notifyDataSetChanged()
     }
 }

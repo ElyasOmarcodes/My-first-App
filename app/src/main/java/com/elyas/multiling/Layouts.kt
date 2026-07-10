@@ -164,13 +164,30 @@ object Layouts {
 
     // -------------------------------------------------------------- Symbols
     /** Symbols page 1. Digit row is localized per language, ordered 1…9,0. */
+    /** Unicode forms of every digit for the long-press popup: Arabic-Indic,
+     *  extended Arabic (Pashto/Farsi), superscript, subscript, circled,
+     *  negative-circled, parenthesized, Roman, fullwidth and keycap. */
+    private val DIGIT_VARIANTS: List<List<String>> = listOf(
+        listOf("٠", "۰", "⁰", "₀", "⓪", "⓿", "０", "0️⃣"),
+        listOf("١", "۱", "¹", "₁", "①", "❶", "⑴", "Ⅰ", "１", "1️⃣"),
+        listOf("٢", "۲", "²", "₂", "②", "❷", "⑵", "Ⅱ", "２", "2️⃣"),
+        listOf("٣", "۳", "³", "₃", "③", "❸", "⑶", "Ⅲ", "３", "3️⃣"),
+        listOf("٤", "۴", "⁴", "₄", "④", "❹", "⑷", "Ⅳ", "４", "4️⃣"),
+        listOf("٥", "۵", "⁵", "₅", "⑤", "❺", "⑸", "Ⅴ", "５", "5️⃣"),
+        listOf("٦", "۶", "⁶", "₆", "⑥", "❻", "⑹", "Ⅵ", "６", "6️⃣"),
+        listOf("٧", "۷", "⁷", "₇", "⑦", "❼", "⑺", "Ⅶ", "７", "7️⃣"),
+        listOf("٨", "۸", "⁸", "₈", "⑧", "❽", "⑻", "Ⅷ", "８", "8️⃣"),
+        listOf("٩", "۹", "⁹", "₉", "⑨", "❾", "⑼", "Ⅸ", "９", "9️⃣")
+    )
+
     fun symbols1(lang: Language): List<List<KeyDef>> {
         val order = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
         val digitRow = order.map { i ->
             val c = lang.digits[i].toString()
             val latin = ('0' + i).toString()
-            if (c == latin) k(latin)
-            else KeyDef(c, latin, listOf(latin))
+            val variants = DIGIT_VARIANTS[i].filter { it != c && it != latin }
+            if (c == latin) KeyDef(latin, null, variants)
+            else KeyDef(c, latin, listOf(latin) + variants)
         }
         return listOf(
             digitRow,

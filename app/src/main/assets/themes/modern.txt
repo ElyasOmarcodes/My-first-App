@@ -1,0 +1,13 @@
+preview	b	true
+corner_radius	i	4
+hints	b	true
+key_height_land	i	42
+col_custom	b	false
+hint_scale	i	97
+key_height	i	72
+key_border	b	false
+font_scale	i	70
+bottom_gap	i	32
+theme	s	dark
+sugg_font	i	17
+key_gap	i	2

@@ -23,6 +23,11 @@
     </string-array>
 
     <string-array name="theme_names">
+        <item>ملټي لینګ (MultiLing) ✦</item>
+        <item>مډرن (Modern) ✦</item>
+        <item>شین پرو (Green) ✦</item>
+        <item>آبي پرو (Blue) ✦</item>
+        <item>روښانه پرو (Light) ✦</item>
         <item>تور (Dark)</item>
         <item>روښانه (Light)</item>
         <item>بشپړ تور (AMOLED)</item>
@@ -30,6 +35,11 @@
         <item>شین (Green)</item>
     </string-array>
     <string-array name="theme_values">
+        <item>p_multiling</item>
+        <item>p_modern</item>
+        <item>p_green</item>
+        <item>p_blue</item>
+        <item>p_light</item>
         <item>dark</item>
         <item>light</item>
         <item>black</item>

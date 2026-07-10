@@ -101,6 +101,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------ lifecycle
     override fun onCreate() {
         super.onCreate()
+        ThemePresets.bootstrap(this)
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
@@ -363,7 +364,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         vibrateOn = p.getBoolean("vibrate", true)
         vibrateMs = p.getInt("vibrate_ms", 20).toLong()
         soundOn = p.getBoolean("sound", true)
-        soundVol = p.getInt("sound_vol", 15) / 100f
+        soundVol = p.getInt("sound_vol", 5) / 100f
         soundType = p.getString("sound_type", "bubble") ?: "bubble"
         if (soundOn && soundType != "system") initSoundPool()
         suggestionsOn = p.getBoolean("suggestions", true)
@@ -1075,6 +1076,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         feedback()
         rebuildKeyboard()
         updateSuggestions()
+        // visible confirmation that the swipe switched the language
+        keyboardView?.flashLanguage(lang.nativeName, delta > 0)
     }
 
     private fun showLanguageMenu() {
