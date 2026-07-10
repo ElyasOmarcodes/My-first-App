@@ -29,3 +29,4 @@ sound_type	s	wood
 sound_vol	i	15
 languages	ss	ps,fa,ar,en
 nav_gap_auto	b	true
+col_custom	b	false

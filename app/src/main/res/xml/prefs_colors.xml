@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreferenceCompat android:key="col_custom"
+        android:title="@string/pref_col_custom"
+        android:summary="@string/pref_col_custom_sum"
+        android:defaultValue="false" />
+
+    <PreferenceCategory android:title="@string/pref_col_cat_keys"
+        android:dependency="col_custom">
+        <com.elyas.multiling.ColorPreference android:key="col_key"
+            android:title="@string/pref_col_key" android:defaultValue="#272B33" />
+        <SwitchPreferenceCompat android:key="col_key_grad_on"
+            android:title="@string/pref_col_key_grad_on" android:defaultValue="false" />
+        <com.elyas.multiling.ColorPreference android:key="col_key_grad"
+            android:title="@string/pref_col_key_grad" android:defaultValue="#3C4250"
+            android:dependency="col_key_grad_on" />
+        <com.elyas.multiling.ColorPreference android:key="col_special"
+            android:title="@string/pref_col_special" android:defaultValue="#1D2026" />
+        <SwitchPreferenceCompat android:key="col_special_grad_on"
+            android:title="@string/pref_col_special_grad_on" android:defaultValue="false" />
+        <com.elyas.multiling.ColorPreference android:key="col_special_grad"
+            android:title="@string/pref_col_special_grad" android:defaultValue="#2E3440"
+            android:dependency="col_special_grad_on" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_col_cat_text"
+        android:dependency="col_custom">
+        <com.elyas.multiling.ColorPreference android:key="col_text"
+            android:title="@string/pref_col_text" android:defaultValue="#FFFFFF" />
+        <com.elyas.multiling.ColorPreference android:key="col_hint"
+            android:title="@string/pref_col_hint" android:defaultValue="#9AA7C7" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_col_cat_theme">
+        <Preference android:key="theme_export" android:title="@string/pref_theme_export"
+            android:summary="@string/pref_theme_export_sum" />
+        <Preference android:key="theme_import" android:title="@string/pref_theme_import"
+            android:summary="@string/pref_theme_import_sum" />
+    </PreferenceCategory>
+</PreferenceScreen>

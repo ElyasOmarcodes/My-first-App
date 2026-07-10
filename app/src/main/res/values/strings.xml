@@ -97,6 +97,25 @@
     <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
 
     <string name="screen_langs_sum">فعالې ژبې او د ژبې بدلول</string>
+    <string name="pref_cat_colors">رنګونه (کاسټوم)</string>
+    <string name="screen_colors_sum">د کیلیو رنګونه، ګرادینټ، د متن رنګ + د ټم شاتړ</string>
+    <string name="pref_col_custom">کاسټوم رنګونه فعالول</string>
+    <string name="pref_col_custom_sum">د ټم پر ځای خپل رنګونه کارول</string>
+    <string name="pref_col_cat_keys">د کیلیو رنګونه</string>
+    <string name="pref_col_cat_text">د متن رنګونه</string>
+    <string name="pref_col_cat_theme">ټم (Backup)</string>
+    <string name="pref_col_key">د حروفو کیلیو رنګ</string>
+    <string name="pref_col_key_grad_on">د حروفو کیلیو ګرادینټ</string>
+    <string name="pref_col_key_grad">د حروفو کیلیو دوهم رنګ (ګرادینټ)</string>
+    <string name="pref_col_special">د ځانګړو کیلیو رنګ (شفټ/بیک/تیر)</string>
+    <string name="pref_col_special_grad_on">د ځانګړو کیلیو ګرادینټ</string>
+    <string name="pref_col_special_grad">د ځانګړو کیلیو دوهم رنګ (ګرادینټ)</string>
+    <string name="pref_col_text">د حروفو/کرکټرونو رنګ</string>
+    <string name="pref_col_hint">د شاته تورو (hint) رنګ</string>
+    <string name="pref_theme_export">ټم خوندي کول (theme.txt)</string>
+    <string name="pref_theme_export_sum">رنګونه او اندازې یو فایل ته</string>
+    <string name="pref_theme_import">ټم راوړل (Import)</string>
+    <string name="pref_theme_import_sum">له خوندي شوي theme.txt فایل نه</string>
     <string name="screen_look_sum">تم، حاشیې، کوچني توري، پاپ اپ</string>
     <string name="screen_sizes_sum">لوړوالی، فونټ، واټنونه، ګردوالی</string>
     <string name="screen_typing_sum">وړاندیز، اتومات سمون، زده کول</string>

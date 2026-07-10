@@ -73,6 +73,22 @@ class KeyboardView(context: Context) : View(context) {
     var theme: Theme = DARK
         set(value) { field = value; invalidate() }
 
+    // custom colors (used when [customColors] is on, else the theme is used)
+    var customColors: Boolean = false
+    var colKeyFill: Int = 0
+    var colKeyFill2: Int = 0        // 0 = no gradient
+    var colSpecialFill: Int = 0
+    var colSpecialFill2: Int = 0
+    var colTextColor: Int = 0
+    var colHintColor: Int = 0
+
+    private val keyFillColor get() = if (customColors) colKeyFill else theme.keyFill
+    private val keyFillColor2 get() = if (customColors) colKeyFill2 else 0
+    private val specialFillColor get() = if (customColors) colSpecialFill else theme.specialFill
+    private val specialFillColor2 get() = if (customColors) colSpecialFill2 else 0
+    private val labelColor get() = if (customColors) colTextColor else theme.text
+    private val hintColorNow get() = if (customColors) colHintColor else theme.hint
+
     var keyHeightDp: Int = 52
     var arrowRowScale: Float = 1f
     var fontScale: Float = 1f
@@ -228,21 +244,35 @@ class KeyboardView(context: Context) : View(context) {
         for (pk in placed) {
             val key = pk.def
             val isPressed = pressedKeys.contains(pk)
-            fillPaint.color = when {
-                isPressed -> theme.keyPressed
-                key.code == Keys.SHIFT && shiftState > 0 -> theme.accent
-                key.code != 0 && key.code != Keys.SPACE -> theme.specialFill
-                else -> theme.keyFill
+            val isSpecialFill = key.code != 0 && key.code != Keys.SPACE
+            // resolve fill colour (+ optional gradient second colour)
+            var fill1: Int
+            var fill2 = 0
+            when {
+                isPressed -> fill1 = theme.keyPressed
+                key.code == Keys.SHIFT && shiftState > 0 -> fill1 = theme.accent
+                isSpecialFill -> { fill1 = specialFillColor; fill2 = specialFillColor2 }
+                else -> { fill1 = keyFillColor; fill2 = keyFillColor2 }
+            }
+            if (fill2 != 0 && !isPressed) {
+                fillPaint.shader = android.graphics.LinearGradient(
+                    pk.rect.left, pk.rect.top, pk.rect.left, pk.rect.bottom,
+                    fill1, fill2, android.graphics.Shader.TileMode.CLAMP
+                )
+            } else {
+                fillPaint.shader = null
+                fillPaint.color = fill1
             }
             canvas.drawRoundRect(pk.rect, radius, radius, fillPaint)
+            fillPaint.shader = null
             if (keyBorder) {
-                borderPaint.color = theme.hint and 0x60FFFFFF
+                borderPaint.color = hintColorNow and 0x60FFFFFF
                 canvas.drawRoundRect(pk.rect, radius, radius, borderPaint)
             }
 
             val cx = pk.rect.centerX()
             val textColor =
-                if (key.code == Keys.SHIFT && shiftState == 2) theme.background else theme.text
+                if (key.code == Keys.SHIFT && shiftState == 2) theme.background else labelColor
 
             // draw a round-fill icon for glyph keys, else the text label
             val iconRes = iconForKey(pk)
@@ -284,7 +314,7 @@ class KeyboardView(context: Context) : View(context) {
                 val hint = key.hint ?: key.shifted ?: key.alternates.firstOrNull()
                 if (hint != null && (shiftState == 0 || key.code != 0)) {
                     hintPaint.textSize = pk.rect.height() * 0.24f * fontScale * hintScale
-                    hintPaint.color = theme.hint
+                    hintPaint.color = hintColorNow
                     canvas.drawText(
                         hint,
                         pk.rect.right - 4 * density,

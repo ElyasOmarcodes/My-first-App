@@ -91,7 +91,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updatePreviewVisibility(screen: String = currentScreen()) {
-        val show = screen == "look" || screen == "sizes"
+        val show = screen == "look" || screen == "sizes" || screen == "colors"
         previewHolder.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
         if (screen == "main") supportActionBar?.setTitle(R.string.settings_title)
         if (show) refreshPreview()
@@ -102,6 +102,19 @@ class SettingsActivity : AppCompatActivity() {
         if (previewHolder.visibility != android.view.View.VISIBLE) return
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         preview.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
+        val custom = p.getBoolean("col_custom", false)
+        preview.customColors = custom
+        if (custom) {
+            val t = preview.theme
+            preview.colKeyFill = p.getInt("col_key", t.keyFill)
+            preview.colKeyFill2 =
+                if (p.getBoolean("col_key_grad_on", false)) p.getInt("col_key_grad", 0) else 0
+            preview.colSpecialFill = p.getInt("col_special", t.specialFill)
+            preview.colSpecialFill2 =
+                if (p.getBoolean("col_special_grad_on", false)) p.getInt("col_special_grad", 0) else 0
+            preview.colTextColor = p.getInt("col_text", t.text)
+            preview.colHintColor = p.getInt("col_hint", t.hint)
+        }
         preview.keyHeightDp = p.getInt("key_height", 72)
         preview.fontScale = p.getInt("font_scale", 70) / 100f
         preview.hintScale = p.getInt("hint_scale", 96) / 100f
@@ -134,6 +147,7 @@ class SettingsActivity : AppCompatActivity() {
             val res = when (screen) {
                 "langs" -> R.xml.prefs_langs
                 "look" -> R.xml.prefs_look
+                "colors" -> R.xml.prefs_colors
                 "sizes" -> R.xml.prefs_sizes
                 "typing" -> R.xml.prefs_typing
                 "autotext" -> R.xml.prefs_autotext
@@ -145,6 +159,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(res, rootKey)
             if (screen == "main") wireMain() else if (screen == "autotext") wireAutoText()
             if (screen == "backup") wireBackup()
+            if (screen == "colors") wireColors()
         }
 
         private fun wireMain() {
@@ -159,6 +174,21 @@ class SettingsActivity : AppCompatActivity() {
                     (activity as? SettingsActivity)?.openScreen(screen, pref.title ?: "")
                     true
                 }
+            }
+            findPreference<Preference>("screen_colors")?.setOnPreferenceClickListener { pref ->
+                (activity as? SettingsActivity)?.openScreen("colors", pref.title ?: "")
+                true
+            }
+        }
+
+        private fun wireColors() {
+            findPreference<Preference>("theme_export")?.setOnPreferenceClickListener {
+                createDocument(REQ_THEME_EXPORT, "theme.txt")
+                true
+            }
+            findPreference<Preference>("theme_import")?.setOnPreferenceClickListener {
+                openDocument(REQ_THEME_IMPORT)
+                true
             }
         }
 
@@ -234,6 +264,28 @@ class SettingsActivity : AppCompatActivity() {
                     is String -> sb.append(k).append("\ts\t").append(v).append('\n')
                     is Set<*> -> sb.append(k).append("\tss\t")
                         .append(v.joinToString(",")).append('\n')
+                }
+            }
+            return sb.toString()
+        }
+
+        /** Only the visual keys (theme, colours, sizes) — for theme.txt. */
+        private fun exportTheme(): String {
+            val visual = setOf(
+                "theme", "col_custom", "col_key", "col_key_grad_on", "col_key_grad",
+                "col_special", "col_special_grad_on", "col_special_grad",
+                "col_text", "col_hint", "key_border", "hints", "preview",
+                "key_height", "key_height_land", "font_scale", "hint_scale",
+                "corner_radius", "key_gap", "bottom_gap", "sugg_font", "arrow_height"
+            )
+            val p = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val sb = StringBuilder()
+            for ((k, v) in p.all) {
+                if (k !in visual) continue
+                when (v) {
+                    is Boolean -> sb.append(k).append("\tb\t").append(v).append('\n')
+                    is Int -> sb.append(k).append("\ti\t").append(v).append('\n')
+                    is String -> sb.append(k).append("\ts\t").append(v).append('\n')
                 }
             }
             return sb.toString()
@@ -360,6 +412,18 @@ class SettingsActivity : AppCompatActivity() {
                         val n = importSettings(text)
                         toast(getString(R.string.imported_n_words, n))
                     }
+                    REQ_THEME_EXPORT -> {
+                        ctx.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use {
+                            it.write(exportTheme())
+                        }
+                        toast(getString(R.string.done))
+                    }
+                    REQ_THEME_IMPORT -> {
+                        val text = ctx.contentResolver.openInputStream(uri)
+                            ?.bufferedReader()?.readText() ?: return
+                        val n = importSettings(text)
+                        toast(getString(R.string.imported_n_words, n))
+                    }
                 }
             } catch (e: Exception) {
                 toast(e.message ?: "error")
@@ -377,6 +441,8 @@ class SettingsActivity : AppCompatActivity() {
             private const val REQ_AUTOTEXT_EXPORT = 14
             private const val REQ_SETTINGS_EXPORT = 15
             private const val REQ_SETTINGS_IMPORT = 16
+            private const val REQ_THEME_EXPORT = 17
+            private const val REQ_THEME_IMPORT = 18
 
             fun create(screen: String): SettingsFragment {
                 val f = SettingsFragment()

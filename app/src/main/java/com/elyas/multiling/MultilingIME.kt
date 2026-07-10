@@ -36,7 +36,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var baseKeyHeightDp = 72
     private var navGapAuto = true
     private var manualBottomGapDp = 10
-    private var detectedNavGapDp = 0
     private var rootView: LinearLayout? = null
     private var suggestionBar: LinearLayout? = null
     private var suggestionScroll: HorizontalScrollView? = null
@@ -104,14 +103,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
-                val text = try {
-                    cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
-                        ?.trim()?.ifEmpty { null }
-                } catch (_: Exception) { null }
-                if (text != null) clipboardStore().add(text)
+                captureClipboard(cm)
+                // refresh the strip so a freshly copied text shows at once
+                if (keyboardView?.visibility == View.VISIBLE) updateSuggestions()
             }
         } catch (_: Exception) {
         }
+    }
+
+    /** Read the current system clipboard text into the history store. */
+    private fun captureClipboard(cm: android.content.ClipboardManager) {
+        val text = try {
+            cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
+                ?.trim()?.ifEmpty { null }
+        } catch (_: Exception) { null }
+        if (text != null) clipboardStore().add(text)
     }
 
     override fun onCreateInputView(): View {
@@ -161,18 +167,35 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             )
         )
         rootView = root
-        // auto-detect the navigation-bar overlap and use it as the gap
+        // re-apply the auto gap whenever the system insets change (rotation,
+        // switching between gesture and 3-button navigation, etc.)
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
-            val navBottom = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.navigationBars()
-            ).bottom
-            detectedNavGapDp = (navBottom / resources.displayMetrics.density).toInt()
             if (navGapAuto) applyBottomGap()
             insets
         }
         applySettings()
         rebuildKeyboard()
         return root
+    }
+
+    /** Apply user custom key colours + gradients (or fall back to the theme). */
+    private fun applyCustomColors(
+        kv: KeyboardView,
+        p: android.content.SharedPreferences
+    ) {
+        val custom = p.getBoolean("col_custom", false)
+        kv.customColors = custom
+        if (custom) {
+            val t = kv.theme
+            kv.colKeyFill = p.getInt("col_key", t.keyFill)
+            kv.colKeyFill2 =
+                if (p.getBoolean("col_key_grad_on", false)) p.getInt("col_key_grad", 0) else 0
+            kv.colSpecialFill = p.getInt("col_special", t.specialFill)
+            kv.colSpecialFill2 =
+                if (p.getBoolean("col_special_grad_on", false)) p.getInt("col_special_grad", 0) else 0
+            kv.colTextColor = p.getInt("col_text", t.text)
+            kv.colHintColor = p.getInt("col_hint", t.hint)
+        }
     }
 
     /** A round-fill vector drawable, tinted and sized (for panel chrome). */
@@ -185,11 +208,34 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         return d
     }
 
+    /**
+     * How far the keyboard must lift so no key sits under the system's
+     * bottom controls. In 3-button navigation the framework already reserves
+     * that space (tappable area > 0) so no extra gap is needed; in gesture
+     * navigation the home bar overlaps the keyboard, so we add the nav-bar
+     * inset as the gap.
+     */
+    private fun autoGapDp(): Int {
+        return try {
+            val decor = window?.window?.decorView ?: return 0
+            val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
+                ?: return 0
+            val nav = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.navigationBars()
+            ).bottom
+            val tappable = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.tappableElement()
+            ).bottom
+            val px = if (tappable > 0) 0 else nav
+            (px / resources.displayMetrics.density).toInt().coerceIn(0, 48)
+        } catch (_: Exception) { 0 }
+    }
+
     /** Bottom padding under the keys: auto = nav-bar overlap, else manual. */
     private fun applyBottomGap() {
         val kv = keyboardView ?: return
         val density = resources.displayMetrics.density
-        val dp = if (navGapAuto) detectedNavGapDp else manualBottomGapDp
+        val dp = if (navGapAuto) autoGapDp() else manualBottomGapDp
         kv.setPadding(0, 0, 0, (dp * density).toInt())
         kv.requestLayout()
     }
@@ -219,6 +265,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         selectMode = false
         wordBuffer.setLength(0)
         lastWord = ""
+        // pick up whatever was copied before the keyboard opened
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE)
+                as android.content.ClipboardManager
+            captureClipboard(cm)
+        } catch (_: Exception) {
+        }
+        applyBottomGap()
         updateAutoCaps()
         rebuildKeyboard()
         updateSuggestions()
@@ -258,8 +312,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (word != wordBuffer.toString()) {
             wordBuffer.setLength(0)
             wordBuffer.append(word)
-            updateSuggestions()
         }
+        // always refresh: the clipboard chip must re-evaluate on every cursor
+        // move (e.g. entering a fresh empty line where the buffer was already
+        // empty), so it never gets stuck showing or hidden
+        updateSuggestions()
     }
 
     override fun onEvaluateFullscreenMode(): Boolean = false
@@ -269,6 +326,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         val kv = keyboardView ?: return
         kv.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
+        applyCustomColors(kv, p)
         val landscape =
             resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         baseKeyHeightDp =
@@ -644,10 +702,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         wordBuffer.setLength(0)
 
         if (word.isNotEmpty() && ic != null && !isPasswordField) {
-            // AutoText expands only on a real space, never on punctuation,
-            // so "shortcut," no longer turns into the whole sentence
+            // AutoText auto-expands only on a real space AND only when
+            // auto-correct is on. With auto-correct off, nothing the user
+            // typed is ever replaced automatically (the expansion still
+            // shows as a tappable suggestion).
             val expansion =
-                if (autotextOn && sep == " ") autoTextStore().expansionFor(word) else null
+                if (autotextOn && autocorrectOn && sep == " ")
+                    autoTextStore().expansionFor(word) else null
             var committed = word
             if (expansion != null) {
                 ic.deleteSurroundingText(word.length, 0)
@@ -790,8 +851,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 updateSuggestions()
             }
             Keys.MIC -> startVoiceInput()
-            Keys.ARROW_UP -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_UP) }
-            Keys.ARROW_DOWN -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_DOWN) }
+            Keys.ARROW_UP -> {
+                feedback()
+                // on the first line (no line above), jump to the line start
+                if (!hasLineAbove()) sendArrow(KeyEvent.KEYCODE_MOVE_HOME)
+                else sendArrow(KeyEvent.KEYCODE_DPAD_UP)
+            }
+            Keys.ARROW_DOWN -> {
+                feedback()
+                // on the last line (no line below), jump to the line end
+                if (!hasLineBelow()) sendArrow(KeyEvent.KEYCODE_MOVE_END)
+                else sendArrow(KeyEvent.KEYCODE_DPAD_DOWN)
+            }
             Keys.ARROW_LEFT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_LEFT) }
             Keys.ARROW_RIGHT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_RIGHT) }
 
@@ -847,6 +918,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Arrows honour edit-panel select mode by holding Shift. */
+    private fun hasLineAbove(): Boolean {
+        val ic = currentInputConnection ?: return true
+        val before = try { ic.getTextBeforeCursor(4000, 0) } catch (_: Exception) { null }
+        return before?.contains('\n') == true
+    }
+
+    private fun hasLineBelow(): Boolean {
+        val ic = currentInputConnection ?: return true
+        val after = try { ic.getTextAfterCursor(4000, 0) } catch (_: Exception) { null }
+        return after?.contains('\n') == true
+    }
+
     private fun sendArrow(keyCode: Int) {
         val ic = currentInputConnection ?: return
         if (mode == Mode.EDIT && selectMode) {

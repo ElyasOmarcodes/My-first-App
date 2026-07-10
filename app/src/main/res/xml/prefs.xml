@@ -4,6 +4,8 @@
         android:summary="@string/screen_langs_sum" android:icon="@drawable/ic_cat_lang" />
     <Preference android:key="screen_look" android:title="@string/pref_cat_look"
         android:summary="@string/screen_look_sum" android:icon="@drawable/ic_cat_look" />
+    <Preference android:key="screen_colors" android:title="@string/pref_cat_colors"
+        android:summary="@string/screen_colors_sum" android:icon="@drawable/ic_cat_look" />
     <Preference android:key="screen_sizes" android:title="@string/pref_cat_sizes"
         android:summary="@string/screen_sizes_sum" android:icon="@drawable/ic_cat_size" />
     <Preference android:key="screen_typing" android:title="@string/pref_cat_typing"
