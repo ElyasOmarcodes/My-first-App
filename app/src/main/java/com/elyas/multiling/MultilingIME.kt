@@ -79,6 +79,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var clipStore: ClipboardStore? = null
 
     private val wordStores = HashMap<String, WordStore>()
+    private val preloadedLangs = HashSet<String>()
     private var autoText: AutoTextStore? = null
     private val wordBuffer = StringBuilder()
     private var lastWord = ""
@@ -368,6 +369,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (dv != lastDataVersion) {
             lastDataVersion = dv
             wordStores.clear()
+            preloadedLangs.clear()
             autoText = null
         }
 
@@ -377,6 +379,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         else Layouts.ALL.filter { enabled.contains(it.code) }
         languages = if (list.isEmpty()) Layouts.ALL else list
         if (langIndex >= languages.size) langIndex = 0
+
+        // decompress + parse the frequency dictionaries off the UI thread so
+        // the first keystroke doesn't stutter
+        val toLoad = languages.filter { preloadedLangs.add(it.code) }
+            .map { l -> wordStores.getOrPut(l.code) { WordStore(this, l.code) } }
+        if (toLoad.isNotEmpty()) {
+            Thread {
+                for (s in toLoad) try { s.preload() } catch (_: Exception) {}
+            }.start()
+        }
 
         rootView?.setBackgroundColor(kv.theme.background)
         suggestionScroll?.visibility = if (suggestionsOn) View.VISIBLE else View.GONE
@@ -854,13 +866,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.ARROW_UP -> {
                 feedback()
                 // on the first line (no line above), jump to the line start
-                if (!hasLineAbove()) sendArrow(KeyEvent.KEYCODE_MOVE_HOME)
+                if (!hasLineAbove()) sendLineStart()
                 else sendArrow(KeyEvent.KEYCODE_DPAD_UP)
             }
             Keys.ARROW_DOWN -> {
                 feedback()
                 // on the last line (no line below), jump to the line end
-                if (!hasLineBelow()) sendArrow(KeyEvent.KEYCODE_MOVE_END)
+                if (!hasLineBelow()) sendLineEnd()
                 else sendArrow(KeyEvent.KEYCODE_DPAD_DOWN)
             }
             Keys.ARROW_LEFT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_LEFT) }
@@ -888,8 +900,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.PASTE -> { feedback(); ic?.performContextMenuAction(android.R.id.paste) }
             Keys.SELECT_ALL -> { feedback(); ic?.performContextMenuAction(android.R.id.selectAll) }
             Keys.FWD_DEL -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_FORWARD_DEL) }
-            Keys.HOME -> { feedback(); sendArrow(KeyEvent.KEYCODE_MOVE_HOME) }
-            Keys.END -> { feedback(); sendArrow(KeyEvent.KEYCODE_MOVE_END) }
+            Keys.HOME -> { feedback(); sendLineStart() }
+            Keys.END -> { feedback(); sendLineEnd() }
         }
     }
 
@@ -915,6 +927,54 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         wordBuffer.append(original)
         updateSuggestions()
         return true
+    }
+
+    /**
+     * MOVE_HOME / MOVE_END are VISUAL edge moves in Android (left/right edge
+     * of the line), so on an RTL line they land on the opposite ends. Send
+     * the key that reaches the logical start/end for the line's direction.
+     */
+    private fun sendLineStart() {
+        sendArrow(
+            if (isRtlLine()) KeyEvent.KEYCODE_MOVE_END else KeyEvent.KEYCODE_MOVE_HOME
+        )
+    }
+
+    private fun sendLineEnd() {
+        sendArrow(
+            if (isRtlLine()) KeyEvent.KEYCODE_MOVE_HOME else KeyEvent.KEYCODE_MOVE_END
+        )
+    }
+
+    /**
+     * Direction of the line the cursor is on, resolved the way Android does:
+     * the first strong directional character decides. Falls back to the
+     * active layout's direction when the line has no strong character.
+     */
+    private fun isRtlLine(): Boolean {
+        val ic = currentInputConnection ?: return lang.rtl
+        val before = try { ic.getTextBeforeCursor(4000, 0)?.toString() } catch (_: Exception) { null }
+        if (before != null) {
+            for (ch in before.substringAfterLast('\n')) {
+                strongDir(ch)?.let { return it }
+            }
+        }
+        val after = try { ic.getTextAfterCursor(4000, 0)?.toString() } catch (_: Exception) { null }
+        if (after != null) {
+            for (ch in after) {
+                if (ch == '\n') break
+                strongDir(ch)?.let { return it }
+            }
+        }
+        return lang.rtl
+    }
+
+    /** true = RTL, false = LTR, null = not a strong directional character. */
+    private fun strongDir(ch: Char): Boolean? = when (Character.getDirectionality(ch)) {
+        Character.DIRECTIONALITY_RIGHT_TO_LEFT,
+        Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> true
+        Character.DIRECTIONALITY_LEFT_TO_RIGHT -> false
+        else -> null
     }
 
     /** Arrows honour edit-panel select mode by holding Shift. */
@@ -1113,7 +1173,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 clipboardStore().newest()?.let { items.add(Triple(it, STYLE_ACCENT, true)) }
             }
             if (bigramsOn && lastWord.isNotEmpty()) {
-                for (w in store().suggestNext(lastWord, 4)) {
+                for (w in store().suggestNext(lastWord, 4, seedDictOn)) {
                     items.add(Triple(w, STYLE_NORMAL, false))
                 }
             }

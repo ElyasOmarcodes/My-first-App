@@ -1,13 +1,17 @@
 package com.elyas.multiling
 
 import android.content.Context
+import org.tukaani.xz.XZInputStream
 import java.io.File
+import kotlin.math.ln
 
 /**
  * On-device word store powering suggestions.
  *
  * Three sources, fully offline:
- *  - a bundled seed word list per language (assets/dict/<lang>.txt)
+ *  - a bundled frequency dictionary per language (assets/dict/<lang>.txt.xz,
+ *    LZMA2-compressed; lines are "word<TAB>frequency" sorted by frequency,
+ *    highest first) built from the Leipzig news corpora
  *  - words learned from the user's typing ("dict_<lang>.txt")
  *  - imported word lists (merged into the learned file), one word per line
  *    or "word<TAB>count" — the same plain-text format MultiLing-style user
@@ -21,7 +25,8 @@ class WordStore(private val context: Context, private val langCode: String) {
     data class Cand(val word: String, val score: Int, val exact: Boolean, val sameLen: Boolean)
 
     private val learned = HashMap<String, Int>()
-    private var seeds: List<String> = emptyList()
+    private var seeds: List<String> = emptyList()   // frequency order, high → low
+    private var seedFreq: IntArray = IntArray(0)    // parallel corpus frequencies
     private var seedSet: HashSet<String> = HashSet()
     private val bigrams = HashMap<String, HashMap<String, Int>>()
     private var loaded = false
@@ -30,6 +35,13 @@ class WordStore(private val context: Context, private val langCode: String) {
     private fun wordFile(): File = File(context.filesDir, "dict_$langCode.txt")
     private fun bigramFile(): File = File(context.filesDir, "bigram_$langCode.txt")
 
+    /** Parse everything up front (call from a background thread) so the
+     *  first keystroke doesn't pay the decompression cost. */
+    fun preload() {
+        ensureLoaded()
+    }
+
+    @Synchronized
     private fun ensureLoaded() {
         if (loaded) return
         loaded = true
@@ -41,11 +53,35 @@ class WordStore(private val context: Context, private val langCode: String) {
         } catch (_: Exception) {
         }
         try {
-            seeds = context.assets.open("dict/$langCode.txt")
-                .bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
-            seedSet = HashSet(seeds)
+            val stream = try {
+                XZInputStream(context.assets.open("dict/$langCode.txt.xz"))
+            } catch (_: Exception) {
+                context.assets.open("dict/$langCode.txt")
+            }
+            val ws = ArrayList<String>(70000)
+            val fs = ArrayList<Int>(70000)
+            stream.bufferedReader().useLines { lines ->
+                for (line in lines) {
+                    val idx = line.indexOf('\t')
+                    if (idx > 0) {
+                        val w = line.substring(0, idx)
+                        ws.add(w)
+                        fs.add(line.substring(idx + 1).toIntOrNull() ?: 1)
+                    } else {
+                        val w = line.trim()
+                        if (w.isNotEmpty()) {
+                            ws.add(w)
+                            fs.add(1)
+                        }
+                    }
+                }
+            }
+            seeds = ws
+            seedFreq = fs.toIntArray()
+            seedSet = HashSet(ws)
         } catch (_: Exception) {
             seeds = emptyList()
+            seedFreq = IntArray(0)
             seedSet = HashSet()
         }
         try {
@@ -104,7 +140,9 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /**
-     * Prefix completions: learned words first (by frequency), then seeds.
+     * Prefix completions: learned words first (by frequency), then seeds —
+     * which are already ordered by corpus frequency, so the most common
+     * words of the language come first.
      * A word typed only once is NOT suggested yet — this keeps one-off
      * typos out of the suggestion strip; a word must repeat to qualify.
      */
@@ -150,11 +188,12 @@ class WordStore(private val context: Context, private val langCode: String) {
         val out = ArrayList<Cand>()
         for ((w, c) in learned) {
             if (c < 2) continue
-            score(typed, w, c + 20, confusable)?.let { out.add(it) }
+            // the user's own words count as if used 100× more than corpus words
+            score(typed, w, freqScore(c * 100), confusable)?.let { out.add(it) }
         }
         if (useSeeds) {
-            for (w in seeds) {
-                score(typed, w, 1, confusable)?.let { out.add(it) }
+            for (i in seeds.indices) {
+                score(typed, seeds[i], freqScore(seedFreq[i]), confusable)?.let { out.add(it) }
             }
         }
         return out.asSequence()
@@ -163,6 +202,14 @@ class WordStore(private val context: Context, private val langCode: String) {
             .take(max)
             .toList()
     }
+
+    /**
+     * Corpus frequencies span 1 … ~1,000,000, so they are folded onto a log
+     * scale (≈ 0–550). One log-unit step (~40 points) weighs the same as one
+     * extra character of completion length, keeping very common words ahead
+     * without ever outranking an exact match (+10000) with an error match.
+     */
+    private fun freqScore(c: Int): Int = (ln(1.0 + c) * 40.0).toInt()
 
     private fun score(
         typed: String,
@@ -192,16 +239,26 @@ class WordStore(private val context: Context, private val langCode: String) {
         return Cand(w, s, exact, w.length == typed.length)
     }
 
-    /** Next-word prediction from learned bigrams (repeated pairs only). */
-    fun suggestNext(prev: String, max: Int): List<String> {
+    /**
+     * Next-word prediction: learned bigrams first (repeated pairs only),
+     * then the most frequent words of the language fill the empty slots.
+     */
+    fun suggestNext(prev: String, max: Int, useSeeds: Boolean): List<String> {
         if (prev.isEmpty()) return emptyList()
         ensureLoaded()
-        val m = bigrams[prev] ?: return emptyList()
-        return m.entries
-            .filter { it.value >= 2 }
-            .sortedByDescending { it.value }
-            .take(max)
-            .map { it.key }
+        val out = ArrayList<String>()
+        bigrams[prev]?.entries
+            ?.filter { it.value >= 2 }
+            ?.sortedByDescending { it.value }
+            ?.take(max)
+            ?.forEach { out.add(it.key) }
+        if (useSeeds && out.size < max) {
+            for (w in seeds) {
+                if (out.size >= max) break
+                if (w != prev && !out.contains(w)) out.add(w)
+            }
+        }
+        return out
     }
 
     /**

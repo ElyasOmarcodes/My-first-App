@@ -11,8 +11,8 @@ android {
     applicationId = "com.elyas.multiling"
     minSdk = 21
     targetSdk = 36
-    versionCode = 12
-    versionName = "1.10.0"
+    versionCode = 13
+    versionName = "1.11.0"
   }
 
   signingConfigs {
@@ -51,4 +51,6 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.preference)
+  // pure-Java LZMA2 decoder for the .xz-compressed frequency dictionaries
+  implementation(libs.xz)
 }
