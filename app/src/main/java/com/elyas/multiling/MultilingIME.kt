@@ -26,6 +26,11 @@ import androidx.preference.PreferenceManager
  */
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
+    companion object {
+        /** long-press token on the enter key: commit a real newline */
+        private const val SHIFT_ENTER = "⇧↵"
+    }
+
     private enum class Mode {
         LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI, EMOJI_SEARCH, CLIPBOARD, KAOMOJI
     }
@@ -434,7 +439,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             KeyDef(symLabel, code = Keys.SYM, width = 1.5f),
             KeyDef("Undo", code = Keys.UNDO, width = 3f),
             KeyDef("Redo", code = Keys.REDO, width = 3f),
-            KeyDef(enterLabel(), code = Keys.ENTER, width = 1.5f)
+            KeyDef(enterLabel(), null, listOf(SHIFT_ENTER), code = Keys.ENTER, width = 1.5f, hint = SHIFT_ENTER)
         )
     }
 
@@ -445,7 +450,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             lang.extraKey,
             KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
             KeyDef(lang.period, null, lang.periodAlts),
-            KeyDef(enterLabel(), code = Keys.ENTER, width = 1.5f)
+            KeyDef(enterLabel(), null, listOf(SHIFT_ENTER), code = Keys.ENTER, width = 1.5f, hint = SHIFT_ENTER)
         )
     }
 
@@ -455,7 +460,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         else KeyDef(",", null, listOf("،", ";")),
         KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
         KeyDef(lang.period, null, lang.periodAlts),
-        KeyDef(enterLabel(), code = Keys.ENTER, width = 1.5f)
+        KeyDef(enterLabel(), null, listOf(SHIFT_ENTER), code = Keys.ENTER, width = 1.5f, hint = SHIFT_ENTER)
     )
 
     private fun arrowRow(): List<KeyDef> = listOf(
@@ -749,7 +754,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             return
         }
 
-        // popup tokens: zwnj joins, date/time insert the current values
+        // popup tokens: shift+enter, zwnj joins, date/time insert values
+        if (rawText == SHIFT_ENTER) {
+            sendShiftEnter()
+            return
+        }
         val text = when (rawText) {
             "zwnj" -> "\u200C"
             "date" -> java.text.SimpleDateFormat(
@@ -998,6 +1007,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      * built-in undo manager driven by exactly these key events, so this is
      * crash-proof: fields without undo support simply ignore the events.
      */
+    /** Shift+Enter — a newline even in fields whose Enter means Send/Go. */
+    private fun sendShiftEnter() {
+        val ic = currentInputConnection ?: return
+        try {
+            val now = SystemClock.uptimeMillis()
+            val meta = KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON
+            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER, 0, meta))
+            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER, 0, meta))
+        } catch (_: Exception) {
+        }
+    }
+
     private fun sendCtrlKey(keyCode: Int, withShift: Boolean) {
         val ic = currentInputConnection ?: return
         try {
@@ -1149,14 +1170,32 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         rebuildKeyboard()
     }
 
+    /** Round-fill icon for each panel-menu entry. */
+    private fun menuIcon(code: Int): Int = when (code) {
+        Keys.EDIT_PANEL -> R.drawable.ic_cat_control
+        Keys.NUMPAD -> R.drawable.ic_key_numpad
+        Keys.EMOJI -> R.drawable.ic_key_emoji
+        Keys.KAOMOJI -> R.drawable.ic_key_kaomoji
+        Keys.CLIPBOARD -> R.drawable.ic_key_clipboard
+        Keys.MIC -> R.drawable.ic_key_mic
+        Keys.LANGS -> R.drawable.ic_cat_lang
+        Keys.SETTINGS -> R.drawable.ic_key_settings
+        Keys.SPLIT -> R.drawable.ic_key_split
+        else -> 0
+    }
+
     override fun onSymLongPress() {
         feedback()
         val kv = keyboardView ?: return
         val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
         val splitOn = p.getBoolean("split_kb", false)
         val items = Layouts.menuItems() +
-            ((if (splitOn) "وېشل شوی کیبورډ ✓" else "وېشل شوی کیبورډ") to Keys.SPLIT)
-        kv.showGridMenu(items.map { it.first }, initial = 0) { which ->
+            ((if (splitOn) "وېشل ✓" else "وېشل") to Keys.SPLIT)
+        kv.showGridMenu(
+            items.map { it.first },
+            initial = 0,
+            icons = items.map { menuIcon(it.second) }
+        ) { which ->
             onSpecial(items[which].second)
         }
     }

@@ -488,6 +488,10 @@ class KeyboardView(context: Context) : View(context) {
         }
 
         drawLangFlash(canvas)
+
+        // low-brightness scrim under an open menu (the menu itself is a
+        // separate popup window above, so it stays fully bright)
+        if (menuDim) canvas.drawColor(0x96000000.toInt())
     }
 
     private val iconCache = HashMap<Int, android.graphics.drawable.Drawable?>()
@@ -727,7 +731,9 @@ class KeyboardView(context: Context) : View(context) {
             listener?.onSpaceLongPress()
             return
         }
-        if (key.def.code == Keys.SYM) {
+        if (key.def.code == Keys.SYM || key.def.code == Keys.ABC) {
+            // the corner key opens the panel menu in EVERY mode, whether it
+            // currently reads ۱۲۳/?123 or ابت
             st.longPressFired = true
             longPressPointerId = id // keep tracking this pointer for the grid
             dismissPreview()
@@ -821,13 +827,20 @@ class KeyboardView(context: Context) : View(context) {
      * The cells are also tappable, so the same grid works after the
      * finger has lifted (e.g. the language menu opened from this menu).
      */
-    fun showGridMenu(labels: List<String>, initial: Int = 0, cols: Int = 3, onSelect: (Int) -> Unit) {
+    fun showGridMenu(
+        labels: List<String>,
+        initial: Int = 0,
+        cols: Int = 3,
+        icons: List<Int>? = null,
+        onSelect: (Int) -> Unit
+    ) {
         dismissPopups()
         gridCols = cols
         gridHandler = onSelect
         val rowsCount = (labels.size + cols - 1) / cols
         gridCellW = (width * (if (cols == 1) 0.45f else 0.9f)) / cols
-        gridCellH = keyHeightDp * density * (if (cols == 1) 0.72f else 1f)
+        gridCellH = keyHeightDp * density *
+            (if (cols == 1) 0.72f else if (icons != null) 1.18f else 1f)
         val totalW = gridCellW * cols
         val totalH = gridCellH * rowsCount
 
@@ -835,8 +848,9 @@ class KeyboardView(context: Context) : View(context) {
         container.orientation = LinearLayout.VERTICAL
         container.layoutDirection = View.LAYOUT_DIRECTION_LTR
         val bg = GradientDrawable()
-        bg.setColor(theme.keyPressed)
-        bg.cornerRadius = 10 * density
+        // menus take the key colours so they match any custom theme
+        bg.setColor(keyFillColor)
+        bg.cornerRadius = 12 * density
         container.background = bg
 
         val views = ArrayList<TextView>()
@@ -851,8 +865,28 @@ class KeyboardView(context: Context) : View(context) {
                 val tv = TextView(context)
                 tv.text = labels[i]
                 tv.gravity = Gravity.CENTER
-                tv.setTextColor(theme.text)
-                tv.textSize = if (cols == 1) 14f else 17f
+                tv.setTextColor(labelColor)
+                tv.maxLines = 1
+                val iconRes = icons?.getOrNull(i) ?: 0
+                if (iconRes != 0) {
+                    // round-fill icon on top, short caption underneath
+                    val d = try {
+                        androidx.appcompat.content.res.AppCompatResources
+                            .getDrawable(context, iconRes)?.mutate()
+                    } catch (_: Exception) { null }
+                    if (d != null) {
+                        androidx.core.graphics.drawable.DrawableCompat
+                            .setTint(d, labelColor)
+                        val sz = (26 * density).toInt()
+                        d.setBounds(0, 0, sz, sz)
+                        tv.setCompoundDrawables(null, d, null, null)
+                        tv.compoundDrawablePadding = (5 * density).toInt()
+                        tv.setPadding(0, (12 * density).toInt(), 0, 0)
+                    }
+                    tv.textSize = 11.5f
+                } else {
+                    tv.textSize = if (cols == 1) 14f else 17f
+                }
                 tv.layoutParams =
                     LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
                 tv.setOnClickListener {
@@ -884,7 +918,13 @@ class KeyboardView(context: Context) : View(context) {
             (loc[0] + gridLeftInView).toInt(), (loc[1] + gridTopInView).toInt()
         )
         gridPopup = popup
+        // dim the keyboard behind the menu so the focus falls on the menu
+        menuDim = true
+        invalidate()
     }
+
+    /** True while a grid menu is open: the keys behind it are darkened. */
+    private var menuDim = false
 
     private fun updateGridSelection(x: Float, y: Float) {
         if (gridCount == 0) return
@@ -925,6 +965,10 @@ class KeyboardView(context: Context) : View(context) {
         gridCount = 0
         gridIndex = -1
         gridHandler = null
+        if (menuDim) {
+            menuDim = false
+            invalidate()
+        }
     }
 
     private fun updateAltSelection(x: Float, y: Float) {

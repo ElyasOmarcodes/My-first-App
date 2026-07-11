@@ -272,7 +272,7 @@ object Layouts {
                 KeyDef("ابت", code = Keys.ABC, width = 1.5f),
                 k(","), k(":"),
                 KeyDef("⌫", code = Keys.DELETE, repeatable = true),
-                KeyDef(enterLabel, code = Keys.ENTER, width = 1.5f)
+                KeyDef(enterLabel, null, listOf("\u21e7\u21b5"), code = Keys.ENTER, width = 1.5f, hint = "\u21e7\u21b5")
             )
         )
     }
@@ -318,7 +318,7 @@ object Layouts {
         "کنټرول" to Keys.EDIT_PANEL,
         "شمېرې" to Keys.NUMPAD,
         "ایموجي" to Keys.EMOJI,
-        "کاوموجي (^‿^)" to Keys.KAOMOJI,
+        "کاوموجي" to Keys.KAOMOJI,
         "کلیپ بورډ" to Keys.CLIPBOARD,
         "غږ" to Keys.MIC,
         "ژبې" to Keys.LANGS,
