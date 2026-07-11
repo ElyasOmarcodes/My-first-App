@@ -319,23 +319,61 @@ class KeyboardView(context: Context) : View(context) {
         layoutKeys()
     }
 
+    /** Samsung-style split keyboard: halves pushed to the screen edges with
+     *  an empty middle area — for tablets and unfolded foldables. */
+    var splitMode: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            layoutKeys()
+            invalidate()
+        }
+
     private fun layoutKeys() {
         placed = ArrayList()
         if (rows.isEmpty() || width == 0) return
         val gap = keyGapDp * density
         val sidePad = keyGapDp * density
+        val splitGap = if (splitMode) width * 0.22f else 0f
         var y = paddingTop.toFloat()
         for ((ri, row) in rows.withIndex()) {
             val rowH = rowHeightPx(row)
             val totalW = row.sumOf { it.width.toDouble() }.toFloat()
-            val unit = (width - 2 * sidePad) / totalW
+            val unit = (width - 2 * sidePad - splitGap) / totalW
             var x = sidePad
+            val half = totalW / 2f
+            var acc = 0f
+            var gapDone = splitGap == 0f
             for ((ki, key) in row.withIndex()) {
                 val w = key.width * unit
-                val rect = RectF(x + gap, y + gap, x + w - gap, y + rowH - gap)
                 val label = displayRows.getOrNull(ri)?.getOrNull(ki) ?: key.label
+                if (!gapDone && acc >= half - 0.01f) {
+                    // the row's midpoint: leave the split area empty
+                    x += splitGap
+                    gapDone = true
+                }
+                if (!gapDone && key.code == Keys.SPACE && acc + key.width > half) {
+                    // the space bar spans the middle: split it in two halves
+                    val leftW = (half - acc) * unit
+                    val rightW = w - leftW
+                    if (leftW > gap * 3) {
+                        placed.add(PlacedKey(key,
+                            RectF(x + gap, y + gap, x + leftW - gap, y + rowH - gap), label))
+                    }
+                    x += leftW + splitGap
+                    if (rightW > gap * 3) {
+                        placed.add(PlacedKey(key,
+                            RectF(x + gap, y + gap, x + rightW - gap, y + rowH - gap), label))
+                    }
+                    x += rightW
+                    acc += key.width
+                    gapDone = true
+                    continue
+                }
+                val rect = RectF(x + gap, y + gap, x + w - gap, y + rowH - gap)
                 placed.add(PlacedKey(key, rect, label))
                 x += w
+                acc += key.width
             }
             y += rowH
         }
@@ -465,6 +503,8 @@ class KeyboardView(context: Context) : View(context) {
     /** Map a special key's code to a round-fill icon (0 = draw text label). */
     private fun iconForKey(pk: PlacedKey): Int = when (pk.def.code) {
         Keys.SHIFT -> R.drawable.ic_key_shift
+        Keys.UNDO -> R.drawable.ic_key_undo
+        Keys.REDO -> R.drawable.ic_key_redo
         Keys.DELETE -> R.drawable.ic_key_backspace
         Keys.ENTER -> if (pk.displayLabel == "↵") R.drawable.ic_key_enter else 0
         Keys.ARROW_UP -> R.drawable.ic_key_arrow_up

@@ -156,8 +156,17 @@ class EmojiPanel(
     private val specialColor: Int,
     private val onEmoji: (String) -> Unit,
     private val onBack: () -> Unit,
-    private val onSearch: () -> Unit,
-    private val onDelete: () -> Unit
+    private val onSearch: (() -> Unit)?,
+    private val onDelete: () -> Unit,
+    /** the same panel also serves kaomoji: wider cells, no search */
+    private val categories: List<Pair<String, List<String>>> = EmojiData.CATEGORIES,
+    private val recentsKey: String = "emoji_recents",
+    /** kaomoji may contain commas, so their recents use a control char */
+    private val recentsSep: Char = ',',
+    private val columns: Int = 8,
+    private val itemTextSize: Float = 26f,
+    private val tabWidthDp: Int = 42,
+    private val tabTextSize: Float = 19f
 ) : LinearLayout(context) {
 
     private val density = resources.displayMetrics.density
@@ -206,7 +215,7 @@ class EmojiPanel(
         }
 
         addBtn("ابت", 0) { onBack() }
-        addBtn("", R.drawable.ic_key_search) { onSearch() }
+        onSearch?.let { s -> addBtn("", R.drawable.ic_key_search) { s() } }
 
         // category pill (rounded rect, normal-key colour, no stroke)
         val tabs = LinearLayout(context)
@@ -232,8 +241,9 @@ class EmojiPanel(
         fun addTab(label: String, iconRes: Int, cat: Int) {
             val tv = TextView(context)
             tv.text = label
+            tv.maxLines = 1
             tv.gravity = Gravity.CENTER
-            tv.textSize = 19f
+            tv.textSize = tabTextSize
             if (iconRes != 0) {
                 val d = try {
                     androidx.appcompat.content.res.AppCompatResources
@@ -248,11 +258,11 @@ class EmojiPanel(
                 }
             }
             tv.setOnClickListener { showCategory(cat) }
-            tabs.addView(tv, LayoutParams((42 * density).toInt(), LayoutParams.MATCH_PARENT))
+            tabs.addView(tv, LayoutParams((tabWidthDp * density).toInt(), LayoutParams.MATCH_PARENT))
             tabViews.add(tv)
         }
         addTab("", R.drawable.ic_key_recent, -1)
-        for ((i, c) in EmojiData.CATEGORIES.withIndex()) addTab(c.first, 0, i)
+        for ((i, c) in categories.withIndex()) addTab(c.first, 0, i)
 
         // emoji grid fills everything below the top bar
         addView(gridHolder, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
@@ -276,17 +286,18 @@ class EmojiPanel(
             val selected = (i == cat + 1)
             tv.background = if (selected) activeCircle() else null
         }
-        val emojis = if (cat == -1) loadRecents() else EmojiData.CATEGORIES[cat].second
+        val emojis = if (cat == -1) loadRecents() else categories[cat].second
         gridHolder.removeAllViews()
         val grid = GridLayout(context)
-        grid.columnCount = 8
+        grid.columnCount = columns
         grid.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        val cell = (resources.displayMetrics.widthPixels / 8f).toInt()
+        val cell = (resources.displayMetrics.widthPixels / columns.toFloat()).toInt()
         for (e in emojis) {
             val tv = TextView(context)
             tv.text = e
+            tv.maxLines = 1
             tv.gravity = Gravity.CENTER
-            tv.textSize = 26f
+            tv.textSize = itemTextSize
             tv.width = cell
             tv.height = (46 * density).toInt()
             tv.setOnClickListener {
@@ -302,14 +313,14 @@ class EmojiPanel(
     private fun prefs() = PreferenceManager.getDefaultSharedPreferences(context)
 
     private fun loadRecents(): List<String> =
-        (prefs().getString("emoji_recents", "") ?: "")
-            .split(',').filter { it.isNotEmpty() }
+        (prefs().getString(recentsKey, "") ?: "")
+            .split(recentsSep).filter { it.isNotEmpty() }
 
     private fun addRecent(e: String) {
         val list = ArrayList(loadRecents())
         list.remove(e)
         list.add(0, e)
         while (list.size > 40) list.removeAt(list.size - 1)
-        prefs().edit().putString("emoji_recents", list.joinToString(",")).apply()
+        prefs().edit().putString(recentsKey, list.joinToString(recentsSep.toString())).apply()
     }
 }

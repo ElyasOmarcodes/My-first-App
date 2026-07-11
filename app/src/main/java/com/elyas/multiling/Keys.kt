@@ -50,6 +50,8 @@ object Keys {
     const val SETTINGS = -24
     const val LANGS = -25
     const val CLIPBOARD = -26
+    const val KAOMOJI = -27
+    const val SPLIT = -28    // toggle split keyboard (tablets/foldables)
 
     // drawn icons (KeyDef.hintIcon)
     const val ICON_MIC = 1
@@ -64,6 +66,8 @@ object Keys {
     const val FWD_DEL = -36
     const val HOME = -37
     const val END = -38
+    const val UNDO = -40
+    const val REDO = -41
 }
 
 /** One language with its letter rows. Rows are defined visually left-to-right. */

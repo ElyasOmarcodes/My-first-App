@@ -26,7 +26,9 @@ import androidx.preference.PreferenceManager
  */
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
-    private enum class Mode { LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI, EMOJI_SEARCH, CLIPBOARD }
+    private enum class Mode {
+        LETTERS, SYM1, SYM2, EDIT, NUMPAD, EMOJI, EMOJI_SEARCH, CLIPBOARD, KAOMOJI
+    }
 
     private var keyboardView: KeyboardView? = null
     private var emojiPanel: EmojiPanel? = null
@@ -355,6 +357,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.showPreview = p.getBoolean("preview", true)
         kv.keyBorder = p.getBoolean("key_border", false)
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
+        kv.splitMode = p.getBoolean("split_kb", false)
         kv.longPressTimeout = (p.getString("longpress", "350") ?: "350").toLong()
         val density = resources.displayMetrics.density
         navGapAuto = p.getBoolean("nav_gap_auto", true)
@@ -423,6 +426,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** Control-panel bottom row: the space bar and its neighbours are
+     *  replaced by Undo/Redo (restore wrongly deleted text). */
+    private fun buildEditBottomRow(): List<KeyDef> {
+        val symLabel = if (lang.digits[0] == '0') "?123" else "۱۲۳"
+        return listOf(
+            KeyDef(symLabel, code = Keys.SYM, width = 1.5f),
+            KeyDef("Undo", code = Keys.UNDO, width = 3f),
+            KeyDef("Redo", code = Keys.REDO, width = 3f),
+            KeyDef(enterLabel(), code = Keys.ENTER, width = 1.5f)
+        )
+    }
+
     private fun buildBottomRow(): List<KeyDef> {
         val symLabel = if (lang.digits[0] == '0') "?123" else "۱۲۳"
         return listOf(
@@ -470,10 +485,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             Mode.EDIT -> {
                 rows.addAll(Layouts.editPanel())
-                rows.add(buildBottomRow())
+                rows.add(buildEditBottomRow())
             }
             Mode.NUMPAD -> rows.addAll(Layouts.numPad(lang, enterLabel()))
             Mode.EMOJI -> {}
+            Mode.KAOMOJI -> {}
             Mode.CLIPBOARD -> {}
             Mode.EMOJI_SEARCH -> {
                 rows.addAll(Layouts.ENGLISH.rows)
@@ -514,6 +530,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val kv = keyboardView ?: return
         if (mode == Mode.EMOJI) {
             showEmojiPanel()
+            return
+        }
+        if (mode == Mode.KAOMOJI) {
+            showKaomojiPanel()
             return
         }
         if (mode == Mode.CLIPBOARD) {
@@ -644,28 +664,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         holder.visibility = View.VISIBLE
     }
 
-    private fun showEmojiPanel() {
-        val kv = keyboardView ?: return
-        val holder = emojiHolder ?: return
-        kv.visibility = View.GONE
+    /** Panel colours follow the custom key colours when they are on. */
+    private fun panelColors(kv: KeyboardView): Pair<Int, Int> {
         val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
         val custom = p.getBoolean("col_custom", false)
-        val panel = EmojiPanel(
-            this, kv.theme,
-            bgColor = kv.resolvedBackground,
-            keyColor = if (custom) p.getInt("col_key", kv.theme.keyFill) else kv.theme.keyFill,
-            specialColor = if (custom) p.getInt("col_special", kv.theme.specialFill)
-                else kv.theme.specialFill,
-            onEmoji = { e -> currentInputConnection?.commitText(e, 1); feedback() },
-            onBack = { mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions() },
-            onSearch = {
-                emojiQuery.setLength(0)
-                mode = Mode.EMOJI_SEARCH
-                rebuildKeyboard()
-                updateEmojiSearch()
-            },
-            onDelete = { sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL); feedback() }
-        )
+        val key = if (custom) p.getInt("col_key", kv.theme.keyFill) else kv.theme.keyFill
+        val special = if (custom) p.getInt("col_special", kv.theme.specialFill)
+            else kv.theme.specialFill
+        return key to special
+    }
+
+    private fun showPanel(panel: EmojiPanel) {
+        val holder = emojiHolder ?: return
         emojiPanel = panel
         holder.removeAllViews()
         val density = resources.displayMetrics.density
@@ -678,6 +688,50 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             )
         )
         holder.visibility = View.VISIBLE
+    }
+
+    private fun showEmojiPanel() {
+        val kv = keyboardView ?: return
+        kv.visibility = View.GONE
+        val (keyCol, specialCol) = panelColors(kv)
+        showPanel(EmojiPanel(
+            this, kv.theme,
+            bgColor = kv.resolvedBackground,
+            keyColor = keyCol,
+            specialColor = specialCol,
+            onEmoji = { e -> currentInputConnection?.commitText(e, 1); feedback() },
+            onBack = { mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions() },
+            onSearch = {
+                emojiQuery.setLength(0)
+                mode = Mode.EMOJI_SEARCH
+                rebuildKeyboard()
+                updateEmojiSearch()
+            },
+            onDelete = { sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL); feedback() }
+        ))
+    }
+
+    private fun showKaomojiPanel() {
+        val kv = keyboardView ?: return
+        kv.visibility = View.GONE
+        val (keyCol, specialCol) = panelColors(kv)
+        showPanel(EmojiPanel(
+            this, kv.theme,
+            bgColor = kv.resolvedBackground,
+            keyColor = keyCol,
+            specialColor = specialCol,
+            onEmoji = { e -> currentInputConnection?.commitText(e, 1); feedback() },
+            onBack = { mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions() },
+            onSearch = null,
+            onDelete = { sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL); feedback() },
+            categories = KaomojiData.CATEGORIES,
+            recentsKey = "kaomoji_recents",
+            recentsSep = '\u0001',
+            columns = 3,
+            itemTextSize = 13.5f,
+            tabWidthDp = 58,
+            tabTextSize = 13f
+        ))
     }
 
     // ------------------------------------------------------------ listener
@@ -914,6 +968,45 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.FWD_DEL -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_FORWARD_DEL) }
             Keys.HOME -> { feedback(); sendLineStart() }
             Keys.END -> { feedback(); sendLineEnd() }
+            Keys.UNDO -> {
+                feedback()
+                wordBuffer.setLength(0)
+                sendCtrlKey(KeyEvent.KEYCODE_Z, withShift = false)
+                updateSuggestions()
+            }
+            Keys.REDO -> {
+                feedback()
+                wordBuffer.setLength(0)
+                sendCtrlKey(KeyEvent.KEYCODE_Z, withShift = true)
+                updateSuggestions()
+            }
+            Keys.KAOMOJI -> { feedback(); mode = Mode.KAOMOJI; rebuildKeyboard() }
+            Keys.SPLIT -> {
+                feedback()
+                val p = androidx.preference.PreferenceManager
+                    .getDefaultSharedPreferences(this)
+                val v = !p.getBoolean("split_kb", false)
+                p.edit().putBoolean("split_kb", v).apply()
+                keyboardView?.splitMode = v
+                rebuildKeyboard()
+            }
+        }
+    }
+
+    /**
+     * Undo = Ctrl+Z, Redo = Ctrl+Shift+Z — Android EditText fields have a
+     * built-in undo manager driven by exactly these key events, so this is
+     * crash-proof: fields without undo support simply ignore the events.
+     */
+    private fun sendCtrlKey(keyCode: Int, withShift: Boolean) {
+        val ic = currentInputConnection ?: return
+        try {
+            val now = SystemClock.uptimeMillis()
+            var meta = KeyEvent.META_CTRL_ON or KeyEvent.META_CTRL_LEFT_ON
+            if (withShift) meta = meta or KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON
+            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta))
+            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta))
+        } catch (_: Exception) {
         }
     }
 
@@ -1059,7 +1152,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onSymLongPress() {
         feedback()
         val kv = keyboardView ?: return
-        val items = Layouts.menuItems()
+        val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        val splitOn = p.getBoolean("split_kb", false)
+        val items = Layouts.menuItems() +
+            ((if (splitOn) "وېشل شوی کیبورډ ✓" else "وېشل شوی کیبورډ") to Keys.SPLIT)
         kv.showGridMenu(items.map { it.first }, initial = 0) { which ->
             onSpecial(items[which].second)
         }
@@ -1209,8 +1305,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val kv = keyboardView ?: return
         val prefix = wordBuffer.toString()
 
-        // item text to (isAccent, isTypedWord, isClip)
-        val items = ArrayList<Triple<String, Int, Boolean>>() // text, style, isClip
+        class SuggItem(
+            val text: String,
+            val style: Int,
+            val isClip: Boolean = false,
+            val isAutoText: Boolean = false
+        )
+
+        val items = ArrayList<SuggItem>()
         val STYLE_NORMAL = 0
         val STYLE_ACCENT = 1
         val STYLE_TYPED = 2
@@ -1218,11 +1320,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (prefix.isEmpty()) {
             // newest clipboard item, shown on EVERY empty line (reusable)
             if (isCurrentLineEmpty()) {
-                clipboardStore().newest()?.let { items.add(Triple(it, STYLE_ACCENT, true)) }
+                clipboardStore().newest()?.let { items.add(SuggItem(it, STYLE_ACCENT, isClip = true)) }
             }
             if (bigramsOn && lastWord.isNotEmpty()) {
                 for (w in store().suggestNext(lastWord, 4, seedDictOn)) {
-                    items.add(Triple(w, STYLE_NORMAL, false))
+                    items.add(SuggItem(w, STYLE_NORMAL))
                 }
             }
         } else {
@@ -1232,38 +1334,46 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 // the typed word is itself a valid word: highlight IT and never
                 // auto-replace it; similar words are only tappable extras
                 bestCandidate = null
-                items.add(Triple(prefix, STYLE_ACCENT, false))
+                items.add(SuggItem(prefix, STYLE_ACCENT))
                 if (autotextOn) {
                     for (e in autoTextStore().matching(prefix, 2)) {
-                        items.add(Triple(e, STYLE_NORMAL, false))
+                        items.add(SuggItem(e, STYLE_NORMAL, isAutoText = true))
                     }
                 }
-                for (c in cands) items.add(Triple(c.word, STYLE_NORMAL, false))
+                for (c in cands) items.add(SuggItem(c.word, STYLE_NORMAL))
             } else {
                 // unknown word: the top match is the correction target (blue),
                 // the typed word stays available (plain, long-press to save)
-                items.add(Triple(prefix, STYLE_TYPED, false))
+                items.add(SuggItem(prefix, STYLE_TYPED))
                 if (autotextOn) {
                     for (e in autoTextStore().matching(prefix, 2)) {
-                        items.add(Triple(e, STYLE_ACCENT, false))
+                        items.add(SuggItem(e, STYLE_ACCENT, isAutoText = true))
                     }
                 }
                 bestCandidate = cands.firstOrNull()
                 for ((i, c) in cands.withIndex()) {
-                    items.add(Triple(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL, false))
+                    items.add(SuggItem(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL))
                 }
             }
         }
 
         val density = resources.displayMetrics.density
         // a lone clipboard chip is centered, Samsung-style
-        val onlyChip = items.size == 1 && items[0].third
+        val onlyChip = items.size == 1 && items[0].isClip
         bar.minimumWidth = if (onlyChip) (suggestionScroll?.width ?: 0) else 0
         bar.gravity = android.view.Gravity.CENTER
 
-        for ((text, style, isClip) in items) {
+        for (item in items) {
+            val text = item.text
+            val style = item.style
+            val isClip = item.isClip
             val tv = TextView(this)
-            tv.text = if (isClip) text.take(60) else text
+            // multi-line AutoText phrases show as one line ("a ⏎ b" gaps fixed)
+            tv.text = when {
+                isClip -> text.take(60)
+                item.isAutoText -> text.replace(Regex("\\s*\\n\\s*"), " ")
+                else -> text
+            }
             tv.setTextColor(if (style == STYLE_ACCENT) kv.theme.accent else kv.theme.text)
             if (isClip) {
                 // rounded pill with an accent stroke and soft glow fill
@@ -1276,8 +1386,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 tv.maxWidth = (150 * density).toInt()
                 tv.ellipsize = android.text.TextUtils.TruncateAt.END
             }
+            if (item.isAutoText) {
+                // long phrases: slightly smaller and cut with … at ~½ screen
+                tv.maxWidth = (200 * density).toInt()
+                tv.ellipsize = android.text.TextUtils.TruncateAt.END
+            }
             if (style == STYLE_ACCENT) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
-            tv.textSize = if (isClip) 12.5f else suggFontSp
+            tv.textSize = when {
+                isClip -> 12.5f
+                item.isAutoText -> suggFontSp * 0.78f
+                else -> suggFontSp
+            }
             tv.maxLines = 1
             tv.setPadding((14 * density).toInt(), 0, (14 * density).toInt(), 0)
             tv.gravity = android.view.Gravity.CENTER
@@ -1301,6 +1420,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                         updateSuggestions()
                     }
                 }
+                item.isAutoText -> {
+                    // commit the ORIGINAL (possibly multi-line) phrase
+                    tv.setOnClickListener { commitAutoText(text) }
+                }
                 style == STYLE_TYPED -> {
                     tv.setOnClickListener { commitSuggestion(text) }
                     tv.setOnLongClickListener {
@@ -1321,6 +1444,20 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             bar.addView(tv)
         }
+    }
+
+    /** Replace the typed shortcut with its full AutoText phrase (which may
+     *  span several lines) — without learning the phrase as a "word". */
+    private fun commitAutoText(expansion: String) {
+        val ic = currentInputConnection ?: return
+        val prefix = wordBuffer.toString()
+        if (prefix.isNotEmpty()) ic.deleteSurroundingText(prefix.length, 0)
+        ic.commitText("$expansion ", 1)
+        wordBuffer.setLength(0)
+        lastWord = ""
+        bestCandidate = null
+        feedback()
+        updateSuggestions()
     }
 
     private fun commitSuggestion(word: String) {
