@@ -25,7 +25,8 @@ class AutoTextStore(private val context: Context) {
         }
     }
 
-    private val map = LinkedHashMap<String, String>()
+    /** A shortcut may carry SEVERAL phrases — all offered on the strip. */
+    private val map = LinkedHashMap<String, ArrayList<String>>()
     private var loaded = false
     private var dirty = false
 
@@ -48,7 +49,10 @@ class AutoTextStore(private val context: Context) {
         if (idx > 0 && idx < line.length - 1) {
             val short = line.substring(0, idx).trim()
             val full = unescape(line.substring(idx + 1).trim())
-            if (short.isNotEmpty() && full.isNotEmpty()) map[short] = full
+            if (short.isNotEmpty() && full.isNotEmpty()) {
+                val list = map.getOrPut(short) { ArrayList() }
+                if (!list.contains(full)) list.add(full)
+            }
         }
     }
 
@@ -77,33 +81,51 @@ class AutoTextStore(private val context: Context) {
 
     fun expansionFor(shortcut: String): String? {
         ensureLoaded()
-        return map[shortcut]
+        return map[shortcut]?.firstOrNull()
     }
 
-    /** Expansions whose shortcut starts with [prefix] — for the suggestion strip. */
+    /** Expansions whose shortcut starts with [prefix] — for the suggestion
+     *  strip. Exact-shortcut phrases come first, then prefix matches. */
     fun matching(prefix: String, max: Int): List<String> {
         if (prefix.isEmpty()) return emptyList()
         ensureLoaded()
         val out = ArrayList<String>()
-        for ((s, e) in map) {
-            if (s.startsWith(prefix)) {
-                out.add(e)
-                if (out.size >= max) break
+        map[prefix]?.let { out.addAll(it) }
+        for ((s, list) in map) {
+            if (out.size >= max) break
+            if (s != prefix && s.startsWith(prefix)) {
+                for (e in list) {
+                    out.add(e)
+                    if (out.size >= max) break
+                }
             }
         }
-        return out
+        return out.take(max)
     }
 
+    /** Adds one more phrase to the shortcut (nothing is overwritten). */
     fun put(shortcut: String, expansion: String) {
         ensureLoaded()
-        map[shortcut] = expansion
-        dirty = true
-        save()
+        val list = map.getOrPut(shortcut) { ArrayList() }
+        if (!list.contains(expansion)) {
+            list.add(expansion)
+            dirty = true
+            save()
+        }
     }
 
-    fun remove(shortcut: String) {
+    /** Remove one phrase; with [expansion] null, the whole shortcut goes. */
+    fun remove(shortcut: String, expansion: String? = null) {
         ensureLoaded()
-        if (map.remove(shortcut) != null) {
+        val list = map[shortcut] ?: return
+        val changed = if (expansion == null) {
+            map.remove(shortcut) != null
+        } else {
+            val r = list.remove(expansion)
+            if (list.isEmpty()) map.remove(shortcut)
+            r
+        }
+        if (changed) {
             dirty = true
             save()
         }
@@ -111,22 +133,26 @@ class AutoTextStore(private val context: Context) {
 
     fun all(): List<Pair<String, String>> {
         ensureLoaded()
-        return map.entries.map { it.key to it.value }
+        val out = ArrayList<Pair<String, String>>()
+        for ((s, list) in map) for (e in list) out.add(s to e)
+        return out
     }
 
     fun importText(text: String): Int {
         ensureLoaded()
-        val before = map.size
+        val before = map.values.sumOf { it.size }
         for (line in text.lineSequence()) parseLine(line)
         dirty = true
         save()
-        return map.size - before
+        return map.values.sumOf { it.size } - before
     }
 
     fun exportText(): String {
         ensureLoaded()
         val sb = StringBuilder()
-        for ((s, e) in map) sb.append(s).append('\t').append(escape(e)).append('\n')
+        for ((s, list) in map) {
+            for (e in list) sb.append(s).append('\t').append(escape(e)).append('\n')
+        }
         return sb.toString()
     }
 

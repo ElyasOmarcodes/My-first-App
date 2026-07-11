@@ -53,7 +53,8 @@ class AutoTextActivity : AppCompatActivity() {
                 .setTitle(entry.first)
                 .setMessage(R.string.autotext_delete_q)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    store.remove(entry.first)
+                    // a shortcut can carry several phrases: delete this one
+                    store.remove(entry.first, entry.second)
                     refresh()
                 }
                 .setNegativeButton(android.R.string.cancel, null)
@@ -93,7 +94,7 @@ class AutoTextActivity : AppCompatActivity() {
                 } else if (ns.contains(' ')) {
                     Toast.makeText(this, R.string.autotext_no_space, Toast.LENGTH_SHORT).show()
                 } else {
-                    if (ns != oldShortcut) store.remove(oldShortcut)
+                    store.remove(oldShortcut, oldExpansion)
                     store.put(ns, ne)
                     refresh()
                 }

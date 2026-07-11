@@ -60,6 +60,12 @@ class SettingsActivity : AppCompatActivity() {
         }
         supportActionBar?.setTitle(R.string.settings_title)
         supportFragmentManager.addOnBackStackChangedListener { updatePreviewVisibility() }
+
+        // the keyboard's menu can deep-link straight to a settings page
+        // (e.g. the active-languages screen)
+        when (intent?.getStringExtra("open_screen")) {
+            "langs" -> openScreen("langs", getString(R.string.pref_cat_langs))
+        }
     }
 
     override fun onResume() {

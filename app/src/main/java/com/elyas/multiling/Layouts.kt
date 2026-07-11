@@ -194,8 +194,8 @@ object Layouts {
             listOf(
                 k("@", null, "﹫"), k("#", null, "№ ♯"),
                 k("$", "؋", "€ £ ¥ ¢ ₹ ₨ ₽ ₺ ₩ ¤ ₿"),
-                k("_", null, "‾"), k("&", null, "§ ¶"),
-                k("-", null, "– — ±"), k("+", null, "±"),
+                k("%", "_", "‰ ٪ ‱"), k("&", null, "§ ¶"),
+                k("-", null, "_ – — ±"), k("+", null, "±"),
                 k("(", null, "[ { ⟨ ‹"), k(")", null, "] } ⟩ ›"),
                 k("/", null, "\\ | ÷")
             ),
@@ -314,14 +314,16 @@ object Layouts {
      * Items of the long-press-123 slide-to-select menu popup.
      * Text labels only — no emoji glyphs in the chrome.
      */
+    /** Control sits bottom-left (nearest the finger that long-pressed 123),
+     *  so it is pre-highlighted and a plain release opens it. */
     fun menuItems(): List<Pair<String, Int>> = listOf(
-        "کنټرول" to Keys.EDIT_PANEL,
+        "ژبې" to Keys.LANGS,
         "شمېرې" to Keys.NUMPAD,
         "ایموجي" to Keys.EMOJI,
         "کاوموجي" to Keys.KAOMOJI,
         "کلیپ بورډ" to Keys.CLIPBOARD,
         "غږ" to Keys.MIC,
-        "ژبې" to Keys.LANGS,
+        "کنټرول" to Keys.EDIT_PANEL,
         "تنظیمات" to Keys.SETTINGS
     )
 }

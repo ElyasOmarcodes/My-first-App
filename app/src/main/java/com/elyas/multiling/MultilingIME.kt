@@ -109,12 +109,29 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onCreate() {
         super.onCreate()
         ThemePresets.bootstrap(this)
+        bootstrapAutoText()
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
                 captureClipboard(cm)
                 // refresh the strip so a freshly copied text shows at once
                 if (keyboardView?.visibility == View.VISIBLE) updateSuggestions()
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    /** First run: load the bundled default AutoText shortcuts. */
+    private fun bootstrapAutoText() {
+        val p = PreferenceManager.getDefaultSharedPreferences(this)
+        if (p.getBoolean("autotext_init", false)) return
+        p.edit().putBoolean("autotext_init", true).apply()
+        try {
+            val store = autoTextStore()
+            if (store.all().isEmpty()) {
+                val text = assets.open("default_autotext.txt")
+                    .bufferedReader().readText()
+                store.importText(text)
             }
         } catch (_: Exception) {
         }
@@ -231,7 +248,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      * navigation the home bar overlaps the keyboard, so we add the nav-bar
      * inset as the gap.
      */
-    private fun autoGapDp(): Int {
+    /**
+     * Exact pixels the keyboard window overlaps the system navigation area
+     * (3-button bar OR gesture pill — any size, any device). The keyboard
+     * window is laid out edge-to-edge on modern Android, so whenever its
+     * bottom reaches the bottom of the screen the navigation inset must be
+     * padded away; when the system already keeps the window above the bar
+     * (older devices) no extra gap is added.
+     */
+    private fun autoGapPx(): Int {
         return try {
             val decor = window?.window?.decorView ?: return 0
             val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
@@ -239,11 +264,29 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val nav = insets.getInsets(
                 androidx.core.view.WindowInsetsCompat.Type.navigationBars()
             ).bottom
-            val tappable = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.tappableElement()
-            ).bottom
-            val px = if (tappable > 0) 0 else nav
-            (px / resources.displayMetrics.density).toInt().coerceIn(0, 48)
+            if (nav <= 0) return 0
+            val loc = IntArray(2)
+            decor.getLocationOnScreen(loc)
+            val windowBottom = loc[1] + decor.height
+            val screenBottom = realScreenHeight()
+            // pad only when the window really extends under the nav area
+            if (screenBottom <= 0 || windowBottom >= screenBottom - 4) {
+                nav.coerceAtMost((64 * resources.displayMetrics.density).toInt())
+            } else 0
+        } catch (_: Exception) { 0 }
+    }
+
+    private fun realScreenHeight(): Int {
+        return try {
+            val wm = getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                wm.currentWindowMetrics.bounds.height()
+            } else {
+                val p = android.graphics.Point()
+                @Suppress("DEPRECATION")
+                wm.defaultDisplay.getRealSize(p)
+                p.y
+            }
         } catch (_: Exception) { 0 }
     }
 
@@ -253,12 +296,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun applyBottomGap() {
         val kv = keyboardView ?: return
         val density = resources.displayMetrics.density
-        val dp = if (navGapAuto) autoGapDp() else manualBottomGapDp
-        val pad = (dp * density).toInt()
+        val pad = if (navGapAuto) autoGapPx() else (manualBottomGapDp * density).toInt()
         kv.setPadding(0, 0, 0, pad)
         kv.requestLayout()
         emojiHolder?.setPadding(0, 0, 0, pad)
         emojiHolder?.requestLayout()
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        // insets/positions are only final once the window is up — re-measure
+        if (navGapAuto) keyboardView?.post { applyBottomGap() }
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -573,7 +621,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
         root.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        root.setBackgroundColor(theme.background)
+        root.setBackgroundColor(kv.resolvedBackground)
 
         // header: title + clear-all
         val header = LinearLayout(this)
@@ -938,18 +986,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 updateSuggestions()
             }
             Keys.MIC -> startVoiceInput()
-            Keys.ARROW_UP -> {
-                feedback()
-                // on the first line (no line above), jump to the line start
-                if (!hasLineAbove()) sendLineStart()
-                else sendArrow(KeyEvent.KEYCODE_DPAD_UP)
-            }
-            Keys.ARROW_DOWN -> {
-                feedback()
-                // on the last line (no line below), jump to the line end
-                if (!hasLineBelow()) sendLineEnd()
-                else sendArrow(KeyEvent.KEYCODE_DPAD_DOWN)
-            }
+            Keys.ARROW_UP -> { feedback(); arrowVertical(up = true) }
+            Keys.ARROW_DOWN -> { feedback(); arrowVertical(up = false) }
             Keys.ARROW_LEFT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_LEFT) }
             Keys.ARROW_RIGHT -> { feedback(); sendArrow(KeyEvent.KEYCODE_DPAD_RIGHT) }
 
@@ -957,16 +995,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.NUMPAD -> { feedback(); mode = Mode.NUMPAD; rebuildKeyboard() }
             Keys.EMOJI -> { feedback(); mode = Mode.EMOJI; rebuildKeyboard() }
             Keys.CLIPBOARD -> { feedback(); mode = Mode.CLIPBOARD; rebuildKeyboard() }
-            Keys.LANGS -> { feedback(); showLanguageMenu() }
-            Keys.SETTINGS -> {
-                feedback()
-                try {
-                    val intent = Intent(this, SettingsActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(intent)
-                } catch (_: Exception) {
-                }
-            }
+            // the menu's languages entry opens the settings page where the
+            // ACTIVE languages are enabled/disabled (switching the current
+            // language stays on the space bar: swipe or long-press)
+            Keys.LANGS -> { feedback(); openSettings("langs") }
+            Keys.SETTINGS -> { feedback(); openSettings(null) }
 
             Keys.ESC -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ESCAPE) }
             Keys.TAB -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_TAB) }
@@ -1053,6 +1086,39 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         wordBuffer.append(original)
         updateSuggestions()
         return true
+    }
+
+    /**
+     * Vertical arrow: send DPAD up/down, then observe whether the cursor
+     * actually moved. When it didn't (first/last VISUAL line — including
+     * wrapped lines in narrow fields, which contain no newline character),
+     * jump to the logical start/end of the line instead. Falls back to the
+     * newline heuristic in fields that don't support text extraction.
+     */
+    private fun arrowVertical(up: Boolean) {
+        val posBefore = cursorPos()
+        sendArrow(if (up) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN)
+        if (posBefore == null) {
+            if (up && !hasLineAbove()) sendLineStart()
+            if (!up && !hasLineBelow()) sendLineEnd()
+            return
+        }
+        keyboardView?.postDelayed({
+            val now = cursorPos()
+            if (now != null && now == posBefore) {
+                if (up) sendLineStart() else sendLineEnd()
+            }
+        }, 70)
+    }
+
+    /** Absolute cursor position, or null when the field can't report it. */
+    private fun cursorPos(): Int? {
+        val ic = currentInputConnection ?: return null
+        val et = try {
+            ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+        } catch (_: Exception) { null } ?: return null
+        if (et.selectionEnd < 0) return null
+        return et.startOffset + et.selectionEnd
     }
 
     /**
@@ -1162,6 +1228,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         showLanguageMenu()
     }
 
+    private fun openSettings(screen: String?) {
+        try {
+            val intent = Intent(this, SettingsActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (screen != null) intent.putExtra("open_screen", screen)
+            startActivity(intent)
+        } catch (_: Exception) {
+        }
+    }
+
     override fun onShiftLongPress() {
         if (mode == Mode.EDIT) return
         feedback()
@@ -1172,13 +1248,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     /** Round-fill icon for each panel-menu entry. */
     private fun menuIcon(code: Int): Int = when (code) {
-        Keys.EDIT_PANEL -> R.drawable.ic_cat_control
+        Keys.EDIT_PANEL -> R.drawable.ic_key_control
         Keys.NUMPAD -> R.drawable.ic_key_numpad
         Keys.EMOJI -> R.drawable.ic_key_emoji
         Keys.KAOMOJI -> R.drawable.ic_key_kaomoji
         Keys.CLIPBOARD -> R.drawable.ic_key_clipboard
         Keys.MIC -> R.drawable.ic_key_mic
-        Keys.LANGS -> R.drawable.ic_cat_lang
+        Keys.LANGS -> R.drawable.ic_key_lang
         Keys.SETTINGS -> R.drawable.ic_key_settings
         Keys.SPLIT -> R.drawable.ic_key_split
         else -> 0
@@ -1193,7 +1269,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             ((if (splitOn) "وېشل ✓" else "وېشل") to Keys.SPLIT)
         kv.showGridMenu(
             items.map { it.first },
-            initial = 0,
+            // control pre-selected: releasing the long-press opens it
+            initial = items.indexOfFirst { it.second == Keys.EDIT_PANEL },
             icons = items.map { menuIcon(it.second) }
         ) { which ->
             onSpecial(items[which].second)
@@ -1375,7 +1452,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 bestCandidate = null
                 items.add(SuggItem(prefix, STYLE_ACCENT))
                 if (autotextOn) {
-                    for (e in autoTextStore().matching(prefix, 2)) {
+                    for (e in autoTextStore().matching(prefix, 3)) {
                         items.add(SuggItem(e, STYLE_NORMAL, isAutoText = true))
                     }
                 }
@@ -1385,7 +1462,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 // the typed word stays available (plain, long-press to save)
                 items.add(SuggItem(prefix, STYLE_TYPED))
                 if (autotextOn) {
-                    for (e in autoTextStore().matching(prefix, 2)) {
+                    for (e in autoTextStore().matching(prefix, 3)) {
                         items.add(SuggItem(e, STYLE_ACCENT, isAutoText = true))
                     }
                 }
