@@ -29,6 +29,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     companion object {
         /** long-press token on the enter key: commit a real newline */
         private const val SHIFT_ENTER = "⇧↵"
+
+        /** separators that delete a space left before them ("word ،"→"word،") */
+        private val TIGHT_PUNCT = setOf("،", ".", ":", "۔", "؛")
     }
 
     private enum class Mode {
@@ -261,9 +264,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val decor = window?.window?.decorView ?: return 0
             val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
                 ?: return 0
-            val nav = insets.getInsets(
+            // gesture mode: while the keyboard is open the system draws its
+            // own hide/switch buttons at the very bottom — that TAPPABLE
+            // strip can be taller than the plain gesture pill, so take the
+            // larger of the two insets
+            val navOnly = insets.getInsets(
                 androidx.core.view.WindowInsetsCompat.Type.navigationBars()
             ).bottom
+            val tappable = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.tappableElement()
+            ).bottom
+            val nav = maxOf(navOnly, tappable)
             if (nav <= 0) return 0
             val loc = IntArray(2)
             decor.getLocationOnScreen(loc)
@@ -491,6 +502,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         )
     }
 
+    /** Back-to-letters label: ZWNJ keeps the Arabic letters unjoined. */
+    private fun abcLabel(): String = if (lang.rtl) "اب‌ت" else "Abc"
+
     private fun buildBottomRow(): List<KeyDef> {
         val symLabel = if (lang.digits[0] == '0') "?123" else "۱۲۳"
         return listOf(
@@ -503,8 +517,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun buildSymBottomRow(): List<KeyDef> = listOf(
-        KeyDef("ابت", code = Keys.ABC, width = 1.5f),
-        if (lang.rtl) KeyDef("،", null, listOf(",", "؛"))
+        KeyDef(abcLabel(), code = Keys.ABC, width = 1.5f),
+        // the letters layout has the comma here, so the 123 layout gets
+        // the tatweel on the same key
+        if (lang.rtl) KeyDef("ـ", null, listOf("،", "؛", ","))
         else KeyDef(",", null, listOf("،", ";")),
         KeyDef(lang.nativeName, code = Keys.SPACE, width = 4f),
         KeyDef(lang.period, null, lang.periodAlts),
@@ -876,7 +892,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             lastWord = committed
         }
         bestCandidate = null
-        if (commitSep && sep.isNotEmpty()) ic?.commitText(sep, 1)
+        if (commitSep && sep.isNotEmpty()) {
+            // punctuation hugs the word before it: "کلمه ،" → "کلمه،"
+            if (sep in TIGHT_PUNCT && ic != null) {
+                try {
+                    if (ic.getTextBeforeCursor(1, 0)?.toString() == " ") {
+                        ic.deleteSurroundingText(1, 0)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+            ic?.commitText(sep, 1)
+        }
         updateAutoCaps()
     }
 

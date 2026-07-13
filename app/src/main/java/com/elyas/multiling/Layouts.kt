@@ -17,7 +17,7 @@ object Layouts {
     private val psRows = listOf(
         listOf(
             k("ض", "ً"), k("ص", "ٌ"), k("ث", "ٍ"), k("ق", "َ"), k("ف", "ُ"),
-            k("غ", "ِ"), k("ع", "ّ"), k("ه", "ْ", "ة ۀ ہ"), k("خ", "ځ"),
+            k("غ", "ِ"), k("ع", "ّ"), k("ه", "ۀ", "ة ہ ْ"), k("خ", "ځ"),
             k("ح", "څ"), k("ج", "]", "}"), k("چ", "[", "{")
         ),
         listOf(
@@ -32,20 +32,22 @@ object Layouts {
     )
 
     // ------------------------------------------------------------ Dari/Farsi
+    // standard Persian layout: only Dari/Farsi letters — no Pashto-specific
+    // characters and no extra yā forms
     private val faRows = listOf(
         listOf(
             k("ض", "ً"), k("ص", "ٌ"), k("ث", "ٍ"), k("ق", "َ"), k("ف", "ُ"),
-            k("غ", "ِ"), k("ع", "ّ"), k("ه", "ة", "ۀ ه‌"), k("خ", "ْ"),
+            k("غ", "ِ"), k("ع", "ّ"), k("ه", "ۀ", "ة هٔ"), k("خ", "ْ"),
             k("ح", "ٔ"), k("ج", "]", "}"), k("چ", "[", "{")
         ),
         listOf(
-            k("ش", "ؤ"), k("س", "ئ"), k("ی", "ي", "ې ى ے"), k("ب", "پ"),
+            k("ش", "ؤ"), k("س", "ئ"), k("ی", "ئ", "ي ى"), k("ب", "پ"),
             k("ل", "أ"), k("ا", "آ", "أ إ ء"), k("ت", "ة"), k("ن", "«"),
             k("م", "»"), k("ک", "ك"), k("گ")
         ),
         listOf(
-            shiftKey(), k("ظ", "ئ"), k("ط", "ي"), k("ز", "ژ"), k("ر", "ٰ"),
-            k("ذ", "ء"), k("د", "ٔ"), k("پ", "؟"), k("و", "ؤ"), k("ژ", "ے"), delKey()
+            shiftKey(), k("ظ", "ء"), k("ط", "ي"), k("ز", "ژ"), k("ر", "ٰ"),
+            k("ذ", "؟"), k("د", "ٔ"), k("پ", "ئ"), k("و", "ؤ"), k("ژ"), delKey()
         )
     )
 
@@ -71,7 +73,7 @@ object Layouts {
     private val urRows = listOf(
         listOf(
             k("ض", "ً"), k("ص", "ٌ"), k("ث", "ٍ"), k("ق", "َ"), k("ف", "ُ"),
-            k("غ", "ِ"), k("ع", "ّ"), k("ہ", "ھ", "ۃ ه"), k("خ", "ْ"),
+            k("غ", "ِ"), k("ع", "ّ"), k("ہ", "ھ", "ۂ ۃ ه ۀ"), k("خ", "ْ"),
             k("ح", "ٔ"), k("ج", "]", "}"), k("چ", "[", "{")
         ),
         listOf(
@@ -113,10 +115,10 @@ object Layouts {
         val alts = listOf(
             "؛", "٪", "«", "»", "؟", "!",
             "ً", "ٌ", "ٍ", "َ", "ُ", "ِ",
-            "ّ", "ْ", "ٔ", "ٰ", "zwnj", "ـ",
-            "…", "،", "ﷲ", "ﷺ", "ﷻ", "﷽"
+            "ّ", "ْ", "ٔ", "ٰ", "zwnj", "…",
+            "ـ", ".", "ﷲ", "ﷺ", "ﷻ", "﷽"
         )
-        return KeyDef("ـ", null, alts)
+        return KeyDef("،", null, alts)
     }
 
     /** Rich period-key long-press set (RTL). */
@@ -202,7 +204,8 @@ object Layouts {
             listOf(
                 KeyDef("=\\<", code = Keys.SYM2, width = 1.4f),
                 k("*", null, "† ‡ ★ ✱"), k("\"", null, "“ ” „ « »"),
-                k("'", null, "‘ ’ ` ′"), k(":", null, "∶"), k(";"),
+                k("'", null, "‘ ’ ` ′"), k(":", null, "∶"),
+                if (lang.rtl) KeyDef("؛", ";") else k(";", "؛"),
                 k("!", null, "¡ ‼"),
                 if (lang.rtl) KeyDef("؟", "?", listOf("¿", "⁇"))
                 else KeyDef("?", "؟", listOf("¿", "⁇")), delKey()
@@ -262,6 +265,7 @@ object Layouts {
 
     /** Number pad — always standard Latin digits. */
     fun numPad(lang: Language, enterLabel: String = "↵"): List<List<KeyDef>> {
+        val abc = if (lang.rtl) "اب‌ت" else "Abc"
         val d = "0123456789".map { it.toString() }
         return listOf(
             listOf(k(d[1]), k(d[2]), k(d[3]), k("÷", null, "/")),
@@ -269,7 +273,7 @@ object Layouts {
             listOf(k(d[7]), k(d[8]), k(d[9]), k("-", null, "_")),
             listOf(k("+"), k(d[0]), k("."), k("=", null, "%")),
             listOf(
-                KeyDef("ابت", code = Keys.ABC, width = 1.5f),
+                KeyDef(abc, code = Keys.ABC, width = 1.5f),
                 k(","), k(":"),
                 KeyDef("⌫", code = Keys.DELETE, repeatable = true),
                 KeyDef(enterLabel, null, listOf("\u21e7\u21b5"), code = Keys.ENTER, width = 1.5f, hint = "\u21e7\u21b5")

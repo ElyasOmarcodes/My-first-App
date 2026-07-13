@@ -214,7 +214,7 @@ class EmojiPanel(
             top.addView(tv, lp)
         }
 
-        addBtn("ابت", 0) { onBack() }
+        addBtn("اب‌ت", 0) { onBack() }
         onSearch?.let { s -> addBtn("", R.drawable.ic_key_search) { s() } }
 
         // category pill (rounded rect, normal-key colour, no stroke)
