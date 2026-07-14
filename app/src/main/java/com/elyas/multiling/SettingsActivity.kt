@@ -201,6 +201,10 @@ class SettingsActivity : AppCompatActivity() {
                 (activity as? SettingsActivity)?.openScreen("colors", pref.title ?: "")
                 true
             }
+            findPreference<Preference>("screen_about")?.setOnPreferenceClickListener {
+                startActivity(Intent(requireContext(), AboutActivity::class.java))
+                true
+            }
         }
 
         private fun wireLook() {

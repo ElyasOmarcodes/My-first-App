@@ -18,4 +18,6 @@
         android:summary="@string/screen_feedback_sum" android:icon="@drawable/ic_cat_feedback" />
     <Preference android:key="screen_backup" android:title="@string/pref_cat_dict"
         android:summary="@string/screen_backup_sum" android:icon="@drawable/ic_cat_backup" />
+    <Preference android:key="screen_about" android:title="@string/about_title"
+        android:summary="@string/screen_about_sum" android:icon="@drawable/ic_key_info" />
 </PreferenceScreen>

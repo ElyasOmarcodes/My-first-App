@@ -87,6 +87,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
 
     private var clipStore: ClipboardStore? = null
+    // clip chip: with clip_chip_repeat OFF the chip disappears after one use
+    private var clipChipRepeat = false
+    private var consumedClip: String? = null
 
     private val wordStores = HashMap<String, WordStore>()
     private val preloadedLangs = HashSet<String>()
@@ -146,7 +149,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
                 ?.trim()?.ifEmpty { null }
         } catch (_: Exception) { null }
-        if (text != null) clipboardStore().add(text)
+        if (text != null) {
+            clipboardStore().add(text)
+            consumedClip = null // a fresh copy re-arms the one-time chip
+        }
     }
 
     override fun onCreateInputView(): View {
@@ -444,6 +450,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         autoCapsOn = p.getBoolean("autocaps", true)
         suggFontSp = p.getInt("sugg_font", 17).toFloat()
         arrowsOn = p.getBoolean("arrows", true)
+        clipChipRepeat = p.getBoolean("clip_chip_repeat", false)
 
         val dv = p.getInt("data_version", 0)
         if (dv != lastDataVersion) {
@@ -670,10 +677,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         root.addView(header, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, (42 * density).toInt()))
 
-        // items
+        // items: 3-column grid; the pin in a cell's corner keeps that item
         val scroll = android.widget.ScrollView(this)
-        val list = LinearLayout(this)
-        list.orientation = LinearLayout.VERTICAL
+        val grid = android.widget.GridLayout(this)
+        grid.columnCount = 3
+        grid.layoutDirection = View.LAYOUT_DIRECTION_RTL
         val items = clipboardStore().all()
         if (items.isEmpty()) {
             val tv = TextView(this)
@@ -681,47 +689,73 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             tv.setTextColor(theme.hint)
             tv.textSize = 15f
             tv.gravity = android.view.Gravity.CENTER
-            tv.setPadding(0, (30 * density).toInt(), 0, 0)
-            list.addView(tv, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT))
-        }
-        for ((i, item) in items.withIndex()) {
-            val bg = android.graphics.drawable.GradientDrawable()
-            bg.setColor(theme.keyFill)
-            bg.cornerRadius = 10 * density
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT)
-            lp.setMargins((8 * density).toInt(), (3 * density).toInt(),
-                (8 * density).toInt(), (3 * density).toInt())
+            tv.setPadding((10 * density).toInt(), (30 * density).toInt(),
+                (10 * density).toInt(), 0)
+            scroll.addView(tv)
+        } else {
+            val (keyCol, _) = panelColors(kv)
+            val cellMargin = (4 * density).toInt()
+            val cellW = (resources.displayMetrics.widthPixels -
+                6 * cellMargin - (16 * density).toInt()) / 3
+            for (item in items) {
+                val pinned = clipboardStore().isPinned(item)
+                val cell = android.widget.FrameLayout(this)
+                val bg = android.graphics.drawable.GradientDrawable()
+                bg.setColor(keyCol)
+                bg.cornerRadius = 12 * density
+                if (pinned) bg.setStroke((1.5f * density).toInt(), theme.accent)
+                cell.background = bg
 
-            val tv = TextView(this)
-            tv.text = item.take(120)
-            tv.maxLines = 2
-            tv.ellipsize = android.text.TextUtils.TruncateAt.END
-            tv.setTextColor(theme.text)
-            tv.textSize = 14f
-            tv.setPadding((12 * density).toInt(), (10 * density).toInt(),
-                (12 * density).toInt(), (10 * density).toInt())
-            tv.background = bg
-            tv.layoutParams = lp
-            tv.setOnClickListener {
-                currentInputConnection?.commitText(item, 1)
-                feedback()
-                mode = Mode.LETTERS
-                rebuildKeyboard()
-                updateSuggestions()
+                val tv = TextView(this)
+                tv.text = item.take(110)
+                tv.maxLines = 3
+                tv.ellipsize = android.text.TextUtils.TruncateAt.END
+                tv.setTextColor(theme.text)
+                tv.textSize = 12.5f
+                tv.setPadding((10 * density).toInt(), (22 * density).toInt(),
+                    (10 * density).toInt(), (8 * density).toInt())
+                cell.addView(tv, android.widget.FrameLayout.LayoutParams(
+                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+
+                val pin = android.widget.ImageView(this)
+                pin.setImageDrawable(tintedIcon(
+                    R.drawable.ic_key_pin,
+                    if (pinned) theme.accent else (theme.hint and 0x88FFFFFF.toInt()),
+                    (15 * density).toInt()))
+                pin.setPadding((6 * density).toInt(), (6 * density).toInt(),
+                    (6 * density).toInt(), (6 * density).toInt())
+                pin.setOnClickListener {
+                    feedback()
+                    clipboardStore().togglePin(item)
+                    mode = Mode.CLIPBOARD
+                    rebuildKeyboard()
+                }
+                cell.addView(pin, android.widget.FrameLayout.LayoutParams(
+                    (28 * density).toInt(), (28 * density).toInt(),
+                    android.view.Gravity.TOP or android.view.Gravity.START))
+
+                cell.setOnClickListener {
+                    currentInputConnection?.commitText(item, 1)
+                    feedback()
+                    mode = Mode.LETTERS
+                    rebuildKeyboard()
+                    updateSuggestions()
+                }
+                cell.setOnLongClickListener {
+                    clipboardStore().remove(item)
+                    mode = Mode.CLIPBOARD
+                    rebuildKeyboard()
+                    true
+                }
+                val glp = android.widget.GridLayout.LayoutParams()
+                glp.width = cellW
+                glp.height = (78 * density).toInt()
+                glp.setMargins(cellMargin, cellMargin, cellMargin, cellMargin)
+                grid.addView(cell, glp)
             }
-            tv.setOnLongClickListener {
-                clipboardStore().removeAt(i)
-                mode = Mode.CLIPBOARD
-                rebuildKeyboard()
-                true
-            }
-            list.addView(tv)
+            scroll.addView(grid)
         }
-        scroll.addView(list)
         root.addView(scroll, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
@@ -1461,9 +1495,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val STYLE_TYPED = 2
 
         if (prefix.isEmpty()) {
-            // newest clipboard item, shown on EVERY empty line (reusable)
+            // newest clipboard item; with repeat OFF the chip is one-shot
             if (isCurrentLineEmpty()) {
-                clipboardStore().newest()?.let { items.add(SuggItem(it, STYLE_ACCENT, isClip = true)) }
+                clipboardStore().newest()?.let {
+                    if (clipChipRepeat || it != consumedClip) {
+                        items.add(SuggItem(it, STYLE_ACCENT, isClip = true))
+                    }
+                }
             }
             if (bigramsOn && lastWord.isNotEmpty()) {
                 for (w in store().suggestNext(lastWord, 4, seedDictOn)) {
@@ -1501,6 +1539,34 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         val density = resources.displayMetrics.density
+
+        // an empty strip becomes a quick-action row: settings, control,
+        // clipboard, numpad, emoji
+        if (items.isEmpty() && prefix.isEmpty()) {
+            bar.minimumWidth = suggestionScroll?.width ?: 0
+            bar.gravity = android.view.Gravity.CENTER
+            val actions = listOf(
+                R.drawable.ic_key_settings to Keys.SETTINGS,
+                R.drawable.ic_key_control to Keys.EDIT_PANEL,
+                R.drawable.ic_key_clipboard to Keys.CLIPBOARD,
+                R.drawable.ic_key_numpad to Keys.NUMPAD,
+                R.drawable.ic_key_emoji to Keys.EMOJI
+            )
+            for ((iconRes, code) in actions) {
+                val iv = android.widget.ImageView(this)
+                iv.setImageDrawable(
+                    tintedIcon(iconRes, kv.theme.hint, (20 * density).toInt())
+                )
+                iv.scaleType = android.widget.ImageView.ScaleType.CENTER
+                iv.setOnClickListener { onSpecial(code) }
+                val lp = LinearLayout.LayoutParams(
+                    (52 * density).toInt(), LinearLayout.LayoutParams.MATCH_PARENT
+                )
+                bar.addView(iv, lp)
+            }
+            return
+        }
+
         // a lone clipboard chip is centered, Samsung-style
         val onlyChip = items.size == 1 && items[0].isClip
         bar.minimumWidth = if (onlyChip) (suggestionScroll?.width ?: 0) else 0
@@ -1556,10 +1622,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             tv.layoutParams = lp
             when {
                 isClip -> {
-                    // paste but keep the chip available on the next empty line
                     tv.setOnClickListener {
                         currentInputConnection?.commitText(text, 1)
                         feedback()
+                        // one-shot mode: this chip is spent after one use
+                        if (!clipChipRepeat) consumedClip = text
                         updateSuggestions()
                     }
                 }

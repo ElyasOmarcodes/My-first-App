@@ -35,7 +35,7 @@ col_key_grad	i	-13618891
 col_key_grad_on	b	true
 col_key_mode	s	2
 col_key_grad_style	s	linear
-col_key_grad_dir	s	d1
+col_key_grad_dir	s	v
 col_special	i	-13816269
 col_special_grad	i	-14737371
 col_special_grad_on	b	true

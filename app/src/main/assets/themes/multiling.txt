@@ -25,4 +25,4 @@ bottom_gap	i	42
 col_hint	i	-7629132
 col_key_mode	s	2
 col_special	i	-13816269
-col_key_grad_dir	s	d1
+col_key_grad_dir	s	v

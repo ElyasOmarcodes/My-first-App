@@ -1,5 +1,22 @@
 <resources>
-    <string name="app_name">ملټي کیبورډ</string>
+    <string name="app_name">Hindukush Kb</string>
+
+    <string name="about_title">د پروګرام په اړه</string>
+    <string name="about_version">نسخه %1$s</string>
+    <string name="about_publisher">هندوکش غږ خپرندویه ټولنه\nHindukush Voice</string>
+    <string name="about_desc">Hindukush Kb — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
+        بشپړ آفلاین، چټک او مسلکي کیبورډ.\nد هندوکش غږ خپرندویې ټولنې یو محصول.</string>
+    <string name="about_sites">زموږ ویب پاڼې</string>
+    <string name="about_privacy">د محرمیت پالیسي (Privacy Policy)</string>
+    <string name="screen_about_sum">نسخه، جوړونکې اداره، ویب پاڼې او پالیسي</string>
+    <string name="privacy_text">Hindukush Kb یو بشپړ آفلاین کیبورډ دی.\n\n
+• دا اپلیکیشن د انټرنیټ اجازه (INTERNET permission) نه لري، نو ستاسو لیکل شوي معلومات
+له وسیلې بهر نه شي لېږل کېدای.\n
+• هر څه چې لیکئ، زده شوې کلمې، لنډیزونه او د کلیپ بورډ تاریخچه یوازې ستاسو
+د موبایل په حافظه کې خوندي کیږي او یوازې تاسو ورته لاسرسی لرئ.\n
+• دا اپلیکیشن هیڅ شخصي معلومات نه راټولوي، نه یې شریکوي او نه یې چا ته پلوري.\n
+• د اعلاناتو یا تحلیل (Analytics) هیڅ کوډ پکې نشته.\n\n
+اړیکه: elyasomar001@gmail.com\nHindukush Voice — hindukushen.com</string>
     <string name="settings_title">د کیبورډ تنظیمات</string>
     <string name="done">ترسره شو ✔</string>
     <string name="imported_n_words">%1$d نوي توکي ورزیات شول ✔</string>
@@ -10,10 +27,10 @@
     <string name="lang_ur">اردو</string>
     <string name="lang_en">English</string>
 
-    <string name="setup_title">ملټي کیبورډ ته ښه راغلاست 🎉</string>
+    <string name="setup_title">Hindukush Kb ته ښه راغلاست 🎉</string>
     <string name="setup_desc">د کارولو لپاره دا درې ګامونه بشپړ کړئ:</string>
     <string name="setup_step1">۱. کیبورډ د سیسټم په تنظیماتو کې فعال کړئ</string>
-    <string name="setup_step2">۲. ملټي کیبورډ د اوسني کیبورډ په توګه وټاکئ</string>
+    <string name="setup_step2">۲. Hindukush Kb د اوسني کیبورډ په توګه وټاکئ</string>
     <string name="setup_step3">۳. دلته یې وازمایئ</string>
     <string name="btn_enable">فعالول (Enable)</string>
     <string name="btn_pick">کیبورډ ټاکل (Select)</string>
@@ -133,6 +150,9 @@
     <string name="screen_control_sum">د تیرو کیلۍ او کنټرول</string>
     <string name="screen_feedback_sum">لړزول او غږونه</string>
     <string name="screen_backup_sum">د تنظیماتو او لغتنامې شاتړ</string>
+
+    <string name="pref_clip_repeat">د کاپي متن تکراري وړاندیز</string>
+    <string name="pref_clip_repeat_sum">فعال: د کاپي متن مستطیل په هر تش لاین کې ښکاري • غیرفعال: له یو ځل کارولو وروسته پټیږي</string>
 
     <string name="pref_autocorrect">اتومات سمون (Auto-correct)</string>
     <string name="pref_autocorrect_sum">د سپیس سره غلطه کلمه پخپله په ښه وړاندیز بدلیږي</string>

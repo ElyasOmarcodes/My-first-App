@@ -17,8 +17,10 @@ class ClipboardStore(private val context: Context) {
     }
 
     private var items: ArrayList<String>? = null
+    private var pins: ArrayList<String>? = null
 
     private fun file(): File = File(context.filesDir, "clipboard.bin")
+    private fun pinFile(): File = File(context.filesDir, "clipboard_pins.bin")
 
     /** Read the history file up front (from a background thread) so the
      *  first copy doesn't block the keyboard. */
@@ -29,16 +31,20 @@ class ClipboardStore(private val context: Context) {
     @Synchronized
     private fun ensureLoaded(): ArrayList<String> {
         items?.let { return it }
-        val list = ArrayList<String>()
-        try {
-            val f = file()
-            if (f.exists()) {
-                for (part in f.readText().split(SEP)) {
-                    if (part.isNotEmpty()) list.add(part)
+        fun read(f: File): ArrayList<String> {
+            val list = ArrayList<String>()
+            try {
+                if (f.exists()) {
+                    for (part in f.readText().split(SEP)) {
+                        if (part.isNotEmpty()) list.add(part)
+                    }
                 }
+            } catch (_: Exception) {
             }
-        } catch (_: Exception) {
+            return list
         }
+        pins = read(pinFile())
+        val list = read(file())
         items = list
         return list
     }
@@ -47,24 +53,49 @@ class ClipboardStore(private val context: Context) {
         if (text.isEmpty()) return
         val t = text.take(MAX_LEN)
         val list = ensureLoaded()
+        if (pins?.contains(t) == true) return // already kept as a pin
         list.remove(t)
         list.add(0, t)
         while (list.size > MAX_ITEMS) list.removeAt(list.size - 1)
         save()
     }
 
-    fun all(): List<String> = ensureLoaded().toList()
+    /** Pinned first, then the recent history. */
+    fun all(): List<String> {
+        val recent = ensureLoaded()
+        return (pins ?: emptyList<String>()) + recent
+    }
 
     fun newest(): String? = ensureLoaded().firstOrNull()
 
-    fun removeAt(index: Int) {
-        val list = ensureLoaded()
-        if (index in list.indices) {
-            list.removeAt(index)
-            save()
-        }
+    fun isPinned(text: String): Boolean {
+        ensureLoaded()
+        return pins?.contains(text) == true
     }
 
+    /** Pin keeps an item forever (survives eviction and clear-all). */
+    fun togglePin(text: String) {
+        val recent = ensureLoaded()
+        val p = pins ?: return
+        if (p.remove(text)) {
+            recent.remove(text)
+            recent.add(0, text)
+        } else {
+            recent.remove(text)
+            p.add(0, text)
+            while (p.size > MAX_ITEMS) p.removeAt(p.size - 1)
+        }
+        save()
+    }
+
+    fun remove(text: String) {
+        val recent = ensureLoaded()
+        val a = recent.remove(text)
+        val b = pins?.remove(text) == true
+        if (a || b) save()
+    }
+
+    /** Clear the history — pinned items survive. */
     fun clear() {
         ensureLoaded().clear()
         save()
@@ -75,9 +106,14 @@ class ClipboardStore(private val context: Context) {
         // clipboard items can total megabytes and froze the UI when written
         // inline
         val data = ensureLoaded().joinToString(SEP.toString())
+        val pinData = (pins ?: emptyList<String>()).joinToString(SEP.toString())
         Io.writer.execute {
             try {
                 file().writeText(data)
+            } catch (_: Exception) {
+            }
+            try {
+                pinFile().writeText(pinData)
             } catch (_: Exception) {
             }
         }

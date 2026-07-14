@@ -34,23 +34,28 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
-      - name: Decode debug keystore
-        run: base64 -d debug.keystore.base64 > debug.keystore
+      - name: Decode keystores
+        run: |
+          base64 -d debug.keystore.base64 > debug.keystore
+          base64 -d release.keystore.base64 > release.keystore
 
-      - name: Build release APK
-        run: gradle :app:assembleRelease --no-daemon
+      - name: Build release APK + AAB
+        run: gradle :app:assembleRelease :app:bundleRelease --no-daemon
 
-      - name: Collect APK
+      - name: Collect outputs
         run: |
           mkdir -p .build-outputs
-          rm -f .build-outputs/app-debug.apk
-          cp app/build/outputs/apk/release/app-release.apk .build-outputs/MultiKeyboard.apk
+          rm -f .build-outputs/app-debug.apk .build-outputs/MultiKeyboard.apk
+          cp app/build/outputs/apk/release/app-release.apk .build-outputs/HindukushKb.apk
+          cp app/build/outputs/bundle/release/app-release.aab .build-outputs/HindukushKb.aab
 
-      - name: Upload APK artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: multi-keyboard-apk
-          path: .build-outputs/MultiKeyboard.apk
+          name: hindukush-kb
+          path: |
+            .build-outputs/HindukushKb.apk
+            .build-outputs/HindukushKb.aab
 
       - name: Commit APK back to branch
         if: github.event_name == 'push'
@@ -61,6 +66,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "APK unchanged"
           else
-            git commit -m "ci: update built APK [skip ci]"
+            git commit -m "ci: update built APK/AAB [skip ci]"
             git push
           fi

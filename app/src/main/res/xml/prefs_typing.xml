@@ -15,6 +15,10 @@
     <SwitchPreferenceCompat android:key="bigrams" android:title="@string/pref_bigrams"
         android:summary="@string/pref_bigrams_sum" android:defaultValue="true"
         android:dependency="suggestions" />
+    <SwitchPreferenceCompat android:key="clip_chip_repeat"
+        android:title="@string/pref_clip_repeat"
+        android:summary="@string/pref_clip_repeat_sum"
+        android:defaultValue="false" />
     <SwitchPreferenceCompat android:key="double_space" android:title="@string/pref_double_space"
         android:defaultValue="true" />
     <SwitchPreferenceCompat android:key="autocaps" android:title="@string/pref_autocaps"

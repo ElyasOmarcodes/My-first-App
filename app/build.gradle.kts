@@ -8,11 +8,14 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.elyas.multiling"
+    applicationId = "com.hindukush.kb.elyas"
     minSdk = 21
     targetSdk = 36
-    versionCode = 22
-    versionName = "1.20.0"
+    versionCode = 23
+    versionName = "2.0.0"
+    // the app ships its own (Pashto) strings; keep only English library
+    // resources — trims androidx translations from the APK
+    resourceConfigurations += setOf("en")
   }
 
   signingConfigs {
@@ -22,6 +25,13 @@ android {
       keyAlias = "androiddebugkey"
       keyPassword = "android"
     }
+    create("releaseConfig") {
+      // proper release key — required for Play Store publishing
+      storeFile = file("${rootDir}/release.keystore")
+      storePassword = "hindukush2026"
+      keyAlias = "hindukush"
+      keyPassword = "hindukush2026"
+    }
   }
 
   buildTypes {
@@ -30,7 +40,7 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("debugConfig")
+      signingConfig = signingConfigs.getByName("releaseConfig")
     }
     debug {
       signingConfig = signingConfigs.getByName("debugConfig")
