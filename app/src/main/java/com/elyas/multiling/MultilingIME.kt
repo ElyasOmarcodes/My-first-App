@@ -88,8 +88,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private var clipStore: ClipboardStore? = null
     // clip chip: with clip_chip_repeat OFF the chip disappears after one use
+    // — permanently, across every field and app (persisted as a fingerprint)
     private var clipChipRepeat = false
-    private var consumedClip: String? = null
+    private var consumedClipKey: String? = null
+
+    private fun clipKey(t: String) = "${t.hashCode()}:${t.length}"
 
     private val wordStores = HashMap<String, WordStore>()
     private val preloadedLangs = HashSet<String>()
@@ -151,7 +154,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         } catch (_: Exception) { null }
         if (text != null) {
             clipboardStore().add(text)
-            consumedClip = null // a fresh copy re-arms the one-time chip
+            // a fresh copy re-arms the one-time chip
+            consumedClipKey = null
+            PreferenceManager.getDefaultSharedPreferences(this)
+                .edit().remove("consumed_clip").apply()
         }
     }
 
@@ -451,6 +457,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         suggFontSp = p.getInt("sugg_font", 17).toFloat()
         arrowsOn = p.getBoolean("arrows", true)
         clipChipRepeat = p.getBoolean("clip_chip_repeat", false)
+        consumedClipKey = p.getString("consumed_clip", null)
 
         val dv = p.getInt("data_version", 0)
         if (dv != lastDataVersion) {
@@ -1498,7 +1505,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             // newest clipboard item; with repeat OFF the chip is one-shot
             if (isCurrentLineEmpty()) {
                 clipboardStore().newest()?.let {
-                    if (clipChipRepeat || it != consumedClip) {
+                    if (clipChipRepeat || clipKey(it) != consumedClipKey) {
                         items.add(SuggItem(it, STYLE_ACCENT, isClip = true))
                     }
                 }
@@ -1552,15 +1559,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 R.drawable.ic_key_numpad to Keys.NUMPAD,
                 R.drawable.ic_key_emoji to Keys.EMOJI
             )
+            // spread the actions evenly over the whole strip width
+            val stripW = (suggestionScroll?.width ?: 0).let {
+                if (it > 0) it else resources.displayMetrics.widthPixels
+            }
             for ((iconRes, code) in actions) {
                 val iv = android.widget.ImageView(this)
                 iv.setImageDrawable(
-                    tintedIcon(iconRes, kv.theme.hint, (20 * density).toInt())
+                    tintedIcon(iconRes, kv.theme.hint, (21 * density).toInt())
                 )
                 iv.scaleType = android.widget.ImageView.ScaleType.CENTER
                 iv.setOnClickListener { onSpecial(code) }
                 val lp = LinearLayout.LayoutParams(
-                    (52 * density).toInt(), LinearLayout.LayoutParams.MATCH_PARENT
+                    stripW / actions.size, LinearLayout.LayoutParams.MATCH_PARENT
                 )
                 bar.addView(iv, lp)
             }
@@ -1625,8 +1636,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     tv.setOnClickListener {
                         currentInputConnection?.commitText(text, 1)
                         feedback()
-                        // one-shot mode: this chip is spent after one use
-                        if (!clipChipRepeat) consumedClip = text
+                        // one-shot mode: spent forever (any field, any app)
+                        if (!clipChipRepeat) {
+                            consumedClipKey = clipKey(text)
+                            PreferenceManager.getDefaultSharedPreferences(this)
+                                .edit().putString("consumed_clip", consumedClipKey)
+                                .apply()
+                        }
                         updateSuggestions()
                     }
                 }

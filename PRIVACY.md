@@ -1,60 +1,106 @@
-# Privacy Policy — Hindukush Kb
+# Privacy Policy for Hindukush Keyboard (هندوکش کیبورډ)
 
-**Effective date:** 2026-07-14
-**Publisher:** Hindukush Voice (هندوکش غږ خپرندویه ټولنه)
-**Contact:** elyasomar001@gmail.com
+**Effective date:** July 14, 2026
+**Developer / Publisher:** Hindukush Voice (هندوکش غږ اداره)
+**Application:** Hindukush Keyboard — package `com.hindukush.kb.elyas`
+**Contact:** via our website — https://hindukushen.com/
 
-Hindukush Kb is a fully **offline** multilingual keyboard for Pashto,
-Dari/Farsi, Arabic, Urdu and English.
+This Privacy Policy explains how the Hindukush Keyboard application
+("the App") handles user information. It applies to the App as distributed
+on Google Play.
 
-## Data collection
+## 1. Summary
 
-Hindukush Kb collects **no data whatsoever**.
+Hindukush Keyboard is a fully **offline** input method (keyboard) for
+Pashto, Dari/Farsi, Arabic, Urdu and English.
+**The App does not collect, store remotely, transmit, share or sell any
+user data of any kind.**
 
-- The app declares **no INTERNET permission**, so nothing you type can ever
-  leave your device.
-- Everything the keyboard stores — typed-word learning, AutoText shortcuts,
-  clipboard history, themes and settings — is saved **only in the app's
-  private storage on your own device** and is accessible to you alone.
-- The app contains **no advertising, analytics, tracking or crash-reporting
-  SDKs** of any kind.
-- The app does not access your contacts, location, files, photos, microphone
-  or camera. Voice typing, when used, is performed by your device's own
-  system voice input, subject to its own privacy policy.
+## 2. About keyboard (IME) apps
 
-## Sensitive fields
+Android warns that an input method may be able to see the text you type.
+For Hindukush Keyboard this access is handled as follows:
 
-The keyboard automatically disables suggestions, word learning and clipboard
-capture in password fields.
+- The App declares **no INTERNET permission**. It is technically impossible
+  for the App to transmit anything you type off your device.
+- Text you type is processed **only on the device, in real time**, to
+  provide suggestions, auto-correction and word learning.
+- The App **never reads, logs or transmits** passwords: in password fields
+  suggestions, word learning and clipboard capture are automatically
+  disabled.
 
-## Data deletion
+## 3. Data stored on your device only
 
-All stored data (learned words, shortcuts, clipboard history and settings)
-can be deleted at any time from the keyboard settings, or completely by
-uninstalling the app / clearing its storage.
+To provide its features, the App keeps the following data **exclusively in
+its private storage on your own device**, never leaving it:
 
-## Children
+- learned words and next-word predictions;
+- AutoText shortcuts you create;
+- clipboard history (text you copy), kept locally for the clipboard panel;
+- your settings and themes.
 
-The app is suitable for all audiences and collects no data from anyone,
-including children.
+This data is accessible to no one but you, and Android's app sandboxing
+prevents other apps from reading it.
 
-## Changes
+## 4. Data collection, sharing and third parties
 
-Any future change to this policy will be published at this address and in
-the app's "About" page.
+- We collect **no** personal information, usage statistics, identifiers or
+  diagnostics.
+- We share data with **no** third parties.
+- The App contains **no** advertising, analytics, tracking or
+  crash-reporting SDKs.
+- The App makes **no** network connections.
+
+## 5. Permissions
+
+- `VIBRATE` — used only for optional key-press haptic feedback.
+
+The App requests no other permissions. Voice typing, if you use it, is
+performed by your device's own system voice input service and is governed
+by that service's privacy policy, not by the App.
+
+## 6. Data retention and deletion
+
+All locally stored data can be deleted at any time:
+
+- from the App's settings (clear learned words, clear clipboard, reset
+  settings); or
+- completely, by clearing the App's storage or uninstalling the App.
+
+Because nothing is stored outside your device, uninstalling the App
+removes all data permanently.
+
+## 7. Children
+
+The App does not collect data from any user, including children, and
+contains no content unsuitable for children.
+
+## 8. Changes to this policy
+
+If this policy changes, the updated version will be published at this same
+address, and material changes will be noted in the App's "About" page.
+
+## 9. Contact
+
+For any question about this policy or the App:
+**Hindukush Voice (هندوکش غږ اداره)** — https://hindukushen.com/
+(Pashto: https://hindukushpa.com — Dari: https://hindokosh.com/)
 
 ---
 
-# د محرمیت پالیسي — Hindukush Kb (پښتو)
+# د محرمیت پالیسي — هندوکش کیبورډ (پښتو لنډیز)
 
-Hindukush Kb یو بشپړ **آفلاین** کیبورډ دی.
+هندوکش کیبورډ یو بشپړ **آفلاین** کیبورډ دی چې د **هندوکش غږ ادارې** لخوا
+خپور شوی.
 
-- اپلیکیشن د **انټرنیټ اجازه نه لري**، نو ستاسو لیکل شوي معلومات هیڅکله له
-  وسیلې بهر نه شي تلای.
+- اپلیکیشن د **انټرنیټ اجازه نه لري** — ستاسو لیکل شوي معلومات له وسیلې
+  بهر تلل تخنیکي پلوه ناشوني دي.
 - زده شوې کلمې، لنډیزونه، د کلیپ بورډ تاریخچه او تنظیمات یوازې ستاسو د
-  موبایل په خصوصي حافظه کې خوندي کیږي.
-- هیڅ ډول شخصي معلومات نه راټولیږي، نه شریکیږي او نه پلورل کیږي.
-- د اعلاناتو، تعقیب یا تحلیل هیڅ کوډ پکې نشته.
+  موبایل په خصوصي حافظه کې ساتل کیږي.
+- هیڅ ډول شخصي معلومات نه راټولیږي، نه شریکیږي او نه پلورل کیږي؛ د
+  اعلاناتو یا تحلیل هیڅ کوډ نشته.
 - په پاسورډ فیلډونو کې وړاندیز، زده کړه او د کلیپ بورډ ثبت پخپله بندیږي.
+- د اپ د حافظې په پاکولو یا له منځه وړلو سره ټول معلومات د تل لپاره
+  ړنګیږي.
 
-اړیکه: elyasomar001@gmail.com — Hindukush Voice
+اړیکه: هندوکش غږ — hindukushen.com

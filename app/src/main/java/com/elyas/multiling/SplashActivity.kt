@@ -28,21 +28,23 @@ class SplashActivity : AppCompatActivity() {
         )
         root.background = bg
 
-        // logo card
+        // logo card (Hindukush wordmark)
         val card = LinearLayout(this)
         card.gravity = Gravity.CENTER
         val cardBg = GradientDrawable()
         cardBg.setColor(Color.WHITE)
-        cardBg.cornerRadius = 34 * density
+        cardBg.cornerRadius = 26 * density
         card.background = cardBg
         val logo = ImageView(this)
         logo.setImageResource(R.drawable.logo_hindukush)
+        logo.adjustViewBounds = true
         card.addView(
             logo,
-            LinearLayout.LayoutParams((92 * density).toInt(), (80 * density).toInt())
+            LinearLayout.LayoutParams(
+                (200 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
         )
         root.addView(card, LinearLayout.LayoutParams(
-            (140 * density).toInt(), (140 * density).toInt()))
+            (248 * density).toInt(), (120 * density).toInt()))
 
         fun text(t: String, sizeSp: Float, color: Int, bold: Boolean, topDp: Int): TextView {
             val tv = TextView(this)
@@ -60,8 +62,8 @@ class SplashActivity : AppCompatActivity() {
             return tv
         }
 
-        val title = text("Hindukush Kb", 27f, Color.WHITE, true, 26)
-        val sub = text("د هندوکش غږ خپرندویه ټولنه", 14.5f, 0xFF9FB4DC.toInt(), false, 6)
+        val title = text("هندوکش کیبورډ", 26f, Color.WHITE, true, 26)
+        val sub = text("هندوکش غږ", 15f, 0xFF9FB4DC.toInt(), false, 6)
         val ver = text(versionLabel(), 12f, 0x66FFFFFF, false, 40)
 
         setContentView(root)

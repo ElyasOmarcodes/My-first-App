@@ -28,8 +28,9 @@ class AboutActivity : AppCompatActivity() {
 
         val logo = ImageView(this)
         logo.setImageResource(R.drawable.logo_hindukush)
+        logo.adjustViewBounds = true
         root.addView(logo, LinearLayout.LayoutParams(
-            (110 * d).toInt(), (94 * d).toInt()))
+            (220 * d).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT))
 
         fun text(t: CharSequence, sizeSp: Float, bold: Boolean = false,
                  topDp: Int = 8, colorAttr: Int = 0): TextView {
@@ -48,7 +49,7 @@ class AboutActivity : AppCompatActivity() {
             return tv
         }
 
-        text("Hindukush Kb", 24f, bold = true, topDp = 14)
+        text("هندوکش کیبورډ", 24f, bold = true, topDp = 14)
         text(getString(R.string.about_version, versionName()), 13f, topDp = 2)
         text(getString(R.string.about_publisher), 17f, bold = true, topDp = 22)
         text(getString(R.string.about_desc), 14f, topDp = 8)
@@ -99,7 +100,7 @@ class AboutActivity : AppCompatActivity() {
         }
         root.addView(privacy)
 
-        text("© 2026 Hindukush Voice — By ElyasOmar", 12.5f, topDp = 30,
+        text("© 2026 هندوکش غږ — Hindukush Voice", 12.5f, topDp = 30,
             colorAttr = Color.GRAY)
 
         val scroll = ScrollView(this)

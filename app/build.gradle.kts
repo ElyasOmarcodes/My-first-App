@@ -11,8 +11,8 @@ android {
     applicationId = "com.hindukush.kb.elyas"
     minSdk = 21
     targetSdk = 36
-    versionCode = 23
-    versionName = "2.0.0"
+    versionCode = 24
+    versionName = "2.0.1"
     // the app ships its own (Pashto) strings; keep only English library
     // resources — trims androidx translations from the APK
     resourceConfigurations += setOf("en")
@@ -26,8 +26,9 @@ android {
       keyPassword = "android"
     }
     create("releaseConfig") {
-      // proper release key — required for Play Store publishing
-      storeFile = file("${rootDir}/release.keystore")
+      // proper release key (JKS in the repo) — required by Play Store,
+      // which rejects debug/test-signed uploads
+      storeFile = file("${rootDir}/keystore/hindukush-release.jks")
       storePassword = "hindukush2026"
       keyAlias = "hindukush"
       keyPassword = "hindukush2026"

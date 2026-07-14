@@ -34,10 +34,20 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
-      - name: Decode keystores
+      - name: Decode debug keystore
+        run: base64 -d debug.keystore.base64 > debug.keystore
+
+      - name: Ensure release keystore (JKS)
         run: |
-          base64 -d debug.keystore.base64 > debug.keystore
-          base64 -d release.keystore.base64 > release.keystore
+          # the signing key lives in keystore/hindukush-release.jks; if it is
+          # ever missing, the action generates a fresh one right here
+          if [ ! -f keystore/hindukush-release.jks ]; then
+            mkdir -p keystore
+            keytool -genkeypair -v -keystore keystore/hindukush-release.jks \
+              -alias hindukush -keyalg RSA -keysize 2048 -validity 10950 \
+              -storepass hindukush2026 -keypass hindukush2026 \
+              -dname "CN=Hindukush Voice, O=Hindukush Voice, L=Kabul, C=AF"
+          fi
 
       - name: Build release APK + AAB
         run: gradle :app:assembleRelease :app:bundleRelease --no-daemon

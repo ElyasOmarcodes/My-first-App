@@ -1,22 +1,23 @@
 <resources>
-    <string name="app_name">Hindukush Kb</string>
+    <string name="app_name">هندوکش کیبورډ</string>
 
     <string name="about_title">د پروګرام په اړه</string>
     <string name="about_version">نسخه %1$s</string>
-    <string name="about_publisher">هندوکش غږ خپرندویه ټولنه\nHindukush Voice</string>
-    <string name="about_desc">Hindukush Kb — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
-        بشپړ آفلاین، چټک او مسلکي کیبورډ.\nد هندوکش غږ خپرندویې ټولنې یو محصول.</string>
+    <string name="about_publisher">هندوکش غږ اداره\nHindukush Voice</string>
+    <string name="about_desc">هندوکش کیبورډ — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
+        بشپړ آفلاین، چټک او مسلکي کیبورډ.\nد هندوکش غږ یو محصول.</string>
     <string name="about_sites">زموږ ویب پاڼې</string>
     <string name="about_privacy">د محرمیت پالیسي (Privacy Policy)</string>
     <string name="screen_about_sum">نسخه، جوړونکې اداره، ویب پاڼې او پالیسي</string>
-    <string name="privacy_text">Hindukush Kb یو بشپړ آفلاین کیبورډ دی.\n\n
+    <string name="privacy_text">هندوکش کیبورډ یو بشپړ آفلاین کیبورډ دی.\n\n
 • دا اپلیکیشن د انټرنیټ اجازه (INTERNET permission) نه لري، نو ستاسو لیکل شوي معلومات
 له وسیلې بهر نه شي لېږل کېدای.\n
 • هر څه چې لیکئ، زده شوې کلمې، لنډیزونه او د کلیپ بورډ تاریخچه یوازې ستاسو
 د موبایل په حافظه کې خوندي کیږي او یوازې تاسو ورته لاسرسی لرئ.\n
 • دا اپلیکیشن هیڅ شخصي معلومات نه راټولوي، نه یې شریکوي او نه یې چا ته پلوري.\n
-• د اعلاناتو یا تحلیل (Analytics) هیڅ کوډ پکې نشته.\n\n
-اړیکه: elyasomar001@gmail.com\nHindukush Voice — hindukushen.com</string>
+• د اعلاناتو یا تحلیل (Analytics) هیڅ کوډ پکې نشته.\n
+• په پاسورډ فیلډونو کې وړاندیز، زده کړه او د کلیپ بورډ ثبت پخپله بندیږي.\n\n
+اړیکه: هندوکش غږ — hindukushen.com</string>
     <string name="settings_title">د کیبورډ تنظیمات</string>
     <string name="done">ترسره شو ✔</string>
     <string name="imported_n_words">%1$d نوي توکي ورزیات شول ✔</string>
@@ -27,10 +28,10 @@
     <string name="lang_ur">اردو</string>
     <string name="lang_en">English</string>
 
-    <string name="setup_title">Hindukush Kb ته ښه راغلاست 🎉</string>
+    <string name="setup_title">هندوکش کیبورډ ته ښه راغلاست 🎉</string>
     <string name="setup_desc">د کارولو لپاره دا درې ګامونه بشپړ کړئ:</string>
     <string name="setup_step1">۱. کیبورډ د سیسټم په تنظیماتو کې فعال کړئ</string>
-    <string name="setup_step2">۲. Hindukush Kb د اوسني کیبورډ په توګه وټاکئ</string>
+    <string name="setup_step2">۲. هندوکش کیبورډ د اوسني کیبورډ په توګه وټاکئ</string>
     <string name="setup_step3">۳. دلته یې وازمایئ</string>
     <string name="btn_enable">فعالول (Enable)</string>
     <string name="btn_pick">کیبورډ ټاکل (Select)</string>
@@ -109,7 +110,7 @@
     <string name="pref_clear_learned_sum">ټولې زده شوې کلمې او وړاندوینې ړنګوي</string>
     <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
 
-    <string name="credit">By : ElyasOmar\n2026</string>
+    <string name="credit">هندوکش غږ\n2026</string>
     <string name="clip_prefix">کاپي شوی:</string>
     <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
 
