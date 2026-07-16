@@ -51,6 +51,11 @@
             android:label="@string/about_title" />
 
         <activity
+            android:name=".PrivacyActivity"
+            android:exported="false"
+            android:label="@string/about_privacy" />
+
+        <activity
             android:name=".AutoTextActivity"
             android:exported="false"
             android:label="@string/autotext_title" />

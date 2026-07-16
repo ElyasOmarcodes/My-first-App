@@ -99,17 +99,7 @@ class AboutActivity : AppCompatActivity() {
         privacy.setTextColor(0xFF4FA3FF.toInt())
         privacy.setPadding(0, (26 * d).toInt(), 0, 0)
         privacy.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.about_privacy)
-                .setMessage(R.string.privacy_text)
-                .setPositiveButton(android.R.string.ok, null)
-                .setNeutralButton("آنلاین بڼه") { _, _ ->
-                    try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
-                    } catch (_: Exception) {
-                    }
-                }
-                .show()
+            startActivity(Intent(this, PrivacyActivity::class.java))
         }
         root.addView(privacy)
 

@@ -122,7 +122,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
-                captureClipboard(cm)
+                // a REAL new copy — this is the only place that re-arms the
+                // one-shot chip
+                captureClipboard(cm, freshCopy = true)
                 // refresh the strip so a freshly copied text shows at once
                 if (keyboardView?.visibility == View.VISIBLE) updateSuggestions()
             }
@@ -146,18 +148,29 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
-    /** Read the current system clipboard text into the history store. */
-    private fun captureClipboard(cm: android.content.ClipboardManager) {
+    /**
+     * Read the current system clipboard text into the history store.
+     * [freshCopy] is true only from the clipboard-changed listener: ONLY a
+     * genuinely new copy re-arms the one-shot chip. The keyboard-open path
+     * (onStartInputView) re-reads the same clipboard, and clearing the flag
+     * there brought a consumed chip back on every keyboard show / field
+     * switch / app switch.
+     */
+    private fun captureClipboard(
+        cm: android.content.ClipboardManager,
+        freshCopy: Boolean = false
+    ) {
         val text = try {
             cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()
                 ?.trim()?.ifEmpty { null }
         } catch (_: Exception) { null }
         if (text != null) {
             clipboardStore().add(text)
-            // a fresh copy re-arms the one-time chip
-            consumedClipKey = null
-            PreferenceManager.getDefaultSharedPreferences(this)
-                .edit().remove("consumed_clip").apply()
+            if (freshCopy) {
+                consumedClipKey = null
+                PreferenceManager.getDefaultSharedPreferences(this)
+                    .edit().remove("consumed_clip").apply()
+            }
         }
     }
 
