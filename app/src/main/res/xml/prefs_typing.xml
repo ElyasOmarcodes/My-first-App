@@ -25,5 +25,5 @@
         android:summary="@string/pref_autocaps_sum" android:defaultValue="true" />
     <ListPreference android:key="longpress" android:title="@string/pref_longpress"
         android:entries="@array/longpress_names" android:entryValues="@array/longpress_values"
-        android:defaultValue="350" app:useSimpleSummaryProvider="true" />
+        android:defaultValue="200" app:useSimpleSummaryProvider="true" />
 </PreferenceScreen>

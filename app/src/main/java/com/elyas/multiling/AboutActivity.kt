@@ -13,8 +13,15 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
-/** «د پروګرام په اړه» — app, publisher (Hindukush Voice) and policy info. */
+/** «د پروګرام په اړه» — app, publisher (Voice Of Hindukush), policy info. */
 class AboutActivity : AppCompatActivity() {
+
+    companion object {
+        /** hosted privacy policy — the same PRIVACY.md used for Play */
+        const val PRIVACY_URL =
+            "https://raw.githubusercontent.com/ElyasOmarcodes/My-first-App/" +
+                "claude/multilingual-keyboard-clone-2effuu/PRIVACY.md"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,11 +103,17 @@ class AboutActivity : AppCompatActivity() {
                 .setTitle(R.string.about_privacy)
                 .setMessage(R.string.privacy_text)
                 .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton("آنلاین بڼه") { _, _ ->
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL)))
+                    } catch (_: Exception) {
+                    }
+                }
                 .show()
         }
         root.addView(privacy)
 
-        text("© 2026 هندوکش غږ — Hindukush Voice", 12.5f, topDp = 30,
+        text("© 2026 هندوکش غږ — Voice Of Hindukush", 12.5f, topDp = 30,
             colorAttr = Color.GRAY)
 
         val scroll = ScrollView(this)

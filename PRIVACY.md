@@ -1,7 +1,7 @@
 # Privacy Policy for Hindukush Keyboard (هندوکش کیبورډ)
 
 **Effective date:** July 14, 2026
-**Developer / Publisher:** Hindukush Voice (هندوکش غږ اداره)
+**Developer / Publisher:** Voice Of Hindukush (هندوکش غږ اداره)
 **Application:** Hindukush Keyboard — package `com.hindukush.kb.elyas`
 **Contact:** via our website — https://hindukushen.com/
 
@@ -83,7 +83,7 @@ address, and material changes will be noted in the App's "About" page.
 ## 9. Contact
 
 For any question about this policy or the App:
-**Hindukush Voice (هندوکش غږ اداره)** — https://hindukushen.com/
+**Voice Of Hindukush (هندوکش غږ اداره)** — https://hindukushen.com/
 (Pashto: https://hindukushpa.com — Dari: https://hindokosh.com/)
 
 ---

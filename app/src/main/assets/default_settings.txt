@@ -12,7 +12,7 @@ key_border	b	false
 hints	b	true
 preview	b	true
 space_swipe	b	true
-longpress	s	350
+longpress	s	200
 suggestions	b	true
 autocorrect	b	true
 learn_words	b	true

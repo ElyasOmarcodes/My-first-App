@@ -3,7 +3,7 @@
 
     <string name="about_title">د پروګرام په اړه</string>
     <string name="about_version">نسخه %1$s</string>
-    <string name="about_publisher">هندوکش غږ اداره\nHindukush Voice</string>
+    <string name="about_publisher">هندوکش غږ اداره\nVoice Of Hindukush</string>
     <string name="about_desc">هندوکش کیبورډ — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
         بشپړ آفلاین، چټک او مسلکي کیبورډ.\nد هندوکش غږ یو محصول.</string>
     <string name="about_sites">زموږ ویب پاڼې</string>

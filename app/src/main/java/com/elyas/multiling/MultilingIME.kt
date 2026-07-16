@@ -434,7 +434,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.keyBorder = p.getBoolean("key_border", false)
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.splitMode = p.getBoolean("split_kb", false)
-        kv.longPressTimeout = (p.getString("longpress", "350") ?: "350").toLong()
+        kv.longPressTimeout = (p.getString("longpress", "200") ?: "200").toLong()
         val density = resources.displayMetrics.density
         navGapAuto = p.getBoolean("nav_gap_auto", true)
         manualBottomGapDp = p.getInt("bottom_gap", 10)
@@ -1071,10 +1071,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
             Keys.ESC -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_ESCAPE) }
             Keys.TAB -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_TAB) }
-            Keys.COPY -> { feedback(); ic?.performContextMenuAction(android.R.id.copy) }
-            Keys.CUT -> { feedback(); ic?.performContextMenuAction(android.R.id.cut) }
-            Keys.PASTE -> { feedback(); ic?.performContextMenuAction(android.R.id.paste) }
-            Keys.SELECT_ALL -> { feedback(); ic?.performContextMenuAction(android.R.id.selectAll) }
+            Keys.COPY -> { feedback(); icActionAsync(android.R.id.copy) }
+            Keys.CUT -> { feedback(); icActionAsync(android.R.id.cut) }
+            Keys.PASTE -> { feedback(); icActionAsync(android.R.id.paste) }
+            Keys.SELECT_ALL -> { feedback(); icActionAsync(android.R.id.selectAll) }
             Keys.FWD_DEL -> { feedback(); sendDownUpKeyEvents(KeyEvent.KEYCODE_FORWARD_DEL) }
             Keys.HOME -> { feedback(); sendLineStart() }
             Keys.END -> { feedback(); sendLineEnd() }
@@ -1108,6 +1108,22 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      * built-in undo manager driven by exactly these key events, so this is
      * crash-proof: fields without undo support simply ignore the events.
      */
+    /**
+     * Copy/cut/paste/select-all run INSIDE the target app during this call:
+     * pasting or copying a large text blocks the caller for seconds while
+     * the app re-lays-out. Running it on a background thread keeps the
+     * keyboard responsive — no more frozen keys after copy/paste.
+     */
+    private fun icActionAsync(action: Int) {
+        val ic = currentInputConnection ?: return
+        Io.writer.execute {
+            try {
+                ic.performContextMenuAction(action)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     /** Shift+Enter — a newline even in fields whose Enter means Send/Go. */
     private fun sendShiftEnter() {
         val ic = currentInputConnection ?: return
@@ -1481,7 +1497,22 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     // -------------------------------------------------------- suggestions
+    private var suggPending = false
+
+    /** Coalesce bursts (selection-update storms after a big paste) into a
+     *  single rebuild per frame — the strip work itself queries the target
+     *  app for text, which is expensive while that app is busy. */
     private fun updateSuggestions() {
+        if (suggPending) return
+        val kv = keyboardView ?: return
+        suggPending = true
+        kv.post {
+            suggPending = false
+            buildSuggestions()
+        }
+    }
+
+    private fun buildSuggestions() {
         bestCandidate = null
         val bar = suggestionBar ?: return
         bar.removeAllViews()

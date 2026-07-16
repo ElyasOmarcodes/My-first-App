@@ -207,7 +207,7 @@ class KeyboardView(context: Context) : View(context) {
     var showPreview: Boolean = true
     var keyBorder: Boolean = false
     var spaceSwipeEnabled: Boolean = true
-    var longPressTimeout: Long = 350
+    var longPressTimeout: Long = 200
     var shiftState: Int = 0 // 0 off, 1 once, 2 locked
 
     private val density = resources.displayMetrics.density
