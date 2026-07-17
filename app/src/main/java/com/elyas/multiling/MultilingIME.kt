@@ -347,6 +347,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        // self-heal: a stuck pending flag must never survive a keyboard open
+        suggHandler.removeCallbacks(suggRunnable)
+        suggPending = false
         applySettings()
         // number/phone/date fields automatically get the number pad;
         // the edit/control panel survives switching fields and apps
@@ -1511,17 +1514,27 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     // -------------------------------------------------------- suggestions
     private var suggPending = false
+    private val suggHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val suggRunnable = Runnable {
+        suggPending = false
+        try {
+            buildSuggestions()
+        } catch (_: Exception) {
+            // never let one bad rebuild kill the strip permanently
+        }
+    }
 
     /** Coalesce bursts (selection-update storms after a big paste) into a
      *  single rebuild per frame — the strip work itself queries the target
-     *  app for text, which is expensive while that app is busy. */
+     *  app for text, which is expensive while that app is busy.
+     *  IMPORTANT: posted on a main-looper Handler, NOT on the view — a
+     *  View.post while the input view is detached loses the runnable and
+     *  left suggPending stuck true, deadening the strip forever. */
     private fun updateSuggestions() {
         if (suggPending) return
-        val kv = keyboardView ?: return
         suggPending = true
-        kv.post {
+        if (!suggHandler.post(suggRunnable)) {
             suggPending = false
-            buildSuggestions()
         }
     }
 
