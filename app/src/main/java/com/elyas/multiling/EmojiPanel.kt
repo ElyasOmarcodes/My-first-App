@@ -184,34 +184,41 @@ class EmojiPanel(
         top.orientation = HORIZONTAL
 
         fun addBtn(label: String, iconRes: Int, click: () -> Unit) {
-            val tv = TextView(context)
-            tv.text = label
-            tv.gravity = Gravity.CENTER
-            tv.textSize = 15f
-            tv.setTextColor(theme.text)
-            if (iconRes != 0) {
+            val bg = GradientDrawable()
+            bg.setColor(specialColor)
+            bg.cornerRadius = 10 * density
+            // icon-only buttons use an ImageView so the icon is CENTERED —
+            // a compound drawable on a TextView sticks to the start edge
+            val v: View = if (label.isEmpty() && iconRes != 0) {
+                val iv = android.widget.ImageView(context)
                 val d = try {
                     androidx.appcompat.content.res.AppCompatResources
                         .getDrawable(context, iconRes)?.mutate()
                 } catch (_: Exception) { null }
                 if (d != null) {
                     androidx.core.graphics.drawable.DrawableCompat.setTint(d, theme.text)
-                    val sz = (20 * density).toInt()
-                    d.setBounds(0, 0, sz, sz)
-                    tv.setCompoundDrawables(d, null, null, null)
                 }
+                iv.setImageDrawable(d)
+                iv.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                val pad = (13 * density).toInt()
+                iv.setPadding(pad, pad, pad, pad)
+                iv
+            } else {
+                val tv = TextView(context)
+                tv.text = label
+                tv.gravity = Gravity.CENTER
+                tv.textSize = 15f
+                tv.setTextColor(theme.text)
+                tv
             }
-            val bg = GradientDrawable()
-            bg.setColor(specialColor)
-            bg.cornerRadius = 10 * density
-            tv.background = bg
-            tv.setOnClickListener { click() }
+            v.background = bg
+            v.setOnClickListener { click() }
             val lp = LayoutParams((48 * density).toInt(), LayoutParams.MATCH_PARENT)
             lp.setMargins(
                 (3 * density).toInt(), (4 * density).toInt(),
                 (3 * density).toInt(), (4 * density).toInt()
             )
-            top.addView(tv, lp)
+            top.addView(v, lp)
         }
 
         addBtn("اب‌ت", 0) { onBack() }
