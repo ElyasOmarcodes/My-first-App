@@ -213,27 +213,31 @@ object Layouts {
         )
     }
 
-    /** Symbols page 2. */
-    fun symbols2(): List<List<KeyDef>> = listOf(
-        listOf(
-            k("~", null, "≈ ≃"), k("`", null, "´ ˝"), k("|", null, "¦"),
-            k("•", null, "· ◦ ▪ ●"), k("√", null, "∛ ∜"),
-            k("π", null, "µ Ω ∞ ∑ ∫ φ"), k("÷", null, "∕"), k("×", null, "∙ ⋅"),
-            k("¶", null, "§"), k("∆", null, "∇ ∂")
-        ),
-        listOf(
-            k("£"), k("€"), k("¥", null, "₹ ₨ ₽ ₺ ₩ ¢ ¤ ₿ ؋"),
-            k("^", null, "ˆ ↑"), k("°", null, "± ‰ ℃ ℉"),
-            k("=", null, "≠ ≡ ≤ ≥"), k("{"), k("}"), k("\\", null, "‖"),
-            k("%", null, "‰ ٪ ‱")
-        ),
-        listOf(
-            KeyDef("۱۲۳", code = Keys.SYM, width = 1.4f),
-            k("©"), k("®"), k("™", null, "℠"), k("✓", null, "✔ ✗ ✘ ☑ ☐"),
-            k("[", null, "⟦"), k("]", null, "⟧"),
-            k("«", null, "< ‹ ≪"), k("»", null, "> › ≫"), delKey()
+    /** Symbols page 2. The "123" key shows the active language's digits. */
+    fun symbols2(lang: Language): List<List<KeyDef>> {
+        val digitsLabel = if (lang.digits[0] == '0') "123" else "۱۲۳"
+        return listOf(
+            listOf(
+                k("~", null, "≈ ≃"), k("`", null, "´ ˝"), k("|", null, "¦"),
+                k("•", null, "· ◦ ▪ ●"), k("√", null, "∛ ∜"),
+                k("π", null, "µ Ω ∞ ∑ ∫ φ"), k("÷", null, "∕"), k("×", null, "∙ ⋅"),
+                k("¶", null, "§"), k("∆", null, "∇ ∂")
+            ),
+            listOf(
+                k("£"), k("€"), k("¥", null, "₹ ₨ ₽ ₺ ₩ ¢ ¤ ₿ ؋"),
+                k("^", null, "ˆ ↑"), k("°", null, "± ‰ ℃ ℉"),
+                k("=", null, "≠ ≡ ≤ ≥"), k("{"), k("}"), k("\\", null, "‖"),
+                k("%", null, "‰ ٪ ‱")
+            ),
+            listOf(
+                KeyDef(digitsLabel, code = Keys.SYM, width = 1.4f),
+                k("©"), k("®"), k("™", null, "℠"), k("✓", null, "✔ ✗ ✘ ☑ ☐"),
+                k("[", null, "⟦"), k("]", null, "⟧"),
+                // real angle brackets on the face, guillemets on long-press
+                k("<", null, "« ‹ ≪ ≤"), k(">", null, "» › ≫ ≥"), delKey()
+            )
         )
-    )
+    }
 
     /**
      * Edit/control panel, like classic multilingual keyboards:

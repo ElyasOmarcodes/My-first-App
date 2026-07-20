@@ -471,7 +471,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         doubleSpacePeriod = p.getBoolean("double_space", true)
         autoCapsOn = p.getBoolean("autocaps", true)
         suggFontSp = p.getInt("sugg_font", 17).toFloat()
-        arrowsOn = p.getBoolean("arrows", true)
+        arrowsOn = p.getBoolean("arrows", false)
         clipChipRepeat = p.getBoolean("clip_chip_repeat", false)
         consumedClipKey = p.getString("consumed_clip", null)
 
@@ -578,7 +578,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 if (arrowsOn) rows.add(arrowRow())
             }
             Mode.SYM2 -> {
-                rows.addAll(Layouts.symbols2())
+                rows.addAll(Layouts.symbols2(lang))
                 rows.add(buildSymBottomRow())
                 if (arrowsOn) rows.add(arrowRow())
             }

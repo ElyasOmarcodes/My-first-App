@@ -284,7 +284,13 @@ class EmojiPanel(
         currentCat = cat
         for ((i, tv) in tabViews.withIndex()) {
             val selected = (i == cat + 1)
+            // setBackground() overwrites the view's padding with the drawable's
+            // own padding (InsetDrawable reports its insets), which shifted the
+            // recents icon and never restored it — preserve padding explicitly
+            val pl = tv.paddingLeft; val pt = tv.paddingTop
+            val pr = tv.paddingRight; val pb = tv.paddingBottom
             tv.background = if (selected) activeCircle() else null
+            tv.setPadding(pl, pt, pr, pb)
         }
         val emojis = if (cat == -1) loadRecents() else categories[cat].second
         gridHolder.removeAllViews()

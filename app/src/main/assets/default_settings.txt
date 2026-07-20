@@ -21,7 +21,7 @@ bigrams	b	true
 autotext_on	b	true
 double_space	b	true
 autocaps	b	true
-arrows	b	true
+arrows	b	false
 vibrate	b	true
 vibrate_ms	i	20
 sound	b	true

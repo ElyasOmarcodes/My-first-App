@@ -11,7 +11,7 @@ android {
     applicationId = "com.hindukush.kb.elyas"
     minSdk = 21
     targetSdk = 36
-    versionCode = 25
+    versionCode = 26
     versionName = "1.0"
     // the app ships its own (Pashto) strings; keep only English library
     // resources — trims androidx translations from the APK
