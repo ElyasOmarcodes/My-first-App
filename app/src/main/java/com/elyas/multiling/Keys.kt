@@ -52,6 +52,7 @@ object Keys {
     const val CLIPBOARD = -26
     const val KAOMOJI = -27
     const val SPLIT = -28    // toggle split keyboard (tablets/foldables)
+    const val RESIZE = -29   // toggle live keyboard-height resize mode
 
     // drawn icons (KeyDef.hintIcon)
     const val ICON_MIC = 1

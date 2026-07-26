@@ -7,6 +7,11 @@
     <string name="about_desc">هندوکش کیبورډ — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
         بشپړ آفلاین، چټک او مسلکي کیبورډ.\nد هندوکش غږ یو محصول.</string>
     <string name="about_sites">زموږ ویب پاڼې</string>
+    <string name="org_intro">هندوکش‌غږ یوه خپلواکه خبري او تحلیلي رسنۍ ده چې د کره، باوري او مستندو معلوماتو د خپرولو، د مهمو پېښو د هر اړخیز تحلیل او د ټولنې د عامه پوهاوي د پیاوړتیا لپاره فعالیت کوي. هندوکش‌غږ د ژورنالېزم له اصولو او مسلکي اخلاقو سره سم، د بې پرېتوب، دقت او مسؤلیت پر بنسټ محتوا برابروي او هڅه کوي چې لوستونکو او لیدونکو ته روښانه، متوازن او د باور وړ معلومات وړاندې کړي.</string>
+    <string name="contact_manager">د هندوکش‌غږ مسئول مدير</string>
+    <string name="contact_manager_name">میرویس سروش</string>
+    <string name="contact_whatsapp_num">+93 76 589 3297</string>
+    <string name="contact_whatsapp_btn">په واټساپ کې اړیکه</string>
     <string name="about_privacy">د محرمیت پالیسي (Privacy Policy)</string>
     <string name="privacy_online">آنلاین بڼه په براوزر کې پرانیستل ↗</string>
     <string name="screen_about_sum">نسخه، جوړونکې اداره، ویب پاڼې او پالیسي</string>
@@ -114,6 +119,11 @@
     <string name="credit">هندوکش غږ\n2026</string>
     <string name="clip_prefix">کاپي شوی:</string>
     <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
+    <string name="word_boost">د کلمې ارزښت لوړول</string>
+    <string name="word_delete">کلمه ړنګول</string>
+    <string name="word_boosted">د کلمې ارزښت لوړ شو ✔</string>
+    <string name="word_deleted">کلمه ړنګه شوه ✔</string>
+    <string name="resize_kb">د کیبورډ اندازه</string>
 
     <string name="screen_langs_sum">فعالې ژبې او د ژبې بدلول</string>
     <string name="pref_cat_colors">رنګونه (کاسټوم)</string>

@@ -17,6 +17,9 @@ import androidx.appcompat.app.AppCompatActivity
 class AboutActivity : AppCompatActivity() {
 
     companion object {
+        /** manager's WhatsApp number in international format, digits only */
+        const val WHATSAPP_NUMBER = "93765893297"
+
         /** hosted privacy policy — the same PRIVACY.md used for Play */
         const val PRIVACY_URL =
             "https://raw.githubusercontent.com/ElyasOmarcodes/My-first-App/" +
@@ -91,6 +94,30 @@ class AboutActivity : AppCompatActivity() {
         linkRow("دري — hindokosh.com", "https://hindokosh.com/")
         linkRow("English — hindukushen.com", "https://hindukushen.com/")
 
+        // ---- responsible manager + WhatsApp contact
+        text(getString(R.string.contact_manager), 15f, bold = true, topDp = 26)
+        text(getString(R.string.contact_manager_name), 16f, topDp = 4)
+        text(getString(R.string.contact_whatsapp_num), 15f, topDp = 2)
+
+        val wa = TextView(this)
+        wa.text = getString(R.string.contact_whatsapp_btn)
+        wa.textSize = 16f
+        wa.gravity = Gravity.CENTER
+        wa.setTextColor(Color.WHITE)
+        wa.setTypeface(wa.typeface, android.graphics.Typeface.BOLD)
+        val waBg = GradientDrawable()
+        waBg.setColor(0xFF25D366.toInt())   // WhatsApp green
+        waBg.cornerRadius = 14 * d
+        wa.background = waBg
+        wa.setPadding((20 * d).toInt(), (14 * d).toInt(),
+            (20 * d).toInt(), (14 * d).toInt())
+        val waLp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT)
+        waLp.topMargin = (12 * d).toInt()
+        wa.setOnClickListener { openWhatsApp() }
+        root.addView(wa, waLp)
+
         // privacy policy: full text offline, in a dialog
         val privacy = TextView(this)
         privacy.text = getString(R.string.about_privacy)
@@ -109,6 +136,19 @@ class AboutActivity : AppCompatActivity() {
         val scroll = ScrollView(this)
         scroll.addView(root)
         setContentView(scroll)
+    }
+
+    /**
+     * Open the chat with the manager. wa.me works with WhatsApp and
+     * WhatsApp Business (the chooser appears when both are installed);
+     * if neither handles it, the link opens in the browser.
+     */
+    private fun openWhatsApp() {
+        val url = "https://wa.me/$WHATSAPP_NUMBER"
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (_: Exception) {
+        }
     }
 
     private fun versionName(): String = try {

@@ -542,7 +542,20 @@ class KeyboardView(context: Context) : View(context) {
 
     // --------------------------------------------------------------- touch
     @SuppressLint("ClickableViewAccessibility")
+    /** While true (resize mode) the keys ignore every touch. */
+    var inputBlocked: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            if (value) {
+                pointers.clear()
+                dismissPopups()
+                invalidate()
+            }
+        }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (inputBlocked) return true
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val index = event.actionIndex

@@ -197,6 +197,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         root.orientation = LinearLayout.VERTICAL
         root.layoutDirection = View.LAYOUT_DIRECTION_LTR
         val density = resources.displayMetrics.density
+
+        // resize bar (hidden unless resize mode is on) — a blue line with a
+        // draggable pill in the middle that changes the keyboard height live
+        val resize = buildResizeBar(density)
+        resizeBar = resize
+        root.addView(
+            resize,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, (34 * density).toInt()
+            )
+        )
+
         root.addView(
             scroll,
             LinearLayout.LayoutParams(
@@ -230,6 +242,110 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         applySettings()
         rebuildKeyboard()
         return root
+    }
+
+    // ------------------------------------------------------- resize mode
+    private var resizeBar: View? = null
+    private var resizeMode = false
+
+    /** The blue bar with the draggable pill shown on top in resize mode. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun buildResizeBar(density: Float): View {
+        val holder = android.widget.FrameLayout(this)
+        holder.visibility = View.GONE
+
+        val line = View(this)
+        val lineLp = android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            (2 * density).toInt(), android.view.Gravity.CENTER_VERTICAL
+        )
+        holder.addView(line, lineLp)
+        resizeLine = line
+
+        val pill = android.widget.ImageView(this)
+        pill.scaleType = android.widget.ImageView.ScaleType.CENTER
+        val pillLp = android.widget.FrameLayout.LayoutParams(
+            (74 * density).toInt(), (30 * density).toInt(),
+            android.view.Gravity.CENTER
+        )
+        holder.addView(pill, pillLp)
+        resizePill = pill
+
+        // drag the pill up/down to change the key height live
+        var startY = 0f
+        var startHeight = 0
+        pill.setOnTouchListener { _, ev ->
+            when (ev.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    startY = ev.rawY
+                    startHeight = baseKeyHeightDp
+                    feedback()
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    // dragging UP (negative dy) makes the keyboard taller
+                    val dDp = ((startY - ev.rawY) / density / 3f).toInt()
+                    val newH = (startHeight + dDp).coerceIn(38, 110)
+                    if (newH != baseKeyHeightDp) {
+                        baseKeyHeightDp = newH
+                        keyboardView?.keyHeightDp = newH
+                        rebuildKeyboard()
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    saveKeyHeight()
+                    true
+                }
+                else -> false
+            }
+        }
+        return holder
+    }
+
+    private var resizeLine: View? = null
+    private var resizePill: android.widget.ImageView? = null
+
+    private fun saveKeyHeight() {
+        val p = PreferenceManager.getDefaultSharedPreferences(this)
+        val landscape =
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        p.edit()
+            .putInt(if (landscape) "key_height_land" else "key_height", baseKeyHeightDp)
+            .apply()
+    }
+
+    /** Toggle the live keyboard-resize mode. */
+    private fun toggleResizeMode() {
+        resizeMode = !resizeMode
+        val kv = keyboardView
+        val density = resources.displayMetrics.density
+        val accent = kv?.theme?.accent ?: 0xFF4FA3FF.toInt()
+
+        if (resizeMode) {
+            resizeLine?.setBackgroundColor(accent)
+            val pillBg = android.graphics.drawable.GradientDrawable()
+            pillBg.setColor(accent)
+            pillBg.cornerRadius = 15 * density
+            resizePill?.background = pillBg
+            resizePill?.setImageDrawable(
+                tintedIcon(R.drawable.ic_drag_handle, 0xFFFFFFFF.toInt(),
+                    (20 * density).toInt())
+            )
+            resizeBar?.visibility = View.VISIBLE
+            // dim the keyboard and block all key input while resizing
+            kv?.alpha = 0.45f
+            kv?.inputBlocked = true
+            emojiHolder?.alpha = 0.45f
+        } else {
+            resizeBar?.visibility = View.GONE
+            kv?.alpha = 1f
+            kv?.inputBlocked = false
+            emojiHolder?.alpha = 1f
+            saveKeyHeight()
+        }
+        updateSuggestions()
     }
 
     /** Apply user custom key colours + gradients (or fall back to the theme). */
@@ -390,6 +506,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         for (s in wordStores.values) s.save()
         autoText?.save()
         keyboardView?.dismissPopups()
+        wordMenu?.dismiss()
+        wordMenu = null
+        // never leave the keyboard dimmed/blocked behind a hidden resize bar
+        if (resizeMode) toggleResizeMode()
         super.onFinishInputView(finishingInput)
     }
 
@@ -1107,6 +1227,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 updateSuggestions()
             }
             Keys.KAOMOJI -> { feedback(); mode = Mode.KAOMOJI; rebuildKeyboard() }
+            Keys.RESIZE -> { feedback(); toggleResizeMode() }
             Keys.SPLIT -> {
                 feedback()
                 val p = androidx.preference.PreferenceManager
@@ -1614,7 +1735,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 R.drawable.ic_key_control to Keys.EDIT_PANEL,
                 R.drawable.ic_key_clipboard to Keys.CLIPBOARD,
                 R.drawable.ic_key_numpad to Keys.NUMPAD,
-                R.drawable.ic_key_emoji to Keys.EMOJI
+                R.drawable.ic_key_emoji to Keys.EMOJI,
+                R.drawable.ic_key_resize to Keys.RESIZE
             )
             // spread the actions evenly over the whole strip width
             val stripW = (suggestionScroll?.width ?: 0).let {
@@ -1622,8 +1744,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             for ((iconRes, code) in actions) {
                 val iv = android.widget.ImageView(this)
+                // the resize icon turns accent-blue while resize mode is on
+                val active = code == Keys.RESIZE && resizeMode
                 iv.setImageDrawable(
-                    tintedIcon(iconRes, kv.theme.hint, (21 * density).toInt())
+                    tintedIcon(
+                        iconRes,
+                        if (active) kv.theme.accent else kv.theme.hint,
+                        (21 * density).toInt()
+                    )
                 )
                 iv.scaleType = android.widget.ImageView.ScaleType.CENTER
                 iv.setOnClickListener { onSpecial(code) }
@@ -1719,13 +1847,92 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 else -> {
                     tv.setOnClickListener { commitSuggestion(text) }
                     tv.setOnLongClickListener {
-                        store().forget(text)
-                        updateSuggestions()
+                        showWordMenu(tv, text)
                         true
                     }
                 }
             }
             bar.addView(tv)
+        }
+    }
+
+    private var wordMenu: android.widget.PopupWindow? = null
+
+    /**
+     * Small menu above a suggested word: raise its rank (so it is offered
+     * sooner) or delete it from the dictionary.
+     */
+    private fun showWordMenu(anchor: View, word: String) {
+        wordMenu?.dismiss()
+        val kv = keyboardView ?: return
+        val density = resources.displayMetrics.density
+        val theme = kv.theme
+
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        val bg = android.graphics.drawable.GradientDrawable()
+        bg.setColor(if (kv.customColors && kv.colBg != 0) kv.colBg else theme.keyFill)
+        bg.cornerRadius = 12 * density
+        bg.setStroke((1 * density).toInt(), theme.accent)
+        box.background = bg
+        box.elevation = 8 * density
+
+        fun row(label: String, iconRes: Int, tint: Int, action: () -> Unit) {
+            val tv = TextView(this)
+            tv.text = label
+            tv.textSize = 14.5f
+            tv.setTextColor(theme.text)
+            tv.gravity = android.view.Gravity.CENTER_VERTICAL
+            tv.setPadding((14 * density).toInt(), (12 * density).toInt(),
+                (18 * density).toInt(), (12 * density).toInt())
+            tintedIcon(iconRes, tint, (18 * density).toInt())?.let {
+                tv.setCompoundDrawables(it, null, null, null)
+                tv.compoundDrawablePadding = (10 * density).toInt()
+            }
+            tv.setOnClickListener {
+                feedback()
+                action()
+                wordMenu?.dismiss()
+                wordMenu = null
+                updateSuggestions()
+            }
+            box.addView(tv, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
+
+        row(getString(R.string.word_boost), R.drawable.ic_key_arrow_up, theme.accent) {
+            // several learns lift it well above equally-scored candidates
+            repeat(6) { store().learn(word) }
+            Toast.makeText(this, R.string.word_boosted, Toast.LENGTH_SHORT).show()
+        }
+        row(getString(R.string.word_delete), R.drawable.ic_key_trash, 0xFFE05B5B.toInt()) {
+            store().forget(word)
+            rejectedWords.add(word)
+            Toast.makeText(this, R.string.word_deleted, Toast.LENGTH_SHORT).show()
+        }
+
+        val popup = android.widget.PopupWindow(
+            box,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popup.isClippingEnabled = false
+        popup.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+        box.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val loc = IntArray(2)
+        anchor.getLocationInWindow(loc)
+        val x = (loc[0] + anchor.width / 2 - box.measuredWidth / 2)
+            .coerceIn(0, maxOf(0, resources.displayMetrics.widthPixels - box.measuredWidth))
+        val y = loc[1] - box.measuredHeight - (6 * density).toInt()
+        try {
+            popup.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y)
+            wordMenu = popup
+        } catch (_: Exception) {
         }
     }
 
