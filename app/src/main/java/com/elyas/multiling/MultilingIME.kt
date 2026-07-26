@@ -198,19 +198,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         root.layoutDirection = View.LAYOUT_DIRECTION_LTR
         val density = resources.displayMetrics.density
 
-        // resize bar (hidden unless resize mode is on) — a blue line with a
-        // draggable pill in the middle that changes the keyboard height live
-        val resize = buildResizeBar(density)
-        resizeBar = resize
-        root.addView(
-            resize,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, (34 * density).toInt()
+        // The suggestion strip and the resize bar share one frame: the thin
+        // blue line sits ON the strip's top edge (like a stroke) and the
+        // draggable pill floats above it — no extra bar is inserted, so the
+        // keyboard never grows a black band in resize mode.
+        val stripFrame = android.widget.FrameLayout(this)
+        stripFrame.addView(
+            scroll,
+            android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
             )
         )
-
+        buildResizeOverlay(stripFrame, density)
         root.addView(
-            scroll,
+            stripFrame,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, (40 * density).toInt()
             )
@@ -245,51 +247,63 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     // ------------------------------------------------------- resize mode
-    private var resizeBar: View? = null
     private var resizeMode = false
+    private var resizeLine: View? = null
+    private var resizePill: android.widget.ImageView? = null
 
-    /** The blue bar with the draggable pill shown on top in resize mode. */
+    /** exact (fractional) key height, so dragging feels perfectly smooth */
+    private var keyHeightExact = 72f
+
+    /**
+     * Thin blue stroke pinned to the TOP EDGE of the suggestion strip plus a
+     * draggable pill — both overlaid on the strip frame, so resize mode adds
+     * no extra bar and the keyboard layout never shifts.
+     */
     @android.annotation.SuppressLint("ClickableViewAccessibility")
-    private fun buildResizeBar(density: Float): View {
-        val holder = android.widget.FrameLayout(this)
-        holder.visibility = View.GONE
-
+    private fun buildResizeOverlay(frame: android.widget.FrameLayout, density: Float) {
         val line = View(this)
-        val lineLp = android.widget.FrameLayout.LayoutParams(
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-            (2 * density).toInt(), android.view.Gravity.CENTER_VERTICAL
+        line.visibility = View.GONE
+        frame.addView(
+            line,
+            android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                maxOf(1, (1.4f * density).toInt()),   // thin stroke
+                android.view.Gravity.TOP
+            )
         )
-        holder.addView(line, lineLp)
         resizeLine = line
 
         val pill = android.widget.ImageView(this)
+        pill.visibility = View.GONE
         pill.scaleType = android.widget.ImageView.ScaleType.CENTER
-        val pillLp = android.widget.FrameLayout.LayoutParams(
-            (74 * density).toInt(), (30 * density).toInt(),
-            android.view.Gravity.CENTER
+        frame.addView(
+            pill,
+            android.widget.FrameLayout.LayoutParams(
+                (66 * density).toInt(), (26 * density).toInt(),
+                android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+            )
         )
-        holder.addView(pill, pillLp)
         resizePill = pill
 
-        // drag the pill up/down to change the key height live
+        // drag the pill to resize the keyboard live and smoothly
         var startY = 0f
-        var startHeight = 0
+        var startHeight = 0f
         pill.setOnTouchListener { _, ev ->
             when (ev.actionMasked) {
                 android.view.MotionEvent.ACTION_DOWN -> {
                     startY = ev.rawY
-                    startHeight = baseKeyHeightDp
+                    startHeight = keyHeightExact
                     feedback()
                     true
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    // dragging UP (negative dy) makes the keyboard taller
-                    val dDp = ((startY - ev.rawY) / density / 3f).toInt()
-                    val newH = (startHeight + dDp).coerceIn(38, 110)
-                    if (newH != baseKeyHeightDp) {
-                        baseKeyHeightDp = newH
-                        keyboardView?.keyHeightDp = newH
-                        rebuildKeyboard()
+                    // dragging UP makes the keyboard taller; fractional dp
+                    // keeps the growth continuous instead of stepping
+                    val dDp = (startY - ev.rawY) / density / 3f
+                    val newH = (startHeight + dDp).coerceIn(38f, 110f)
+                    if (kotlin.math.abs(newH - keyHeightExact) > 0.01f) {
+                        keyHeightExact = newH
+                        applyLiveKeyHeight()
                     }
                     true
                 }
@@ -301,11 +315,26 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 else -> false
             }
         }
-        return holder
     }
 
-    private var resizeLine: View? = null
-    private var resizePill: android.widget.ImageView? = null
+    /**
+     * Push the current (fractional) height into the view without rebuilding
+     * the whole keyboard — just a re-measure, so every frame is smooth.
+     */
+    private fun applyLiveKeyHeight() {
+        val kv = keyboardView ?: return
+        baseKeyHeightDp = kotlin.math.round(keyHeightExact).toInt()
+        val lettersUnits = heightUnits(lang.rows.size + 1, arrowsOn)
+        val arrowInMode = arrowsOn &&
+            (mode == Mode.LETTERS || mode == Mode.SYM1 || mode == Mode.SYM2 ||
+                mode == Mode.EMOJI_SEARCH)
+        val rows = currentRows()
+        val bodyRows = rows.size - (if (arrowInMode) 1 else 0)
+        val modeUnits = heightUnits(bodyRows, arrowInMode)
+        kv.keyHeightDpF = keyHeightExact * lettersUnits / modeUnits
+        kv.requestLayout()
+        kv.invalidate()
+    }
 
     private fun saveKeyHeight() {
         val p = PreferenceManager.getDefaultSharedPreferences(this)
@@ -324,26 +353,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val accent = kv?.theme?.accent ?: 0xFF4FA3FF.toInt()
 
         if (resizeMode) {
+            keyHeightExact = baseKeyHeightDp.toFloat()
             resizeLine?.setBackgroundColor(accent)
             val pillBg = android.graphics.drawable.GradientDrawable()
             pillBg.setColor(accent)
-            pillBg.cornerRadius = 15 * density
+            pillBg.cornerRadius = 13 * density
             resizePill?.background = pillBg
             resizePill?.setImageDrawable(
                 tintedIcon(R.drawable.ic_drag_handle, 0xFFFFFFFF.toInt(),
-                    (20 * density).toInt())
+                    (18 * density).toInt())
             )
-            resizeBar?.visibility = View.VISIBLE
+            resizeLine?.visibility = View.VISIBLE
+            resizePill?.visibility = View.VISIBLE
             // dim the keyboard and block all key input while resizing
             kv?.alpha = 0.45f
             kv?.inputBlocked = true
             emojiHolder?.alpha = 0.45f
         } else {
-            resizeBar?.visibility = View.GONE
+            resizeLine?.visibility = View.GONE
+            resizePill?.visibility = View.GONE
             kv?.alpha = 1f
             kv?.inputBlocked = false
             emojiHolder?.alpha = 1f
             saveKeyHeight()
+            rebuildKeyboard()
         }
         updateSuggestions()
     }
@@ -559,6 +592,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         baseKeyHeightDp =
             if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
+        // keep the exact height in sync unless a live resize drag is running
+        if (!resizeMode) keyHeightExact = baseKeyHeightDp.toFloat()
         kv.keyHeightDp = baseKeyHeightDp
         kv.arrowRowScale = p.getInt("arrow_height", 69) / 100f
         kv.fontScale = p.getInt("font_scale", 70) / 100f
@@ -771,7 +806,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 mode == Mode.EMOJI_SEARCH)
         val bodyRows = rows.size - (if (arrowInMode) 1 else 0)
         val modeUnits = heightUnits(bodyRows, arrowInMode)
-        kv.keyHeightDp = (baseKeyHeightDp * lettersUnits / modeUnits).toInt()
+        // fractional so a live resize keeps sub-dp precision
+        kv.keyHeightDpF = keyHeightExact * lettersUnits / modeUnits
 
         kv.shiftState = if (mode == Mode.EDIT) (if (selectMode) 2 else 0) else shift
         kv.setKeyboard(rows, displayFor(rows))

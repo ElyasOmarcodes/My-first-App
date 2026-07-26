@@ -10,7 +10,8 @@
     <string name="org_intro">هندوکش‌غږ یوه خپلواکه خبري او تحلیلي رسنۍ ده چې د کره، باوري او مستندو معلوماتو د خپرولو، د مهمو پېښو د هر اړخیز تحلیل او د ټولنې د عامه پوهاوي د پیاوړتیا لپاره فعالیت کوي. هندوکش‌غږ د ژورنالېزم له اصولو او مسلکي اخلاقو سره سم، د بې پرېتوب، دقت او مسؤلیت پر بنسټ محتوا برابروي او هڅه کوي چې لوستونکو او لیدونکو ته روښانه، متوازن او د باور وړ معلومات وړاندې کړي.</string>
     <string name="contact_manager">د هندوکش‌غږ مسئول مدير</string>
     <string name="contact_manager_name">میرویس سروش</string>
-    <string name="contact_whatsapp_num">+93 76 589 3297</string>
+    <!-- LRM marks keep the number rendered left-to-right, no spaces -->
+    <string name="contact_whatsapp_num">‎+93765893297‎</string>
     <string name="contact_whatsapp_btn">په واټساپ کې اړیکه</string>
     <string name="about_privacy">د محرمیت پالیسي (Privacy Policy)</string>
     <string name="privacy_online">آنلاین بڼه په براوزر کې پرانیستل ↗</string>

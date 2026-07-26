@@ -197,7 +197,16 @@ class KeyboardView(context: Context) : View(context) {
         }
     }
 
-    var keyHeightDp: Int = 52
+    /**
+     * Key height in dp. Kept as a Float internally so the live resize drag
+     * can grow the keyboard continuously instead of stepping a dp at a time;
+     * [keyHeightDp] stays an Int for all the existing callers.
+     */
+    var keyHeightDpF: Float = 52f
+    var keyHeightDp: Int
+        get() = kotlin.math.round(keyHeightDpF).toInt()
+        set(value) { keyHeightDpF = value.toFloat() }
+
     var arrowRowScale: Float = 1f
     var fontScale: Float = 1f
     var hintScale: Float = 1f
@@ -302,7 +311,8 @@ class KeyboardView(context: Context) : View(context) {
         row.isNotEmpty() && row.all { it.code in Keys.ARROW_RIGHT..Keys.ARROW_UP }
 
     private fun rowHeightPx(row: List<KeyDef>): Float {
-        val base = keyHeightDp * density
+        // fractional height -> the live resize drag grows smoothly
+        val base = keyHeightDpF * density
         return if (isArrowRow(row)) base * arrowRowScale else base
     }
 
@@ -311,7 +321,7 @@ class KeyboardView(context: Context) : View(context) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         var h = (paddingTop + paddingBottom).toFloat()
         for (row in rows) h += rowHeightPx(row)
-        val height = max((keyHeightDp * density).toInt(), h.toInt())
+        val height = max((keyHeightDpF * density).toInt(), h.toInt())
         setMeasuredDimension(width, height)
     }
 
