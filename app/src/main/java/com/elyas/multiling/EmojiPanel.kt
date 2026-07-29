@@ -4,139 +4,125 @@ import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
-import android.widget.GridLayout
+import android.view.ViewGroup
+import android.widget.BaseAdapter
+import android.widget.GridView
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.preference.PreferenceManager
+import org.tukaani.xz.XZInputStream
 
-/** Emoji sets grouped Samsung/Gboard-style. */
+/**
+ * The complete emoji catalogue (every emoji in the Unicode standard, ~3500
+ * counting skin tones) lives in `assets/emoji.txt.xz` — LZMA2-compressed so
+ * it costs the APK ~43 KB instead of ~190 KB. It is decoded once, lazily, the
+ * first time the emoji panel or emoji search is opened.
+ *
+ * Line format inside the archive:
+ *     `#<tabEmoji>`                    starts a category
+ *     `<emoji>\t<tags>`                an entry
+ *     `<emoji>\t<tags>\t<v1 v2 …>`     an entry whose long-press offers the
+ *                                      five skin-tone variants
+ * Tags mix English, Farsi and Arabic words so search works in any of the
+ * languages our users type in.
+ */
 object EmojiData {
-    val CATEGORIES: List<Pair<String, List<String>>> = listOf(
+
+    /** tab emoji -> the emoji shown in that tab, in official Unicode order */
+    private var cats: List<Pair<String, List<String>>>? = null
+
+    /** base emoji -> its skin-tone variants (long-press menu) */
+    private var variantMap: Map<String, List<String>> = emptyMap()
+
+    /** base emoji -> its space-separated search tags */
+    private var tagMap: Map<String, String> = emptyMap()
+
+    @Synchronized
+    private fun ensureLoaded(context: Context) {
+        if (cats != null) return
+        val out = ArrayList<Pair<String, ArrayList<String>>>()
+        val variants = HashMap<String, List<String>>()
+        val tags = LinkedHashMap<String, String>()
+        try {
+            XZInputStream(context.assets.open("emoji.txt.xz"))
+                .bufferedReader().forEachLine { line ->
+                    if (line.isEmpty()) return@forEachLine
+                    if (line[0] == '#') {
+                        out.add(line.substring(1) to ArrayList<String>())
+                        return@forEachLine
+                    }
+                    val parts = line.split('\t')
+                    if (parts.size < 2 || out.isEmpty()) return@forEachLine
+                    val e = parts[0]
+                    out[out.size - 1].second.add(e)
+                    tags[e] = parts[1]
+                    if (parts.size >= 3 && parts[2].isNotEmpty()) {
+                        variants[e] = parts[2].split(' ').filter { it.isNotEmpty() }
+                    }
+                }
+        } catch (_: Exception) {
+        }
+        variantMap = variants
+        tagMap = tags
+        cats = if (out.isEmpty()) FALLBACK
+        else out.map { (tab, list) -> tab to list.toList() }
+    }
+
+    fun categories(context: Context): List<Pair<String, List<String>>> {
+        ensureLoaded(context)
+        return cats ?: FALLBACK
+    }
+
+    /** the five skin-tone forms of [emoji], or empty when it has none */
+    fun variantsOf(context: Context, emoji: String): List<String> {
+        ensureLoaded(context)
+        return variantMap[emoji] ?: emptyList()
+    }
+
+    /** every emoji with its search tags, in catalogue order */
+    fun searchIndex(context: Context): Map<String, String> {
+        ensureLoaded(context)
+        return tagMap
+    }
+
+    /** tiny built-in set, used only if the asset is missing or corrupt */
+    private val FALLBACK: List<Pair<String, List<String>>> = listOf(
         "😀" to listOf(
-            "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
-            "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙",
-            "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔",
-            "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥",
-            "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮",
-            "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓",
-            "🧐", "😕", "😟", "🙁", "😮", "😯", "😲", "😳", "🥺", "😦",
-            "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞",
-            "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿",
-            "💀", "👻", "👽", "🤖", "💩", "😺", "😸", "😹", "😻", "😽"
+            "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🙂", "😉", "😊",
+            "😍", "😘", "😗", "😋", "😛", "🤔", "😐", "😒", "🙄", "😪",
+            "😴", "😷", "🤒", "😎", "😕", "😟", "😢", "😭", "😡", "😠"
         ),
         "👍" to listOf(
-            "👍", "👎", "👌", "🤌", "✌️", "🤞", "🤟", "🤘", "🤙", "👈",
-            "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐️", "🖖", "👋", "🤝",
-            "👏", "🙌", "👐", "🤲", "🙏", "✍️", "💪", "🦾", "🖕", "✊",
-            "👊", "🤛", "🤜", "💅", "🤳", "👂", "👃", "👀", "👁️", "👅",
-            "👄", "🧠", "🦷", "👶", "🧒", "👦", "👧", "🧑", "👨", "👩",
-            "🧔", "👴", "👵", "👨‍⚕️", "👨‍🏫", "👨‍🌾", "👨‍🍳", "👨‍🔧", "👮", "💂",
-            "🕵️", "👷", "🤴", "👸", "👳", "🧕", "🤵", "👰", "🤰", "🤱",
-            "🚶", "🏃", "💃", "🕺", "🧎", "🧍", "👫", "👬", "👭", "💏",
-            "💑", "👪", "🗣️", "👤", "👥", "🫂", "👣", "🤷", "🤦", "💁"
+            "👍", "👎", "👌", "✌️", "🤝", "👏", "🙌", "🤲", "🙏", "💪",
+            "👀", "👶", "🧒", "👨", "👩", "🧓", "🧕", "👪", "🚶", "🏃"
         ),
         "🐻" to listOf(
-            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯",
-            "🦁", "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🐔",
-            "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴",
-            "🦄", "🐝", "🐛", "🦋", "🐌", "🐞", "🐜", "🦟", "🦗", "🕷️",
-            "🦂", "🐢", "🐍", "🦎", "🦖", "🐙", "🦑", "🦐", "🦀", "🐡",
-            "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓",
-            "🦍", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🐃", "🐂",
-            "🐄", "🐎", "🐖", "🐏", "🐑", "🦙", "🐐", "🦌", "🐕", "🐩",
-            "🐈", "🐓", "🦃", "🕊️", "🐇", "🦝", "🦨", "🦥", "🌵", "🌲",
-            "🌳", "🌴", "🌱", "🌿", "☘️", "🍀", "🍁", "🍂", "🌸", "🌺",
-            "🌻", "🌹", "🥀", "🌷", "🌼", "💐", "🌾", "🌍", "🌙", "⭐",
-            "🌟", "✨", "⚡", "🔥", "🌈", "☀️", "⛅", "☁️", "🌧️", "⛈️",
-            "❄️", "☃️", "🌬️", "💧", "💦", "🌊"
+            "🐶", "🐱", "🐭", "🐰", "🐻", "🐯", "🦁", "🐸", "🐝", "🦋",
+            "🌲", "🌿", "🌷", "🌹", "🌞", "🌙", "⭐", "✨", "🔥", "🌊"
         ),
         "🍔" to listOf(
-            "🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐",
-            "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑",
-            "🥦", "🥬", "🥒", "🌶️", "🌽", "🥕", "🧄", "🧅", "🥔", "🍠",
-            "🥐", "🍞", "🥖", "🥨", "🧀", "🥚", "🍳", "🧈", "🥞", "🧇",
-            "🥓", "🥩", "🍗", "🍖", "🌭", "🍔", "🍟", "🍕", "🥪", "🌮",
-            "🌯", "🥙", "🧆", "🥘", "🍲", "🥣", "🥗", "🍿", "🧂", "🥫",
-            "🍱", "🍚", "🍜", "🍝", "🍢", "🍣", "🍤", "🍙", "🍘", "🍥",
-            "🥮", "🍡", "🥟", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰",
-            "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕",
-            "🍵", "🧃", "🥤", "🧉", "🥢", "🍽️", "🍴", "🥄", "🫖", "🧊"
+            "🍎", "🍌", "🍇", "🍉", "🍅", "🍞", "🍔", "🍕", "🍛", "🍜",
+            "🍩", "🍰", "☕", "🍵", "🥛", "🥂"
         ),
         "⚽" to listOf(
-            "⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱",
-            "🪀", "🏓", "🏸", "🏒", "🏑", "🥍", "🏏", "🥅", "⛳", "🪁",
-            "🏹", "🎣", "🤿", "🥊", "🥋", "🎽", "🛹", "🛷", "⛸️", "🥌",
-            "🎿", "⛷️", "🏂", "🏋️", "🤼", "🤸", "⛹️", "🤺", "🤾", "🏌️",
-            "🏇", "🧘", "🏄", "🏊", "🤽", "🚣", "🧗", "🚵", "🚴", "🏆",
-            "🥇", "🥈", "🥉", "🏅", "🎖️", "🎗️", "🎫", "🎟️", "🎪", "🤹",
-            "🎭", "🩰", "🎨", "🎬", "🎤", "🎧", "🎼", "🎹", "🥁", "🎷",
-            "🎺", "🎸", "🪕", "🎻", "🎲", "♟️", "🎯", "🎳", "🎮", "🎰", "🧩"
+            "⚽", "🏀", "🏏", "🏐", "🏆", "🥇", "🎯", "🎮", "🎵", "🎨"
         ),
         "🚗" to listOf(
-            "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐",
-            "🛻", "🚚", "🚛", "🚜", "🛵", "🏍️", "🛺", "🚲", "🛴", "🚨",
-            "🚔", "🚍", "🚘", "🚖", "🚡", "🚠", "🚟", "🚃", "🚋", "🚞",
-            "🚝", "🚄", "🚅", "🚈", "🚂", "🚆", "🚇", "🚊", "🚉", "✈️",
-            "🛫", "🛬", "🛩️", "💺", "🛰️", "🚀", "🛸", "🚁", "🛶", "⛵",
-            "🚤", "🛥️", "🛳️", "⛴️", "🚢", "⚓", "⛽", "🚧", "🚦", "🚥",
-            "🗺️", "🗿", "🗽", "🗼", "🏰", "🏯", "🏟️", "🎡", "🎢", "🎠",
-            "⛲", "⛱️", "🏖️", "🏝️", "🏜️", "🌋", "⛰️", "🏔️", "🗻", "🏕️",
-            "⛺", "🏠", "🏡", "🏘️", "🏚️", "🏗️", "🏭", "🏢", "🏬", "🏣",
-            "🏤", "🏥", "🏦", "🏨", "🏪", "🏫", "🏩", "💒", "🏛️", "⛪",
-            "🕌", "🕍", "🛕", "🕋", "⛩️", "🌁", "🌃", "🏙️", "🌄", "🌅"
+            "🚗", "🚕", "🚌", "🚓", "🚑", "🚲", "✈️", "🚀", "⛵", "🏠",
+            "🏥", "🏫", "🕌", "🕋", "⛰️", "🌅"
         ),
         "💡" to listOf(
-            "⌚", "📱", "📲", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "🖲️", "🕹️",
-            "🗜️", "💽", "💾", "💿", "📀", "📼", "📷", "📸", "📹", "🎥",
-            "📽️", "🎞️", "📞", "☎️", "📟", "📠", "📺", "📻", "🎙️", "🎚️",
-            "🎛️", "🧭", "⏱️", "⏲️", "⏰", "🕰️", "⌛", "⏳", "📡", "🔋",
-            "🔌", "💡", "🔦", "🕯️", "🧯", "🛢️", "💸", "💵", "💴", "💶",
-            "💷", "💰", "💳", "💎", "⚖️", "🧰", "🔧", "🔨", "⚒️", "🛠️",
-            "⛏️", "🔩", "⚙️", "🧱", "⛓️", "🧲", "🔫", "💣", "🧨", "🪓",
-            "🔪", "🗡️", "⚔️", "🛡️", "🚬", "⚰️", "⚱️", "🏺", "🔮", "📿",
-            "🧿", "💈", "⚗️", "🔭", "🔬", "🕳️", "💊", "💉", "🩸", "🩹",
-            "🩺", "🌡️", "🧹", "🧺", "🧻", "🚽", "🚰", "🚿", "🛁", "🛀",
-            "🧼", "🪒", "🧽", "🧴", "🛎️", "🔑", "🗝️", "🚪", "🪑", "🛋️",
-            "🛏️", "🛌", "🧸", "🖼️", "🛍️", "🛒", "🎁", "🎈", "🎏", "🎀",
-            "🎊", "🎉", "🎎", "🏮", "🎐", "✉️", "📩", "📨", "📧", "💌",
-            "📮", "📪", "📫", "📬", "📭", "📦", "🏷️", "📜", "📃", "📄",
-            "📑", "🧾", "📊", "📈", "📉", "🗒️", "🗓️", "📆", "📅", "🗑️",
-            "📇", "🗃️", "🗳️", "🗄️", "📋", "📁", "📂", "🗂️", "🗞️", "📰",
-            "📓", "📔", "📒", "📕", "📗", "📘", "📙", "📚", "📖", "🔖",
-            "🧷", "🔗", "📎", "🖇️", "📐", "📏", "🧮", "📌", "📍", "✂️",
-            "🖊️", "🖋️", "✒️", "🖌️", "🖍️", "📝", "✏️", "🔍", "🔎", "🔏",
-            "🔐", "🔒", "🔓"
+            "⌚", "📱", "💻", "📷", "☎️", "💡", "🔑", "🔒", "💰", "💳",
+            "📚", "✏️", "📝", "✂️", "🎁", "💊"
         ),
         "❤" to listOf(
-            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
-            "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️",
-            "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "🕎", "☯️", "☦️", "🛐",
-            "⛎", "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐",
-            "♑", "♒", "♓", "🆔", "⚛️", "🉑", "☢️", "☣️", "📴", "📳",
-            "🈶", "🈚", "🈸", "🈺", "🈷️", "✴️", "🆚", "💮", "🉐", "㊙️",
-            "㊗️", "🈴", "🈵", "🈹", "🈲", "🅰️", "🅱️", "🆎", "🆑", "🅾️",
-            "🆘", "❌", "⭕", "🛑", "⛔", "📛", "🚫", "💯", "💢", "♨️",
-            "🚷", "🚯", "🚳", "🚱", "🔞", "📵", "🚭", "❗", "❕", "❓",
-            "❔", "‼️", "⁉️", "🔅", "🔆", "〽️", "⚠️", "🚸", "🔱", "⚜️",
-            "🔰", "♻️", "✅", "🈯", "💹", "❇️", "✳️", "❎", "🌐", "💠",
-            "Ⓜ️", "🌀", "💤", "🏧", "🚾", "♿", "🅿️", "🈳", "🈂️", "🛂",
-            "🛃", "🛄", "🛅", "🚹", "🚺", "🚼", "🚻", "🚮", "🎦", "📶",
-            "🈁", "🔣", "ℹ️", "🔤", "🔡", "🔠", "🆖", "🆗", "🆙", "🆒",
-            "🆕", "🆓", "0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣",
-            "8️⃣", "9️⃣", "🔟", "🔢", "#️⃣", "*️⃣", "⏏️", "▶️", "⏸️", "⏯️",
-            "⏹️", "⏺️", "⏭️", "⏮️", "⏩", "⏪", "⏫", "⏬", "◀️", "🔼",
-            "🔽", "➡️", "⬅️", "⬆️", "⬇️", "↗️", "↘️", "↙️", "↖️", "↕️",
-            "↔️", "↪️", "↩️", "⤴️", "⤵️", "🔀", "🔁", "🔂", "🔄", "🔃"
+            "❤️", "🧡", "💛", "💚", "💙", "💜", "💔", "💕", "☪️", "✅",
+            "❌", "❗", "❓", "⚠️", "💯", "🔝"
         ),
         "🏳" to listOf(
-            "🏳️", "🏴", "🏁", "🚩", "🏳️‍🌈", "🇦🇫", "🇵🇰", "🇮🇷", "🇮🇳", "🇸🇦",
-            "🇦🇪", "🇶🇦", "🇰🇼", "🇧🇭", "🇴🇲", "🇾🇪", "🇮🇶", "🇸🇾", "🇯🇴", "🇱🇧",
-            "🇵🇸", "🇪🇬", "🇹🇷", "🇹🇯", "🇺🇿", "🇹🇲", "🇰🇿", "🇰🇬", "🇨🇳", "🇯🇵",
-            "🇰🇷", "🇮🇩", "🇲🇾", "🇧🇩", "🇱🇰", "🇳🇵", "🇷🇺", "🇺🇦", "🇩🇪", "🇫🇷",
-            "🇬🇧", "🇮🇹", "🇪🇸", "🇳🇱", "🇧🇪", "🇨🇭", "🇸🇪", "🇳🇴", "🇩🇰", "🇦🇹",
-            "🇬🇷", "🇵🇱", "🇺🇸", "🇨🇦", "🇲🇽", "🇧🇷", "🇦🇷", "🇦🇺", "🇳🇿", "🇿🇦"
+            "🏳️", "🏁", "🚩", "🇦🇫", "🇵🇰", "🇮🇷", "🇸🇦", "🇹🇷", "🇺🇸", "🇬🇧"
         )
     )
 }
@@ -159,20 +145,52 @@ class EmojiPanel(
     private val onSearch: (() -> Unit)?,
     private val onDelete: () -> Unit,
     /** the same panel also serves kaomoji: wider cells, no search */
-    private val categories: List<Pair<String, List<String>>> = EmojiData.CATEGORIES,
+    private val categories: List<Pair<String, List<String>>> = EmojiData.categories(context),
     private val recentsKey: String = "emoji_recents",
     /** kaomoji may contain commas, so their recents use a control char */
     private val recentsSep: Char = ',',
     private val columns: Int = 8,
     private val itemTextSize: Float = 26f,
     private val tabWidthDp: Int = 42,
-    private val tabTextSize: Float = 19f
+    private val tabTextSize: Float = 19f,
+    /** kaomoji have no skin tones — don't decode the emoji catalogue for them */
+    private val skinTones: Boolean = true
 ) : LinearLayout(context) {
 
     private val density = resources.displayMetrics.density
-    private val gridHolder = ScrollView(context)
+    private val grid = GridView(context)
     private val tabViews = ArrayList<TextView>()
     private var currentCat = -1 // -1 = recents
+    private var items: List<String> = emptyList()
+    private var tonePopup: PopupWindow? = null
+
+    // declared before init(): the init block hands it to the GridView
+    private val adapter = object : BaseAdapter() {
+        override fun getCount() = items.size
+        override fun getItem(position: Int): Any = items[position]
+        override fun getItemId(position: Int) = position.toLong()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+            val tv = (convertView as? TextView) ?: TextView(context).apply {
+                maxLines = 1
+                gravity = Gravity.CENTER
+                textSize = itemTextSize
+                height = (46 * density).toInt()
+            }
+            val e = items[position]
+            tv.text = e
+            tv.setTextColor(theme.text)
+            tv.setOnClickListener { pick(e) }
+            val tones =
+                if (skinTones) EmojiData.variantsOf(context, e) else emptyList()
+            tv.isLongClickable = tones.isNotEmpty()
+            tv.setOnLongClickListener(
+                if (tones.isEmpty()) null
+                else View.OnLongClickListener { showTones(tv, tones); true }
+            )
+            return tv
+        }
+    }
 
     init {
         orientation = VERTICAL
@@ -271,10 +289,62 @@ class EmojiPanel(
         addTab("", R.drawable.ic_key_recent, -1)
         for ((i, c) in categories.withIndex()) addTab(c.first, 0, i)
 
-        // emoji grid fills everything below the top bar
-        addView(gridHolder, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        // emoji grid fills everything below the top bar. A GridView (rather
+        // than a GridLayout in a ScrollView) recycles its cells, so a family
+        // of 385 emoji costs the same to show as one of 20.
+        grid.numColumns = columns
+        grid.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        grid.isVerticalScrollBarEnabled = false
+        grid.selector = android.graphics.drawable.ColorDrawable(0)
+        grid.adapter = adapter
+        addView(grid, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
 
         showCategory(if (loadRecents().isEmpty()) 0 else -1)
+    }
+
+    private fun pick(e: String) {
+        onEmoji(e)
+        addRecent(e)
+    }
+
+    /**
+     * Long-press on an emoji that has skin tones opens the five variants in a
+     * small row above the cell, the way Gboard and WhatsApp do it.
+     */
+    private fun showTones(anchor: View, tones: List<String>) {
+        tonePopup?.dismiss()
+        val row = LinearLayout(context)
+        row.orientation = HORIZONTAL
+        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val bg = GradientDrawable()
+        bg.setColor(keyColor)
+        bg.cornerRadius = 12 * density
+        bg.setStroke((1 * density).toInt(), specialColor)
+        row.background = bg
+        val cell = (44 * density).toInt()
+        for (t in tones) {
+            val tv = TextView(context)
+            tv.text = t
+            tv.maxLines = 1
+            tv.gravity = Gravity.CENTER
+            tv.textSize = itemTextSize
+            tv.setOnClickListener {
+                tonePopup?.dismiss()
+                tonePopup = null
+                pick(t)
+            }
+            row.addView(tv, LayoutParams(cell, cell))
+        }
+        val pop = PopupWindow(row, cell * tones.size, cell, true)
+        pop.isOutsideTouchable = true
+        pop.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+        tonePopup = pop
+        val loc = IntArray(2)
+        anchor.getLocationInWindow(loc)
+        // keep the row inside the screen when the pressed cell is near an edge
+        val maxX = resources.displayMetrics.widthPixels - cell * tones.size
+        val x = (loc[0] + anchor.width / 2 - cell * tones.size / 2).coerceIn(0, maxOf(0, maxX))
+        pop.showAtLocation(this, Gravity.NO_GRAVITY, x, loc[1] - cell)
     }
 
     /** Circle marking the active family, in the special-key colour. */
@@ -299,27 +369,11 @@ class EmojiPanel(
             tv.background = if (selected) activeCircle() else null
             tv.setPadding(pl, pt, pr, pb)
         }
-        val emojis = if (cat == -1) loadRecents() else categories[cat].second
-        gridHolder.removeAllViews()
-        val grid = GridLayout(context)
-        grid.columnCount = columns
-        grid.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        val cell = (resources.displayMetrics.widthPixels / columns.toFloat()).toInt()
-        for (e in emojis) {
-            val tv = TextView(context)
-            tv.text = e
-            tv.maxLines = 1
-            tv.gravity = Gravity.CENTER
-            tv.textSize = itemTextSize
-            tv.width = cell
-            tv.height = (46 * density).toInt()
-            tv.setOnClickListener {
-                onEmoji(e)
-                addRecent(e)
-            }
-            grid.addView(tv)
-        }
-        gridHolder.addView(grid)
+        tonePopup?.dismiss()
+        tonePopup = null
+        items = if (cat == -1) loadRecents() else categories[cat].second
+        adapter.notifyDataSetChanged()
+        grid.setSelection(0)
     }
 
     // -------------------------------------------------------------- recents

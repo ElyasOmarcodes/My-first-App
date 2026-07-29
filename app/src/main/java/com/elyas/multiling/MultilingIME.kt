@@ -270,6 +270,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
         applySettings()
         rebuildKeyboard()
+        applyWindowDirection()
+        registerBackCallback()
         return root
     }
 
@@ -519,6 +521,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         super.onWindowShown()
         // insets/positions are only final once the window is up — re-measure
         if (navGapAuto) keyboardView?.post { applyBottomGap() }
+        // the decor is recreated with the window, so re-assert both each time
+        applyWindowDirection()
+        registerBackCallback()
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -608,6 +613,108 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onEvaluateFullscreenMode(): Boolean = false
+
+    // ------------------------------------------- system navigation buttons
+    //
+    // While the keyboard is up the system shows two buttons under it: switch
+    // IME and hide keyboard. Because our window is laid out edge to edge, it
+    // is InputMethodService — i.e. our own process — that draws that little
+    // bar inside the IME window, so both of its problems are ours to fix:
+    //
+    //   * the hide (down-arrow) button did nothing. Apps targeting SDK 35+
+    //     get predictive back by default, which retires the old KEYCODE_BACK
+    //     path; nothing was registered on the new dispatcher in its place, so
+    //     the press was simply dropped. We now register an explicit callback
+    //     and keep the legacy key handling for older releases.
+    //
+    //   * the two buttons sat in the opposite order to Samsung/Gboard. That
+    //     bar is a child of the IME window's decor view, so it mirrors with
+    //     the decor's layout direction — which stayed LTR. Following the UI
+    //     language puts the buttons where every other keyboard puts them.
+
+    private var backCallback: Any? = null
+
+    /** Hide the keyboard, leaving no panel or resize state behind. */
+    private fun hideKeyboardFromNavBar() {
+        if (resizeMode) toggleResizeMode()
+        if (mode != Mode.LETTERS) {
+            mode = Mode.LETTERS
+            rebuildKeyboard()
+            updateSuggestions()
+        }
+        requestHideSelf(0)
+    }
+
+    @android.annotation.TargetApi(33)
+    private fun registerBackCallback() {
+        if (android.os.Build.VERSION.SDK_INT < 33 || backCallback != null) return
+        try {
+            val dispatcher = window?.onBackInvokedDispatcher ?: return
+            val cb = android.window.OnBackInvokedCallback { hideKeyboardFromNavBar() }
+            dispatcher.registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb
+            )
+            backCallback = cb
+        } catch (_: Throwable) {
+        }
+    }
+
+    @android.annotation.TargetApi(33)
+    private fun unregisterBackCallback() {
+        if (android.os.Build.VERSION.SDK_INT < 33) return
+        try {
+            (backCallback as? android.window.OnBackInvokedCallback)?.let {
+                window?.onBackInvokedDispatcher?.unregisterOnBackInvokedCallback(it)
+            }
+        } catch (_: Throwable) {
+        }
+        backCallback = null
+    }
+
+    /**
+     * Mirror the IME window's decor with the DEVICE language, so the hide and
+     * switch-keyboard buttons the service draws under the keyboard sit on the
+     * same sides as they do for every other IME. It deliberately follows the
+     * system locale rather than our in-app language: those two buttons belong
+     * to the system, and Samsung/Gboard place them by the system locale too.
+     * The input view keeps its own explicit LTR, so nothing inside the
+     * keyboard moves.
+     */
+    private fun applyWindowDirection() {
+        try {
+            val decor = window?.window?.decorView ?: return
+            // system resources — unaffected by the AppLocale wrapping we apply
+            // to everything else in this process
+            val sysConfig = android.content.res.Resources.getSystem().configuration
+            decor.layoutDirection =
+                if (sysConfig.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+                    View.LAYOUT_DIRECTION_RTL
+                } else {
+                    View.LAYOUT_DIRECTION_LTR
+                }
+        } catch (_: Throwable) {
+        }
+    }
+
+    // legacy path — devices below Android 13 still deliver the hide button as
+    // a BACK key press
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown && event.repeatCount == 0) {
+            event.startTracking()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown &&
+            event.isTracking && !event.isCanceled
+        ) {
+            hideKeyboardFromNavBar()
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
+    }
 
     // ------------------------------------------------------------- settings
     private fun applySettings() {
@@ -1040,7 +1147,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             columns = 3,
             itemTextSize = 13.5f,
             tabWidthDp = 58,
-            tabTextSize = 13f
+            tabTextSize = 13f,
+            skinTones = false
         ))
     }
 
@@ -1612,18 +1720,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     // ------------------------------------------------------- emoji search
+    /**
+     * The search index is the catalogue itself: one entry per emoji with its
+     * tags already split. Tags carry English, Farsi and Arabic words, so the
+     * same query box works whichever language the user is typing in.
+     */
     private fun loadEmojiKeywords(): List<Pair<String, List<String>>> {
         emojiKeywords?.let { return it }
         val list = ArrayList<Pair<String, List<String>>>()
         try {
-            assets.open("emoji_keywords.txt").bufferedReader().forEachLine { line ->
-                val idx = line.indexOf('\t')
-                if (idx > 0) {
-                    val kw = line.substring(0, idx).trim()
-                    val emojis = line.substring(idx + 1).trim()
-                        .split(' ').filter { it.isNotEmpty() }
-                    if (kw.isNotEmpty() && emojis.isNotEmpty()) list.add(kw to emojis)
-                }
+            for ((emoji, tags) in EmojiData.searchIndex(this)) {
+                list.add(emoji to tags.split(' ').filter { it.isNotEmpty() })
             }
         } catch (_: Exception) {
         }
@@ -1655,13 +1762,22 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         )
 
         if (q.isEmpty()) return
-        val out = LinkedHashSet<String>()
-        for ((kw, emojis) in loadEmojiKeywords()) {
-            if (kw.startsWith(q) || (q.length >= 3 && kw.contains(q))) {
-                out.addAll(emojis)
-                if (out.size >= 24) break
+        // rank: a tag that starts with the query beats one that merely
+        // contains it, so "car" offers 🚗 before 🃏 (playing card)
+        val query = q.lowercase()
+        val exact = LinkedHashSet<String>()
+        val prefix = LinkedHashSet<String>()
+        val loose = LinkedHashSet<String>()
+        for ((emoji, tags) in loadEmojiKeywords()) {
+            for (t in tags) {
+                if (t == query) { exact.add(emoji); break }
+                if (t.startsWith(query)) { prefix.add(emoji); break }
+                if (query.length >= 3 && t.contains(query)) { loose.add(emoji); break }
             }
+            if (exact.size >= 24) break
         }
+        val out = LinkedHashSet<String>()
+        out.addAll(exact); out.addAll(prefix); out.addAll(loose)
         for (e in out.take(24)) {
             val tv = TextView(this)
             tv.text = e
@@ -2073,6 +2189,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDestroy() {
+        unregisterBackCallback()
         soundPool?.release()
         soundPool = null
         super.onDestroy()
