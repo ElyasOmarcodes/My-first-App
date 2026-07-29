@@ -484,16 +484,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun autoGapPx(): Int {
         return try {
             val decor = window?.window?.decorView ?: return 0
-            // When the framework draws the IME navigation bar (the hide and
-            // switch-keyboard buttons) it installs its own frame INTO our
-            // decor, at Gravity.BOTTOM with height = the navigation inset,
-            // and reports that strip to us as captionBar insets. Adding our
-            // own gap on top of that reserved the space TWICE: the window
-            // grew past the rect the framework had already computed for those
-            // buttons, and our padded keyboard view ended up over them — which
-            // is why the hide button stopped responding. When the framework
-            // owns the strip, we add nothing.
-            if (imeDrawsNavBar(decor)) return 0
             val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
                 ?: return 0
             // gesture mode: while the keyboard is open the system draws its
@@ -517,37 +507,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 nav.coerceAtMost((64 * resources.displayMetrics.density).toInt())
             } else 0
         } catch (_: Exception) { 0 }
-    }
-
-    /**
-     * True when InputMethodService is rendering the IME navigation bar itself
-     * — which it does under gesture navigation, per
-     * `InputMethodService.canImeRenderGesturalNavButtons()`.
-     *
-     * Two independent signals, because either alone can lag by a frame:
-     *  * captionBar insets — the documented contract, the framework reports
-     *    the IME nav bar to the IME window as captionBar;
-     *  * a NavigationBarFrame child in our decor — what it actually adds.
-     */
-    private fun imeDrawsNavBar(decor: View): Boolean {
-        try {
-            val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
-            val caption = insets?.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.captionBar()
-            )?.bottom ?: 0
-            if (caption > 0) return true
-        } catch (_: Throwable) {
-        }
-        try {
-            val group = decor as? android.view.ViewGroup ?: return false
-            for (i in 0 until group.childCount) {
-                if (group.getChildAt(i).javaClass.simpleName == "NavigationBarFrame") {
-                    return true
-                }
-            }
-        } catch (_: Throwable) {
-        }
-        return false
     }
 
     private fun realScreenHeight(): Int {
@@ -690,6 +649,42 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onEvaluateFullscreenMode(): Boolean = false
 
+    /**
+     * The framework's hide-keyboard button only works if the view it lives in
+     * was inflated with THIS SERVICE as its context. From AOSP's
+     * `KeyButtonView.sendEvent()`:
+     *
+     *     if (mContext instanceof InputMethodService) {
+     *         final InputMethodService ims = (InputMethodService) mContext;
+     *         handled = ims.onKeyDown(ev.getKeyCode(), ev);
+     *
+     * The whole body sits inside that check — if it fails the press does
+     * literally nothing. And it was failing: to show the UI in the chosen app
+     * language we wrap the base context with createConfigurationContext(), so
+     * `LayoutInflater.from(service)` came back holding that configuration
+     * context rather than the service, and the `instanceof` was false.
+     *
+     * The IME-switch button never went through this path — it calls
+     * `mService.onImeSwitchButtonClickFromClient()` on a stored reference —
+     * which is exactly why only the hide button was dead.
+     *
+     * Handing out an inflater cloned into this service fixes the check while
+     * leaving the wrapped configuration (and so the app language) intact.
+     */
+    private var imeInflater: android.view.LayoutInflater? = null
+
+    override fun getSystemService(name: String): Any? {
+        if (LAYOUT_INFLATER_SERVICE == name) {
+            imeInflater?.let { return it }
+            val base = super.getSystemService(name) as? android.view.LayoutInflater
+                ?: return null
+            val cloned = base.cloneInContext(this)
+            imeInflater = cloned
+            return cloned
+        }
+        return super.getSystemService(name)
+    }
+
     // ------------------------------------------- system navigation buttons
     //
     // While the keyboard is up the system shows two buttons under it: switch
@@ -793,16 +788,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      */
     private fun applyWindowDirection() {
         try {
-            val decor = window?.window?.decorView ?: return
-            // system resources — unaffected by the AppLocale wrapping we apply
-            // to everything else in this process
-            val sysConfig = android.content.res.Resources.getSystem().configuration
-            decor.layoutDirection =
-                if (sysConfig.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
-                    View.LAYOUT_DIRECTION_RTL
-                } else {
-                    View.LAYOUT_DIRECTION_LTR
+            val decor = window?.window?.decorView as? android.view.ViewGroup ?: return
+            // The device direction. NOT Resources.getSystem(), which returns
+            // the framework's own defaults and "is not configured for the
+            // current screen" — it reported LTR no matter the device locale,
+            // so the previous attempt at this silently did nothing. The
+            // application context is the right source: attachBaseContext
+            // wraps only this service, so the Application still carries the
+            // real device configuration.
+            val dir = applicationContext.resources.configuration.layoutDirection
+            decor.layoutDirection = dir
+            // The framework's nav bar orders its buttons with a start group
+            // and an end group inside a LinearLayout, so mirroring it is what
+            // swaps hide and switch-keyboard onto the sides every other
+            // keyboard puts them. It is added straight to the decor, so set
+            // the direction on it rather than relying on inheritance.
+            for (i in 0 until decor.childCount) {
+                val child = decor.getChildAt(i)
+                if (child.javaClass.simpleName == "NavigationBarFrame") {
+                    if (child.layoutDirection != dir) {
+                        child.layoutDirection = dir
+                        child.requestLayout()
+                    }
                 }
+            }
         } catch (_: Throwable) {
         }
     }
