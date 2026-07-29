@@ -15,6 +15,11 @@ import androidx.appcompat.app.AppCompatActivity
 /** Branded launch screen: Hindukush Voice motif, app name, soft fade-in. */
 class SplashActivity : AppCompatActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val density = resources.displayMetrics.density
@@ -62,8 +67,8 @@ class SplashActivity : AppCompatActivity() {
             return tv
         }
 
-        val title = text("هندوکش کیبورډ", 26f, Color.WHITE, true, 26)
-        val sub = text("هندوکش غږ", 15f, 0xFF9FB4DC.toInt(), false, 6)
+        val title = text(getString(R.string.app_name), 26f, Color.WHITE, true, 26)
+        val sub = text(getString(R.string.splash_sub), 15f, 0xFF9FB4DC.toInt(), false, 6)
         val ver = text(versionLabel(), 12f, 0x66FFFFFF, false, 40)
 
         setContentView(root)

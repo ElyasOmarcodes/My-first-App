@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_desc">Hindukush Keyboard — a fully offline, fast and professional keyboard
+        for Pashto, Dari/Farsi, Arabic, Urdu and English.\n A product of Voice Of Hindukush.</string>
+    <string name="about_privacy">Privacy Policy</string>
+    <string name="about_publisher">Voice Of Hindukush \nهندوکش غږ</string>
+    <string name="about_sites">Our websites</string>
+    <string name="about_title">About the app</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="app_name">Hindukush Keyboard</string>
+    <string name="autotext_add">Add ➕</string>
+    <string name="autotext_delete_q">Delete this shortcut?</string>
+    <string name="autotext_desc">While typing, write the shortcut and its full phrase is shown to you — one tap replaces the letters you typed with that phrase.</string>
+    <string name="autotext_edit">Edit shortcut</string>
+    <string name="autotext_expansion_hint">Full phrase (e.g. Assalamu alaikum wa rahmatullahi wa barakatuh)</string>
+    <string name="autotext_fill_both">Fill in both fields</string>
+    <string name="autotext_list_hint">Tap a suggestion once to edit it.
+Long-press a suggestion to delete it</string>
+    <string name="autotext_no_space">The shortcut must not contain a space</string>
+    <string name="autotext_shortcut_hint">Shortcut (e.g. salam)</string>
+    <string name="autotext_title">Keyboard shortcuts</string>
+    <string name="btn_enable">Enable</string>
+    <string name="btn_pick">Select keyboard</string>
+    <string name="btn_settings">Settings</string>
+    <string name="cat_dict_backup">Dictionary</string>
+    <string name="cat_settings_backup">Settings</string>
+    <string name="clear_learned_q">Are you sure? This cannot be undone.</string>
+    <string name="clip_prefix">Copied:</string>
+    <string name="contact_manager">Editor-in-chief of Voice Of Hindukush</string>
+    <string name="contact_manager_name">Mirwais Sarosh</string>
+    <string name="contact_whatsapp_btn">Contact on WhatsApp</string>
+    <string name="contact_whatsapp_num">+93765893297</string>
+    <string name="credit">Voice Of Hindukush\n2026</string>
+    <string name="done">Done ✔</string>
+    <string name="imported_n_words">%1$d new items added ✔</string>
+    <string name="lang_ar">Arabic</string>
+    <string name="lang_en">English</string>
+    <string name="lang_fa">Dari / Farsi</string>
+    <string name="lang_ps">Pashto</string>
+    <string name="lang_ur">Urdu</string>
+    <string name="org_intro">Voice Of Hindukush is an independent news and analysis outlet that works to publish accurate, reliable and documented information, to analyse important events from every angle, and to strengthen public awareness in society. In line with the principles of journalism and professional ethics, Voice Of Hindukush prepares its content on the basis of impartiality, accuracy and responsibility, and strives to present clear, balanced and trustworthy information to its readers and viewers.</string>
+    <string name="pref_arrow_height">Height of the arrow key row (%)</string>
+    <string name="pref_arrows">Enable arrow keys</string>
+    <string name="pref_arrows_sum">Cursor movement keys below the keyboard</string>
+    <string name="pref_autocaps">Capitalise the first letter of a sentence (English only)</string>
+    <string name="pref_autocaps_sum">Makes the first letter at the start of a sentence uppercase</string>
+    <string name="pref_autocorrect">Auto-correct words</string>
+    <string name="pref_autocorrect_sum">On space, a wrong word is replaced with the best suggestion</string>
+    <string name="pref_autotext_export">Export shortcuts</string>
+    <string name="pref_autotext_import">Import shortcuts</string>
+    <string name="pref_autotext_import_sum">Add all suggestions at once from a saved text file</string>
+    <string name="pref_autotext_manage">Manage shortcuts</string>
+    <string name="pref_autotext_manage_sum">Add, view and delete shortcuts</string>
+    <string name="pref_autotext_on">Enable shortcuts</string>
+    <string name="pref_autotext_on_sum">Create a shortcut and simply type it — the full phrase appears in the suggestion strip and one tap inserts it</string>
+    <string name="pref_bigrams">Next-word prediction</string>
+    <string name="pref_bigrams_sum">Suggests the next word based on the previous one</string>
+    <string name="pref_bottom_gap">Bottom gap</string>
+    <string name="pref_bottom_gap_sum">Space between the keyboard and the system buttons (dp)</string>
+    <string name="pref_cat_autotext">Shortcuts</string>
+    <string name="pref_cat_colors">Custom colours and appearance</string>
+    <string name="pref_cat_control">Arrow keys</string>
+    <string name="pref_cat_dict">Dictionary and its backup</string>
+    <string name="pref_cat_feedback">Key feedback</string>
+    <string name="pref_cat_langs">Languages</string>
+    <string name="pref_cat_look">Appearance and theme</string>
+    <string name="pref_cat_sizes">Sizes</string>
+    <string name="pref_cat_typing">Typing and suggestions</string>
+    <string name="pref_clear_learned">Clear learned words</string>
+    <string name="pref_clear_learned_sum">Deletes all learned words and predictions</string>
+    <string name="pref_clip_repeat">Repeating suggestion of copied text</string>
+    <string name="pref_clip_repeat_sum">If enabled: the copied-text chip appears on every empty line
+• If disabled: after one use the chip is hidden</string>
+    <string name="pref_col_bg">Background colour (behind and between the keys)</string>
+    <string name="pref_col_cat_general">General</string>
+    <string name="pref_col_cat_key_group">Letter keys</string>
+    <string name="pref_col_cat_keys">Key colours</string>
+    <string name="pref_col_cat_sections">Sections</string>
+    <string name="pref_col_cat_special_group">Special keys (shift, backspace, numbers and enter)</string>
+    <string name="pref_col_cat_text">Key text colours</string>
+    <string name="pref_col_cat_theme">Theme backup</string>
+    <string name="pref_col_custom">Enable custom colours</string>
+    <string name="pref_col_custom_sum">Use your own colours instead of the built-in appearance</string>
+    <string name="pref_col_first">First colour</string>
+    <string name="pref_col_grad_dir">Gradient direction</string>
+    <string name="pref_col_grad_style">Gradient style</string>
+    <string name="pref_col_group_sum">One colour or two colours, colour style and direction</string>
+    <string name="pref_col_hint">Colour of the small hint letters</string>
+    <string name="pref_col_key">Letter key colour</string>
+    <string name="pref_col_key_grad">Second colour</string>
+    <string name="pref_col_mode">Colour mode</string>
+    <string name="pref_col_second">Second colour</string>
+    <string name="pref_col_special">Special keys (shift, backspace, numbers and enter)</string>
+    <string name="pref_col_special_grad">Second colour</string>
+    <string name="pref_col_text">Letter / character colour</string>
+    <string name="pref_col_text_sum">Colour of the letters and the small hint letters</string>
+    <string name="pref_corner_radius">Key corner roundness</string>
+    <string name="pref_dict_export">Export dictionary</string>
+    <string name="pref_dict_export_sum">Export learned words to a text file so they can be used again</string>
+    <string name="pref_dict_import">Import dictionary</string>
+    <string name="pref_dict_import_sum">Add words back from a text file — one word per line (or word + value)</string>
+    <string name="pref_double_space">Double space = full stop + space</string>
+    <string name="pref_font_scale">Letter size inside the keys (%)</string>
+    <string name="pref_hint_scale">Size of the small hint letters (%)</string>
+    <string name="pref_hints">Small letters on the keys</string>
+    <string name="pref_hints_sum">Shows the shift or long-press character on the key</string>
+    <string name="pref_key_border">Show key borders</string>
+    <string name="pref_key_gap">Gap between the keys</string>
+    <string name="pref_key_height">Key height (portrait)</string>
+    <string name="pref_key_height_land">Key height (when the phone is in landscape)</string>
+    <string name="pref_languages">Active languages</string>
+    <string name="pref_languages_sum">Which languages are enabled on the keyboard</string>
+    <string name="pref_learn_words">Learn new words</string>
+    <string name="pref_learn_words_sum">Adds the words you type to the dictionary</string>
+    <string name="pref_longpress">Long-press delay</string>
+    <string name="pref_nav_gap_auto">Automatic bottom gap</string>
+    <string name="pref_nav_gap_auto_sum">The keyboard picks a suitable gap automatically from the phone\'s bottom buttons (if disabled, the bottom slider must be used)</string>
+    <string name="pref_preview">Long-press popup</string>
+    <string name="pref_seed_dict">Use the built-in dictionary</string>
+    <string name="pref_seed_dict_sum">Also suggests common words bundled with the app</string>
+    <string name="pref_settings_export">Export settings</string>
+    <string name="pref_settings_export_sum">Export all settings to a text file so they can be used again</string>
+    <string name="pref_settings_import">Import settings</string>
+    <string name="pref_settings_import_sum">Import again from a saved file</string>
+    <string name="pref_settings_reset">Reset settings to default</string>
+    <string name="pref_settings_reset_sum">All settings return to their original state</string>
+    <string name="pref_sound">Key sound</string>
+    <string name="pref_sound_type">Sound type</string>
+    <string name="pref_sound_vol">Sound volume (%)</string>
+    <string name="pref_space_swipe">Swipe on the space bar = switch language</string>
+    <string name="pref_space_swipe_sum">Swiping right/left switches the language; a long press opens the menu</string>
+    <string name="pref_sugg_font">Text size of the suggestion strip</string>
+    <string name="pref_suggestions">Word suggestions</string>
+    <string name="pref_suggestions_sum">Show word suggestions while typing</string>
+    <string name="pref_theme">Appearance</string>
+    <string name="pref_theme_export">Export theme (theme.txt)</string>
+    <string name="pref_theme_export_sum">Colours and sizes are saved to a file so they can be reused any time</string>
+    <string name="pref_theme_import">Import theme</string>
+    <string name="pref_theme_import_sum">Import again from a saved theme.txt file</string>
+    <string name="pref_vibrate">Vibration</string>
+    <string name="pref_vibrate_ms">Vibration duration in milliseconds</string>
+    <string name="privacy_online">Open the online version in the browser ↗</string>
+    <string name="privacy_text">Hindukush Keyboard is a fully offline keyboard.\n\n
+• This app has no INTERNET permission, so what you type can never be sent
+off your device.\n
+• Everything you type, the learned words, the shortcuts and the clipboard history are
+stored only in your phone\'s memory and only you have access to them.\n
+• This app collects no personal data, shares none and sells none.\n
+• It contains no advertising or analytics code whatsoever.\n
+• In password fields, suggestions, learning and clipboard capture are disabled automatically.\n\n
+Contact: Voice Of Hindukush — hindukushen.com</string>
+    <string name="resize_kb">Keyboard size</string>
+    <string name="screen_about_sum">Version, publisher, websites and policy</string>
+    <string name="screen_autotext_sum">Shortcuts — type short, get the full phrase</string>
+    <string name="screen_backup_sum">Backup of settings and dictionary</string>
+    <string name="screen_colors_sum">Key colours, gradient, text colour + theme backup</string>
+    <string name="screen_control_sum">Arrow keys and control</string>
+    <string name="screen_feedback_sum">Vibration and sounds</string>
+    <string name="screen_langs_sum">Active languages and switching</string>
+    <string name="screen_look_sum">Appearance, borders, small letters, popup</string>
+    <string name="screen_sizes_sum">Height, font, gaps, roundness</string>
+    <string name="screen_typing_sum">Suggestions, auto-correct, learning</string>
+    <string name="settings_reset_q">Are you sure? All settings will return to default.</string>
+    <string name="settings_title">Keyboard settings</string>
+    <string name="setup_desc">Complete these three steps to start:</string>
+    <string name="setup_features">✔ Pashto, Dari/Farsi, Arabic, Urdu and English\n✔ Long press = extra letters and diacritics\n✔ Swipe on the space bar = switch language\n✔ Long press 123 = menu (control panel, numbers, emoji…)\n✔ Word suggestion, prediction and learning\n✔ Shortcuts — type short, the full phrase is written\n✔ Fast typing (multi-touch)\n✔ Fully offline — no internet permission</string>
+    <string name="setup_step1">1. Enable the keyboard in the system settings</string>
+    <string name="setup_step2">2. Select Hindukush Keyboard as your current keyboard</string>
+    <string name="setup_step3">3. Try it out here</string>
+    <string name="setup_title">Welcome to Hindukush Keyboard</string>
+    <string name="test_hint">Try the keyboard here…</string>
+    <string name="word_boost">Raise the word\'s rank</string>
+    <string name="word_boosted">The word\'s rank was raised ✔</string>
+    <string name="word_delete">Delete word</string>
+    <string name="word_deleted">Word deleted ✔</string>
+    <string name="word_saved">Word saved to the dictionary ✔</string>
+
+    <!-- ===== app language ===== -->
+    <string name="app_lang_title">App language</string>
+    <string name="app_lang_msg">Choose a language for the app:</string>
+    <string name="app_lang_sum">Language of the app\'s menus and settings</string>
+    <string name="app_lang_ps">Pashto</string>
+    <string name="app_lang_fa">Farsi / Dari</string>
+    <string name="app_lang_en">English</string>
+
+    <!-- ===== keyboard runtime labels ===== -->
+    <string name="key_search">Search</string>
+    <string name="key_send">Send</string>
+    <string name="key_next">Next</string>
+    <string name="key_go">Go</string>
+    <string name="key_done">Done</string>
+    <string name="key_search_hint">Search…</string>
+    <string name="menu_langs">Languages</string>
+    <string name="menu_numbers">Numbers</string>
+    <string name="menu_emoji">Emoji</string>
+    <string name="menu_kaomoji">Kaomoji</string>
+    <string name="menu_clipboard">Clipboard</string>
+    <string name="menu_voice">Voice</string>
+    <string name="menu_control">Control</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_split">Split</string>
+    <string name="clip_back">Back</string>
+    <string name="clip_title">Clipboard</string>
+    <string name="clip_clear">Clear</string>
+    <string name="clip_empty">The clipboard is empty — copy some text</string>
+    <string name="about_copyright">© 2026 Voice Of Hindukush</string>
+    <string name="site_ps">Pashto — hindukushpa.com</string>
+    <string name="site_fa">Dari — hindokosh.com</string>
+    <string name="site_en">English — hindukushen.com</string>
+    <string name="splash_sub">Voice Of Hindukush</string>
+</resources>

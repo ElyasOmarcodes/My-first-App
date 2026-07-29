@@ -12,6 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 /** Manage AutoText shortcuts: list, add, delete (long-press). */
 class AutoTextActivity : AppCompatActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+
     private lateinit var store: AutoTextStore
     private lateinit var adapter: ArrayAdapter<String>
     private var entries: List<Pair<String, String>> = emptyList()

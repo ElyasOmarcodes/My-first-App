@@ -20,6 +20,11 @@ import androidx.preference.PreferenceManager
  */
 class SettingsActivity : AppCompatActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+
     private lateinit var preview: KeyboardView
     private lateinit var previewHolder: FrameLayout
 
@@ -205,6 +210,31 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(requireContext(), AboutActivity::class.java))
                 true
             }
+            findPreference<Preference>("app_lang_pick")?.setOnPreferenceClickListener {
+                showAppLanguageDialog()
+                true
+            }
+        }
+
+        /** Pick the language of the app's own menus and settings. */
+        private fun showAppLanguageDialog() {
+            val ctx = requireContext()
+            val codes = arrayOf(AppLocale.PS, AppLocale.FA, AppLocale.EN)
+            val labels = arrayOf(
+                getString(R.string.app_lang_ps),
+                getString(R.string.app_lang_fa),
+                getString(R.string.app_lang_en)
+            )
+            val current = codes.indexOf(AppLocale.current(ctx)).coerceAtLeast(0)
+            AlertDialog.Builder(ctx)
+                .setTitle(R.string.app_lang_title)
+                .setSingleChoiceItems(labels, current) { dlg, which ->
+                    AppLocale.setLanguage(ctx, codes[which])
+                    dlg.dismiss()
+                    activity?.recreate()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
 
         private fun wireLook() {

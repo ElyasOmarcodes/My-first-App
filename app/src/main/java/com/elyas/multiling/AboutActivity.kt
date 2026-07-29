@@ -16,6 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 /** «د پروګرام په اړه» — app, publisher (Voice Of Hindukush), policy info. */
 class AboutActivity : AppCompatActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+
     companion object {
         /** manager's WhatsApp number in international format, digits only */
         const val WHATSAPP_NUMBER = "93765893297"
@@ -59,7 +64,7 @@ class AboutActivity : AppCompatActivity() {
             return tv
         }
 
-        text("هندوکش کیبورډ", 24f, bold = true, topDp = 14)
+        text(getString(R.string.app_name), 24f, bold = true, topDp = 14)
         text(getString(R.string.about_version, versionName()), 13f, topDp = 2)
         text(getString(R.string.about_publisher), 17f, bold = true, topDp = 22)
         text(getString(R.string.about_desc), 14f, topDp = 8)
@@ -90,9 +95,9 @@ class AboutActivity : AppCompatActivity() {
         }
 
         text(getString(R.string.about_sites), 15f, bold = true, topDp = 24)
-        linkRow("پښتو — hindukushpa.com", "https://hindukushpa.com")
-        linkRow("دري — hindokosh.com", "https://hindokosh.com/")
-        linkRow("English — hindukushen.com", "https://hindukushen.com/")
+        linkRow(getString(R.string.site_ps), "https://hindukushpa.com")
+        linkRow(getString(R.string.site_fa), "https://hindokosh.com/")
+        linkRow(getString(R.string.site_en), "https://hindukushen.com/")
 
         // ---- responsible manager + WhatsApp contact
         text(getString(R.string.contact_manager), 15f, bold = true, topDp = 26)
@@ -130,7 +135,7 @@ class AboutActivity : AppCompatActivity() {
         }
         root.addView(privacy)
 
-        text("© 2026 هندوکش غږ — Voice Of Hindukush", 12.5f, topDp = 30,
+        text(getString(R.string.about_copyright), 12.5f, topDp = 30,
             colorAttr = Color.GRAY)
 
         val scroll = ScrollView(this)

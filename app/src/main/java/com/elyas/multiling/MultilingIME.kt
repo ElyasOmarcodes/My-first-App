@@ -115,6 +115,33 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         clipStore ?: ClipboardStore(this).also { clipStore = it }
 
     // ------------------------------------------------------------ lifecycle
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // the keyboard's own labels follow the chosen app language too
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+    /**
+     * The service outlives a language change made in the settings app, so
+     * re-apply the chosen locale to its resources whenever settings reload.
+     */
+    @Suppress("DEPRECATION")
+    private fun syncAppLocale() {
+        try {
+            val code = AppLocale.current(this)
+            val cfg = resources.configuration
+            val currentLang =
+                if (android.os.Build.VERSION.SDK_INT >= 24) cfg.locales[0].language
+                else cfg.locale.language
+            if (currentLang != code) {
+                val loc = java.util.Locale(code)
+                java.util.Locale.setDefault(loc)
+                cfg.setLocale(loc)
+                resources.updateConfiguration(cfg, resources.displayMetrics)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         ThemePresets.bootstrap(this)
@@ -584,6 +611,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     // ------------------------------------------------------------- settings
     private fun applySettings() {
+        syncAppLocale()
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         val kv = keyboardView ?: return
         kv.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
@@ -666,11 +694,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val info = currentInputEditorInfo ?: return "↵"
         if (info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION != 0) return "↵"
         return when (info.imeOptions and EditorInfo.IME_MASK_ACTION) {
-            EditorInfo.IME_ACTION_SEARCH -> "لټون"
-            EditorInfo.IME_ACTION_SEND -> "لېږل"
-            EditorInfo.IME_ACTION_NEXT -> "بل ⇥"
-            EditorInfo.IME_ACTION_GO -> "ورتګ"
-            EditorInfo.IME_ACTION_DONE -> "بشپړ"
+            EditorInfo.IME_ACTION_SEARCH -> getString(R.string.key_search)
+            EditorInfo.IME_ACTION_SEND -> getString(R.string.key_send)
+            EditorInfo.IME_ACTION_NEXT -> getString(R.string.key_next) + " ⇥"
+            EditorInfo.IME_ACTION_GO -> getString(R.string.key_go)
+            EditorInfo.IME_ACTION_DONE -> getString(R.string.key_done)
             else -> "↵"
         }
     }
@@ -751,7 +779,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     listOf(
                         KeyDef("😀", code = Keys.EMOJI, width = 1.5f),
                         KeyDef(",", null, listOf("'")),
-                        KeyDef("لټون…", code = Keys.SPACE, width = 4f),
+                        KeyDef(getString(R.string.key_search_hint), code = Keys.SPACE, width = 4f),
                         KeyDef("."),
                         KeyDef("↵", code = Keys.ENTER, width = 1.5f)
                     )
@@ -843,12 +871,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             header.addView(tv, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight))
             return tv
         }
-        headerBtn("بیرته", R.drawable.ic_key_back, 1f) {
+        headerBtn(getString(R.string.clip_back), R.drawable.ic_key_back, 1f) {
             mode = Mode.LETTERS; rebuildKeyboard(); updateSuggestions()
         }
-        val title = headerBtn("کلیپ بورډ", 0, 2f) {}
+        val title = headerBtn(getString(R.string.clip_title), 0, 2f) {}
         title.setTextColor(theme.hint)
-        headerBtn("پاکول", R.drawable.ic_key_trash, 1f) {
+        headerBtn(getString(R.string.clip_clear), R.drawable.ic_key_trash, 1f) {
             clipboardStore().clear()
             mode = Mode.CLIPBOARD
             rebuildKeyboard()
@@ -864,7 +892,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val items = clipboardStore().all()
         if (items.isEmpty()) {
             val tv = TextView(this)
-            tv.text = "کلیپ بورډ تش دی — یو متن کاپي کړئ"
+            tv.text = getString(R.string.clip_empty)
             tv.setTextColor(theme.hint)
             tv.textSize = 15f
             tv.gravity = android.view.Gravity.CENTER
@@ -1522,8 +1550,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val kv = keyboardView ?: return
         val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
         val splitOn = p.getBoolean("split_kb", false)
-        val items = Layouts.menuItems() +
-            ((if (splitOn) "وېشل ✓" else "وېشل") to Keys.SPLIT)
+        val items = Layouts.menuItems(this) +
+            ((getString(R.string.menu_split) + (if (splitOn) " ✓" else "")) to Keys.SPLIT)
         kv.showGridMenu(
             items.map { it.first },
             // control pre-selected: releasing the long-press opens it

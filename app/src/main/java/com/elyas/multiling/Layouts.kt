@@ -324,14 +324,14 @@ object Layouts {
      */
     /** Control sits bottom-left (nearest the finger that long-pressed 123),
      *  so it is pre-highlighted and a plain release opens it. */
-    fun menuItems(): List<Pair<String, Int>> = listOf(
-        "ژبې" to Keys.LANGS,
-        "شمېرې" to Keys.NUMPAD,
-        "ایموجي" to Keys.EMOJI,
-        "کاوموجي" to Keys.KAOMOJI,
-        "کلیپ بورډ" to Keys.CLIPBOARD,
-        "غږ" to Keys.MIC,
-        "کنټرول" to Keys.EDIT_PANEL,
-        "تنظیمات" to Keys.SETTINGS
+    fun menuItems(c: android.content.Context): List<Pair<String, Int>> = listOf(
+        c.getString(R.string.menu_langs) to Keys.LANGS,
+        c.getString(R.string.menu_numbers) to Keys.NUMPAD,
+        c.getString(R.string.menu_emoji) to Keys.EMOJI,
+        c.getString(R.string.menu_kaomoji) to Keys.KAOMOJI,
+        c.getString(R.string.menu_clipboard) to Keys.CLIPBOARD,
+        c.getString(R.string.menu_voice) to Keys.MIC,
+        c.getString(R.string.menu_control) to Keys.EDIT_PANEL,
+        c.getString(R.string.menu_settings) to Keys.SETTINGS
     )
 }

@@ -18,6 +18,11 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // edge-to-edge so the glass gradient fills behind the system bars
@@ -50,6 +55,29 @@ class MainActivity : AppCompatActivity() {
         }
 
         startOrgTyping()
+
+        // first run: ask which language the app itself should use
+        if (!AppLocale.isChosen(this)) showLanguagePicker()
+    }
+
+    /** Language chooser — also reachable from Settings. */
+    private fun showLanguagePicker() {
+        val codes = arrayOf(AppLocale.PS, AppLocale.FA, AppLocale.EN)
+        val labels = arrayOf(
+            getString(R.string.app_lang_ps),
+            getString(R.string.app_lang_fa),
+            getString(R.string.app_lang_en)
+        )
+        val current = codes.indexOf(AppLocale.current(this)).coerceAtLeast(0)
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.app_lang_title)
+            .setSingleChoiceItems(labels, current) { dlg, which ->
+                AppLocale.setLanguage(this, codes[which])
+                dlg.dismiss()
+                recreate()   // reload the UI in the new language
+            }
+            .setCancelable(false)
+            .show()
     }
 
     // ------------------------------------------------- typing animation

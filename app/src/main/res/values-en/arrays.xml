@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="lang_names">
+        <item>Pashto</item>
+        <item>Dari / Farsi</item>
+        <item>Arabic</item>
+        <item>Urdu</item>
+        <item>English</item>
+    </string-array>
+
+    <string-array name="theme_names">
+        <item>MultiLing ✦</item>
+        <item>Modern ✦</item>
+        <item>Green Pro ✦</item>
+        <item>Blue Pro ✦</item>
+        <item>Light Pro ✦</item>
+        <item>Dark</item>
+        <item>Light</item>
+        <item>AMOLED black</item>
+    </string-array>
+
+    <string-array name="sound_type_names">
+        <item>Pop</item>
+        <item>Click</item>
+        <item>Drop</item>
+        <item>Wood</item>
+        <item>Bubble</item>
+        <item>Soft</item>
+        <item>System sound</item>
+    </string-array>
+
+    <string-array name="col_mode_names">
+        <item>One colour</item>
+        <item>Two colours (gradient)</item>
+    </string-array>
+
+    <string-array name="grad_style_names">
+        <item>Linear</item>
+        <item>Radial</item>
+        <item>Sweep</item>
+    </string-array>
+
+    <string-array name="grad_dir_names">
+        <item>Vertical ↓ (top to bottom)</item>
+        <item>Horizontal ← (side to side)</item>
+        <item>Diagonal ↘ (corner to corner)</item>
+        <item>Diagonal ↗ (corner to corner)</item>
+    </string-array>
+
+    <string-array name="longpress_names">
+        <item>Very fast (200ms)</item>
+        <item>Fast (250ms)</item>
+        <item>Medium (350ms)</item>
+        <item>Slow (500ms)</item>
+        <item>Very slow (700ms)</item>
+    </string-array>
+</resources>
