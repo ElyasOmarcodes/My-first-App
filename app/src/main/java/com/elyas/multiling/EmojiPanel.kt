@@ -335,16 +335,23 @@ class EmojiPanel(
             }
             row.addView(tv, LayoutParams(cell, cell))
         }
-        val pop = PopupWindow(row, cell * tones.size, cell, true)
+        val width = cell * tones.size
+        val pop = PopupWindow(row, width, cell, true)
         pop.isOutsideTouchable = true
+        pop.isClippingEnabled = false
         pop.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
-        tonePopup = pop
         val loc = IntArray(2)
         anchor.getLocationInWindow(loc)
-        // keep the row inside the screen when the pressed cell is near an edge
-        val maxX = resources.displayMetrics.widthPixels - cell * tones.size
-        val x = (loc[0] + anchor.width / 2 - cell * tones.size / 2).coerceIn(0, maxOf(0, maxX))
-        pop.showAtLocation(this, Gravity.NO_GRAVITY, x, loc[1] - cell)
+        // keep the row on screen when the pressed cell is near either edge
+        val maxX = maxOf(0, resources.displayMetrics.widthPixels - width)
+        val x = (loc[0] + anchor.width / 2 - width / 2).coerceIn(0, maxX)
+        // above the cell, except on the top row where there is no space
+        val y = if (loc[1] >= cell) loc[1] - cell else loc[1] + anchor.height
+        try {
+            pop.showAtLocation(this, Gravity.NO_GRAVITY, x, y)
+            tonePopup = pop
+        } catch (_: Exception) {
+        }
     }
 
     /** Circle marking the active family, in the special-key colour. */
