@@ -547,6 +547,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         registerBackCallback()
     }
 
+    override fun onStartInput(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(info, restarting)
+        // the back dispatcher is rebuilt with the input connection, so the
+        // callback has to be re-seated here, not just once at startup
+        registerBackCallback()
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         // tell the system the back/hide button really does dismiss us — some
@@ -663,6 +670,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var backCallback: Any? = null
 
     /**
+     * The dispatcher the callback is currently registered on. With predictive
+     * back the IME's dispatcher is a PROXY the framework re-creates whenever
+     * the input connection is rebuilt — a callback left on the previous one
+     * is simply never invoked again. Tracking the instance lets us move the
+     * callback across instead of registering once and going deaf.
+     */
+    private var backDispatcher: Any? = null
+
+    /**
      * Hide the keyboard, leaving no panel or resize state behind.
      *
      * Two mechanisms, because they fail independently: requestHideSelf() asks
@@ -694,14 +710,20 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     @android.annotation.TargetApi(33)
     private fun registerBackCallback() {
-        if (android.os.Build.VERSION.SDK_INT < 33 || backCallback != null) return
+        if (android.os.Build.VERSION.SDK_INT < 33) return
         try {
             val dispatcher = window?.onBackInvokedDispatcher ?: return
+            // already on THIS dispatcher — nothing to do
+            if (backCallback != null && backDispatcher === dispatcher) return
+            // the dispatcher was swapped underneath us: drop the stale
+            // registration before taking out a new one
+            unregisterBackCallback()
             val cb = android.window.OnBackInvokedCallback { hideKeyboardFromNavBar() }
             dispatcher.registerOnBackInvokedCallback(
                 android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb
             )
             backCallback = cb
+            backDispatcher = dispatcher
         } catch (_: Throwable) {
         }
     }
@@ -710,12 +732,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun unregisterBackCallback() {
         if (android.os.Build.VERSION.SDK_INT < 33) return
         try {
-            (backCallback as? android.window.OnBackInvokedCallback)?.let {
-                window?.onBackInvokedDispatcher?.unregisterOnBackInvokedCallback(it)
-            }
+            val cb = backCallback as? android.window.OnBackInvokedCallback
+            val disp = backDispatcher as? android.window.OnBackInvokedDispatcher
+            if (cb != null && disp != null) disp.unregisterOnBackInvokedCallback(cb)
         } catch (_: Throwable) {
         }
         backCallback = null
+        backDispatcher = null
     }
 
     /**

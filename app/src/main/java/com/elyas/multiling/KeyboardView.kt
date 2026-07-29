@@ -572,6 +572,16 @@ class KeyboardView(context: Context) : View(context) {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (inputBlocked) return true
+        // The bottom padding is the navigation gap — the strip where the
+        // system draws its hide-keyboard and switch-keyboard buttons. This
+        // view is padded DOWN over that strip, so without this check every
+        // press on those buttons was eaten here and never reached them.
+        // Nothing of ours is drawn there, so hand the touch back.
+        if (paddingBottom > 0 && event.actionMasked == MotionEvent.ACTION_DOWN &&
+            event.y >= height - paddingBottom && pointers.isEmpty()
+        ) {
+            return false
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val index = event.actionIndex
