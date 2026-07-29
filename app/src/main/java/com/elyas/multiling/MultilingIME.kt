@@ -1762,22 +1762,29 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         )
 
         if (q.isEmpty()) return
-        // rank: a tag that starts with the query beats one that merely
-        // contains it, so "car" offers 🚗 before 🃏 (playing card)
+        // Rank by how the tag matched and how central it is to the emoji:
+        // an exact hit beats a prefix beats a substring, and within each, an
+        // early tag beats a late one. So "flag" offers 🏳️🚩 ahead of 📫,
+        // whose name only happens to end in "with raised flag".
         val query = q.lowercase()
-        val exact = LinkedHashSet<String>()
-        val prefix = LinkedHashSet<String>()
-        val loose = LinkedHashSet<String>()
+        val scored = ArrayList<Pair<String, Int>>()
         for ((emoji, tags) in loadEmojiKeywords()) {
-            for (t in tags) {
-                if (t == query) { exact.add(emoji); break }
-                if (t.startsWith(query)) { prefix.add(emoji); break }
-                if (query.length >= 3 && t.contains(query)) { loose.add(emoji); break }
+            var best = Int.MAX_VALUE
+            for ((i, t) in tags.withIndex()) {
+                val kind = when {
+                    t == query -> 0
+                    t.startsWith(query) -> 1
+                    query.length >= 3 && t.contains(query) -> 2
+                    else -> continue
+                }
+                val score = kind * 1000 + i
+                if (score < best) best = score
+                if (best == 0) break
             }
-            if (exact.size >= 24) break
+            if (best != Int.MAX_VALUE) scored.add(emoji to best)
         }
-        val out = LinkedHashSet<String>()
-        out.addAll(exact); out.addAll(prefix); out.addAll(loose)
+        // sortedBy is stable, so ties keep the catalogue's Unicode order
+        val out = scored.sortedBy { it.second }.map { it.first }
         for (e in out.take(24)) {
             val tv = TextView(this)
             tv.text = e
