@@ -332,7 +332,6 @@ object Layouts {
         c.getString(R.string.menu_clipboard) to Keys.CLIPBOARD,
         c.getString(R.string.menu_voice) to Keys.MIC,
         c.getString(R.string.menu_control) to Keys.EDIT_PANEL,
-        c.getString(R.string.menu_settings) to Keys.SETTINGS,
-        c.getString(R.string.menu_hide) to Keys.HIDE
+        c.getString(R.string.menu_settings) to Keys.SETTINGS
     )
 }

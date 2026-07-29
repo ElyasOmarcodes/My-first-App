@@ -484,6 +484,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun autoGapPx(): Int {
         return try {
             val decor = window?.window?.decorView ?: return 0
+            // When the framework draws the IME navigation bar (the hide and
+            // switch-keyboard buttons) it installs its own frame INTO our
+            // decor, at Gravity.BOTTOM with height = the navigation inset,
+            // and reports that strip to us as captionBar insets. Adding our
+            // own gap on top of that reserved the space TWICE: the window
+            // grew past the rect the framework had already computed for those
+            // buttons, and our padded keyboard view ended up over them — which
+            // is why the hide button stopped responding. When the framework
+            // owns the strip, we add nothing.
+            if (imeDrawsNavBar(decor)) return 0
             val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
                 ?: return 0
             // gesture mode: while the keyboard is open the system draws its
@@ -507,6 +517,37 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 nav.coerceAtMost((64 * resources.displayMetrics.density).toInt())
             } else 0
         } catch (_: Exception) { 0 }
+    }
+
+    /**
+     * True when InputMethodService is rendering the IME navigation bar itself
+     * — which it does under gesture navigation, per
+     * `InputMethodService.canImeRenderGesturalNavButtons()`.
+     *
+     * Two independent signals, because either alone can lag by a frame:
+     *  * captionBar insets — the documented contract, the framework reports
+     *    the IME nav bar to the IME window as captionBar;
+     *  * a NavigationBarFrame child in our decor — what it actually adds.
+     */
+    private fun imeDrawsNavBar(decor: View): Boolean {
+        try {
+            val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
+            val caption = insets?.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.captionBar()
+            )?.bottom ?: 0
+            if (caption > 0) return true
+        } catch (_: Throwable) {
+        }
+        try {
+            val group = decor as? android.view.ViewGroup ?: return false
+            for (i in 0 until group.childCount) {
+                if (group.getChildAt(i).javaClass.simpleName == "NavigationBarFrame") {
+                    return true
+                }
+            }
+        } catch (_: Throwable) {
+        }
+        return false
     }
 
     private fun realScreenHeight(): Int {
