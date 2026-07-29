@@ -21,14 +21,20 @@ import org.tukaani.xz.XZInputStream
  * first time the emoji panel or emoji search is opened.
  *
  * Line format inside the archive:
- *     `#<tabEmoji>`                    starts a category
+ *     `<0x01><tabEmoji>`              starts a category
  *     `<emoji>\t<tags>`                an entry
  *     `<emoji>\t<tags>\t<v1 v2 …>`     an entry whose long-press offers the
  *                                      five skin-tone variants
  * Tags mix English, Farsi and Arabic words so search works in any of the
  * languages our users type in.
+ *
+ * The category marker has to be a control character: the keycap emoji `#️⃣`
+ * starts with a literal '#', so a '#' marker ate it as a header.
  */
 object EmojiData {
+
+    /** starts a category line — see the note on '#' above */
+    private const val CAT_MARK = '\u0001'
 
     /** tab emoji -> the emoji shown in that tab, in official Unicode order */
     private var cats: List<Pair<String, List<String>>>? = null
@@ -49,7 +55,7 @@ object EmojiData {
             XZInputStream(context.assets.open("emoji.txt.xz"))
                 .bufferedReader().forEachLine { line ->
                     if (line.isEmpty()) return@forEachLine
-                    if (line[0] == '#') {
+                    if (line[0] == CAT_MARK) {
                         out.add(line.substring(1) to ArrayList<String>())
                         return@forEachLine
                     }
