@@ -53,6 +53,8 @@ object Keys {
     const val KAOMOJI = -27
     const val SPLIT = -28    // toggle split keyboard (tablets/foldables)
     const val RESIZE = -29   // toggle live keyboard-height resize mode
+    const val HIDE = -30     // close the keyboard
+    const val LANG_CYCLE = -31 // step to the next keyboard language in place
 
     // drawn icons (KeyDef.hintIcon)
     const val ICON_MIC = 1

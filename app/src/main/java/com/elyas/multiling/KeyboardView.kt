@@ -321,7 +321,12 @@ class KeyboardView(context: Context) : View(context) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         var h = (paddingTop + paddingBottom).toFloat()
         for (row in rows) h += rowHeightPx(row)
-        val height = max((keyHeightDpF * density).toInt(), h.toInt())
+        // round rather than truncate: during a live resize this is the only
+        // place the fractional height collapses to pixels
+        val height = max(
+            Math.round(keyHeightDpF * density),
+            Math.round(h)
+        )
         setMeasuredDimension(width, height)
     }
 
@@ -525,6 +530,7 @@ class KeyboardView(context: Context) : View(context) {
         Keys.ARROW_DOWN -> R.drawable.ic_key_arrow_down
         Keys.ARROW_LEFT -> R.drawable.ic_key_arrow_left
         Keys.ARROW_RIGHT -> R.drawable.ic_key_arrow_right
+        Keys.LANG_CYCLE -> R.drawable.ic_key_lang
         else -> 0
     }
 

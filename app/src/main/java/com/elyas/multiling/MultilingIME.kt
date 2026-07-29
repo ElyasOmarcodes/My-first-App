@@ -244,18 +244,22 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 LinearLayout.LayoutParams.MATCH_PARENT, (40 * density).toInt()
             )
         )
-        root.addView(
-            kv,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
+        // The panel holder sits ABOVE the keys. For the emoji/kaomoji/clipboard
+        // panels the keyboard is hidden so the order does not show, but emoji
+        // SEARCH keeps both on screen — results on top, letters underneath,
+        // the way Gboard and Samsung lay it out.
         val holder = android.widget.FrameLayout(this)
         holder.visibility = View.GONE
         emojiHolder = holder
         root.addView(
             holder,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+        root.addView(
+            kv,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -314,23 +318,34 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         )
         resizePill = pill
 
-        // drag the pill to resize the keyboard live and smoothly
+        // Drag the pill to resize the keyboard live.
+        //
+        // The height must follow the finger EXACTLY 1:1, or the drag feels
+        // like it is stepping: the keyboard is several rows tall, so 1 dp of
+        // key height moves the top edge by `units` dp. Dividing the finger
+        // delta by `units` makes the edge travel exactly as far as the
+        // finger, which is what reads as smooth.
         var startY = 0f
         var startHeight = 0f
-        pill.setOnTouchListener { _, ev ->
+        var startUnits = 5f
+        pill.setOnTouchListener { v, ev ->
             when (ev.actionMasked) {
                 android.view.MotionEvent.ACTION_DOWN -> {
                     startY = ev.rawY
                     startHeight = keyHeightExact
+                    startUnits = currentHeightUnits()
+                    // keep receiving moves even when the finger leaves the pill
+                    v.parent?.requestDisallowInterceptTouchEvent(true)
                     feedback()
                     true
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    // dragging UP makes the keyboard taller; fractional dp
-                    // keeps the growth continuous instead of stepping
-                    val dDp = (startY - ev.rawY) / density / 3f
+                    // dragging UP makes the keyboard taller
+                    val dDp = (startY - ev.rawY) / density / startUnits
                     val newH = (startHeight + dDp).coerceIn(38f, 110f)
-                    if (kotlin.math.abs(newH - keyHeightExact) > 0.01f) {
+                    // re-lay out whenever the total height moves by ≥1 px,
+                    // so every frame the finger produces is drawn
+                    if (kotlin.math.abs(newH - keyHeightExact) * startUnits * density >= 1f) {
                         keyHeightExact = newH
                         applyLiveKeyHeight()
                     }
@@ -345,6 +360,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
         }
     }
+
+    /** How many key-height units tall the keyboard currently is. */
+    private fun currentHeightUnits(): Float =
+        heightUnits(lang.rows.size + 1, arrowsOn).coerceAtLeast(1f)
 
     /**
      * Push the current (fractional) height into the view without rebuilding
@@ -513,7 +532,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val pad = if (navGapAuto) autoGapPx() else (manualBottomGapDp * density).toInt()
         kv.setPadding(0, 0, 0, pad)
         kv.requestLayout()
-        emojiHolder?.setPadding(0, 0, 0, pad)
+        // the gap belongs to whichever view is bottom-most: in emoji SEARCH
+        // the keys sit below the panel, so the panel must not add it too
+        emojiHolder?.setPadding(0, 0, 0, if (kv.visibility == View.GONE) pad else 0)
         emojiHolder?.requestLayout()
     }
 
@@ -528,6 +549,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        // tell the system the back/hide button really does dismiss us — some
+        // builds consult this before routing the press to the IME at all
+        try {
+            setBackDisposition(BACK_DISPOSITION_WILL_DISMISS)
+        } catch (_: Throwable) {
+        }
+        registerBackCallback()
         // self-heal: a stuck pending flag must never survive a keyboard open
         suggHandler.removeCallbacks(suggRunnable)
         suggPending = false
@@ -634,7 +662,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private var backCallback: Any? = null
 
-    /** Hide the keyboard, leaving no panel or resize state behind. */
+    /**
+     * Hide the keyboard, leaving no panel or resize state behind.
+     *
+     * Two mechanisms, because they fail independently: requestHideSelf() asks
+     * the input-method manager to dismiss us, while hideSoftInputFromWindow()
+     * goes through the token of the window we are attached to. Whichever one
+     * the device honours, the keyboard closes.
+     */
     private fun hideKeyboardFromNavBar() {
         if (resizeMode) toggleResizeMode()
         if (mode != Mode.LETTERS) {
@@ -642,7 +677,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             rebuildKeyboard()
             updateSuggestions()
         }
-        requestHideSelf(0)
+        try {
+            requestHideSelf(0)
+        } catch (_: Throwable) {
+        }
+        try {
+            val token = window?.window?.attributes?.token
+            if (token != null) {
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE)
+                    as android.view.inputmethod.InputMethodManager
+                imm.hideSoftInputFromWindow(token, 0)
+            }
+        } catch (_: Throwable) {
+        }
     }
 
     @android.annotation.TargetApi(33)
@@ -696,23 +743,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
-    // legacy path — devices below Android 13 still deliver the hide button as
-    // a BACK key press
+    // Legacy path. Hide on the DOWN edge rather than tracking to the UP:
+    // some devices deliver only the DOWN for this button, and a tracked
+    // event that never gets its UP simply does nothing.
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown && event.repeatCount == 0) {
-            event.startTracking()
+            hideKeyboardFromNavBar()
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown &&
-            event.isTracking && !event.isCanceled
-        ) {
-            hideKeyboardFromNavBar()
-            return true
-        }
+        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown) return true
         return super.onKeyUp(keyCode, event)
     }
 
@@ -881,13 +924,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Mode.KAOMOJI -> {}
             Mode.CLIPBOARD -> {}
             Mode.EMOJI_SEARCH -> {
-                rows.addAll(Layouts.ENGLISH.rows)
+                // the CURRENT language, not English — people search for
+                // emoji in Pashto and Farsi too
+                rows.addAll(lang.rows)
                 rows.add(
                     listOf(
                         KeyDef("😀", code = Keys.EMOJI, width = 1.5f),
-                        KeyDef(",", null, listOf("'")),
+                        KeyDef("", code = Keys.LANG_CYCLE, width = 1.5f),
                         KeyDef(getString(R.string.key_search_hint), code = Keys.SPACE, width = 4f),
-                        KeyDef("."),
+                        KeyDef("⌫", code = Keys.DELETE, width = 1.5f),
                         KeyDef("↵", code = Keys.ENTER, width = 1.5f)
                     )
                 )
@@ -929,8 +974,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             showClipboardPanel()
             return
         }
-        emojiHolder?.visibility = View.GONE
         kv.visibility = View.VISIBLE
+        if (mode == Mode.EMOJI_SEARCH) {
+            // results panel on top, keys below — both visible at once
+            showEmojiSearchPanel()
+        } else {
+            emojiHolder?.visibility = View.GONE
+            emojiSearchGrid = null
+            emojiSearchField = null
+        }
 
         val rows = currentRows()
         // scale the key height so control/numbers/symbol layouts occupy the
@@ -946,6 +998,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
         kv.shiftState = if (mode == Mode.EDIT) (if (selectMode) 2 else 0) else shift
         kv.setKeyboard(rows, displayFor(rows))
+        // the nav gap belongs to whichever view is now bottom-most
+        applyBottomGap()
     }
 
     private fun showClipboardPanel() {
@@ -1079,6 +1133,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         holder.addView(root, android.widget.FrameLayout.LayoutParams(
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT, h))
         holder.visibility = View.VISIBLE
+        applyBottomGap()
     }
 
     /** Panel colours follow the custom key colours when they are on. */
@@ -1105,6 +1160,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             )
         )
         holder.visibility = View.VISIBLE
+        applyBottomGap()
     }
 
     private fun showEmojiPanel() {
@@ -1159,8 +1215,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         revertCorrected = null
 
         if (mode == Mode.EMOJI_SEARCH) {
-            // typing filters emojis instead of committing text
-            if (rawText.length == 1 && Character.isLetter(rawText[0])) {
+            // typing filters emoji instead of committing text. Any script
+            // counts — isLetter() is true for Pashto/Farsi/Arabic letters
+            // just as it is for Latin ones.
+            if (rawText.length == 1 &&
+                (Character.isLetter(rawText[0]) || Character.isDigit(rawText[0]))
+            ) {
                 emojiQuery.append(rawText.lowercase())
                 updateEmojiSearch()
             }
@@ -1260,7 +1320,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val ic = currentInputConnection
         if (mode == Mode.EMOJI_SEARCH) {
             when (code) {
-                Keys.SPACE -> { feedback(); return }
+                Keys.SPACE -> {
+                    feedback()
+                    // a space separates search terms; never leads
+                    if (emojiQuery.isNotEmpty() && emojiQuery.last() != ' ') {
+                        emojiQuery.append(' ')
+                        updateEmojiSearch()
+                    }
+                    return
+                }
                 Keys.ENTER -> {
                     feedback()
                     mode = Mode.EMOJI
@@ -1400,6 +1468,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             Keys.KAOMOJI -> { feedback(); mode = Mode.KAOMOJI; rebuildKeyboard() }
             Keys.RESIZE -> { feedback(); toggleResizeMode() }
+            Keys.HIDE -> { feedback(); hideKeyboardFromNavBar() }
+            Keys.LANG_CYCLE -> switchLanguage(1)
             Keys.SPLIT -> {
                 feedback()
                 val p = androidx.preference.PreferenceManager
@@ -1648,6 +1718,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         Keys.CLIPBOARD -> R.drawable.ic_key_clipboard
         Keys.MIC -> R.drawable.ic_key_mic
         Keys.LANGS -> R.drawable.ic_key_lang
+        Keys.LANG_CYCLE -> R.drawable.ic_key_lang
+        Keys.HIDE -> R.drawable.ic_key_arrow_down
         Keys.SETTINGS -> R.drawable.ic_key_settings
         Keys.SPLIT -> R.drawable.ic_key_split
         else -> 0
@@ -1674,7 +1746,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun switchLanguage(delta: Int) {
         if (languages.size < 2) return
         langIndex = (langIndex + delta + languages.size) % languages.size
-        mode = Mode.LETTERS
+        // switching language while searching emoji keeps you in the search —
+        // that is the whole point of being able to switch there
+        if (mode != Mode.EMOJI_SEARCH) mode = Mode.LETTERS
         shift = 0
         wordBuffer.setLength(0)
         lastWord = ""
@@ -1738,72 +1812,183 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         return list
     }
 
-    /** The suggestion strip becomes the emoji-search result row. */
-    private fun updateEmojiSearch() {
-        val bar = suggestionBar ?: return
-        bar.removeAllViews()
+    // ------------------------------------------------- emoji search panel
+    //
+    // Laid out the way Gboard and Samsung do it: a search field with the
+    // query and a clear button on top, the matching emoji in a scrollable
+    // grid under it, and the ordinary keyboard — IN THE CURRENT LANGUAGE —
+    // below that. Results are ranked, not capped at a single strip row.
+
+    private var emojiSearchGrid: android.widget.GridView? = null
+    private var emojiSearchField: TextView? = null
+
+    /** Build the search panel into the panel holder above the keys. */
+    private fun showEmojiSearchPanel() {
         val kv = keyboardView ?: return
-        val q = emojiQuery.toString()
+        val holder = emojiHolder ?: return
         val density = resources.displayMetrics.density
+        val theme = kv.theme
+        val (keyCol, specialCol) = panelColors(kv)
 
-        val label = TextView(this)
-        label.text = if (q.isEmpty()) "🔍…" else "🔍 $q"
-        label.setTextColor(kv.theme.accent)
-        label.textSize = suggFontSp
-        label.maxLines = 1
-        label.gravity = android.view.Gravity.CENTER
-        label.setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
-        bar.addView(
-            label,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-        )
+        val root = LinearLayout(this)
+        root.orientation = LinearLayout.VERTICAL
+        root.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        root.setBackgroundColor(kv.resolvedBackground)
 
-        if (q.isEmpty()) return
-        // Rank by how the tag matched and how central it is to the emoji:
-        // an exact hit beats a prefix beats a substring, and within each, an
-        // early tag beats a late one. So "flag" offers 🏳️🚩 ahead of 📫,
-        // whose name only happens to end in "with raised flag".
-        val query = q.lowercase()
-        val scored = ArrayList<Pair<String, Int>>()
-        for ((emoji, tags) in loadEmojiKeywords()) {
-            var best = Int.MAX_VALUE
-            for ((i, t) in tags.withIndex()) {
-                val kind = when {
-                    t == query -> 0
-                    t.startsWith(query) -> 1
-                    query.length >= 3 && t.contains(query) -> 2
-                    else -> continue
-                }
-                val score = kind * 1000 + i
-                if (score < best) best = score
-                if (best == 0) break
-            }
-            if (best != Int.MAX_VALUE) scored.add(emoji to best)
+        // ---- header: back | search field | clear
+        val header = LinearLayout(this)
+        header.orientation = LinearLayout.HORIZONTAL
+        header.gravity = android.view.Gravity.CENTER_VERTICAL
+
+        fun iconBtn(iconRes: Int, click: () -> Unit): View {
+            val iv = android.widget.ImageView(this)
+            iv.setImageDrawable(tintedIcon(iconRes, theme.text, (20 * density).toInt()))
+            iv.scaleType = android.widget.ImageView.ScaleType.CENTER
+            val bg = android.graphics.drawable.GradientDrawable()
+            bg.setColor(specialCol)
+            bg.cornerRadius = 10 * density
+            iv.background = bg
+            iv.setOnClickListener { click() }
+            return iv
         }
-        // sortedBy is stable, so ties keep the catalogue's Unicode order
-        val out = scored.sortedBy { it.second }.map { it.first }
-        for (e in out.take(24)) {
-            val tv = TextView(this)
-            tv.text = e
-            tv.textSize = 24f
-            tv.maxLines = 1
-            tv.gravity = android.view.Gravity.CENTER
-            tv.setPadding((8 * density).toInt(), 0, (8 * density).toInt(), 0)
-            tv.setOnClickListener {
+
+        val btnLp = LinearLayout.LayoutParams((44 * density).toInt(), (38 * density).toInt())
+        btnLp.setMargins((4 * density).toInt(), 0, (4 * density).toInt(), 0)
+        header.addView(iconBtn(R.drawable.ic_key_back) {
+            feedback()
+            emojiQuery.setLength(0)
+            mode = Mode.EMOJI
+            rebuildKeyboard()
+        }, btnLp)
+
+        val field = TextView(this)
+        field.maxLines = 1
+        field.textSize = 16f
+        field.gravity = android.view.Gravity.CENTER_VERTICAL
+        field.setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
+        val fieldBg = android.graphics.drawable.GradientDrawable()
+        fieldBg.setColor(keyCol)
+        fieldBg.cornerRadius = 19 * density
+        field.background = fieldBg
+        // the query is whatever the user typed — Pashto, Farsi, English…
+        field.textDirection = View.TEXT_DIRECTION_FIRST_STRONG
+        emojiSearchField = field
+        val fieldLp = LinearLayout.LayoutParams(0, (38 * density).toInt(), 1f)
+        header.addView(field, fieldLp)
+
+        header.addView(iconBtn(R.drawable.ic_key_backspace) {
+            feedback()
+            if (emojiQuery.isNotEmpty()) {
+                emojiQuery.setLength(emojiQuery.length - 1)
+                updateEmojiSearch()
+            }
+        }, btnLp)
+
+        root.addView(header, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, (46 * density).toInt()))
+
+        // ---- results: a scrollable grid, two rows tall
+        val grid = android.widget.GridView(this)
+        grid.numColumns = 8
+        grid.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        grid.isVerticalScrollBarEnabled = false
+        grid.selector = android.graphics.drawable.ColorDrawable(0)
+        grid.adapter = emojiResultAdapter
+        emojiSearchGrid = grid
+        root.addView(grid, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, (96 * density).toInt()))
+
+        holder.removeAllViews()
+        holder.addView(root)
+        holder.visibility = View.VISIBLE
+        applyBottomGap()
+        updateEmojiSearch()
+    }
+
+    /** Current result list, shared by the adapter and the click handler. */
+    private var emojiResults: List<String> = emptyList()
+
+    private val emojiResultAdapter = object : android.widget.BaseAdapter() {
+        override fun getCount() = emojiResults.size
+        override fun getItem(position: Int): Any = emojiResults[position]
+        override fun getItemId(position: Int) = position.toLong()
+
+        override fun getView(
+            position: Int, convertView: View?, parent: android.view.ViewGroup?
+        ): View {
+            val density = resources.displayMetrics.density
+            val theme = keyboardView?.theme
+            val cell = (convertView as? EmojiCell) ?: EmojiCell(this@MultilingIME).apply {
+                maxLines = 1
+                gravity = android.view.Gravity.CENTER
+                textSize = 24f
+                height = (46 * density).toInt()
+            }
+            val e = emojiResults[position]
+            cell.text = e
+            theme?.let { cell.setTextColor(it.text); cell.markColor = it.hint }
+            cell.hasMore = EmojiData.variantsOf(this@MultilingIME, e).isNotEmpty()
+            cell.setOnClickListener {
                 currentInputConnection?.commitText(e, 1)
                 feedback()
             }
-            bar.addView(
-                tv,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                )
-            )
+            return cell
         }
+    }
+
+    /** Re-run the query and refresh the field and the result grid. */
+    private fun updateEmojiSearch() {
+        val q = emojiQuery.toString()
+        val theme = keyboardView?.theme
+        emojiSearchField?.let { f ->
+            if (q.isEmpty()) {
+                f.text = getString(R.string.emoji_search_hint)
+                theme?.let { f.setTextColor(it.hint) }
+            } else {
+                // a caret so the field reads as a live text box
+                f.text = q + "|"
+                theme?.let { f.setTextColor(it.text) }
+            }
+        }
+        emojiResults = if (q.isEmpty()) emptyList() else rankEmoji(q)
+        emojiResultAdapter.notifyDataSetChanged()
+        emojiSearchGrid?.setSelection(0)
+    }
+
+    /**
+     * Rank by how the tag matched and how central it is to the emoji: an
+     * exact hit beats a prefix beats a substring, and within each an early
+     * tag beats a late one. So "flag" offers the real flags ahead of the
+     * mailbox, whose name merely ends in "with raised flag".
+     */
+    private fun rankEmoji(rawQuery: String): List<String> {
+        // several words mean "all of them": "afghanistan flag" -> 🇦🇫
+        val terms = rawQuery.lowercase().split(' ').filter { it.isNotEmpty() }
+        if (terms.isEmpty()) return emptyList()
+        val scored = ArrayList<Pair<String, Int>>()
+        for ((emoji, tags) in loadEmojiKeywords()) {
+            var total = 0
+            var matchedAll = true
+            for (term in terms) {
+                var best = Int.MAX_VALUE
+                for ((i, t) in tags.withIndex()) {
+                    val kind = when {
+                        t == term -> 0
+                        t.startsWith(term) -> 1
+                        term.length >= 3 && t.contains(term) -> 2
+                        else -> continue
+                    }
+                    val score = kind * 1000 + i
+                    if (score < best) best = score
+                    if (best == 0) break
+                }
+                if (best == Int.MAX_VALUE) { matchedAll = false; break }
+                total += best
+            }
+            if (matchedAll) scored.add(emoji to total)
+        }
+        // sortedBy is stable, so ties keep the catalogue's Unicode order
+        return scored.sortedBy { it.second }.map { it.first }.take(240)
     }
 
     /** True when the line the cursor is on has no characters at all. */
@@ -1851,6 +2036,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val bar = suggestionBar ?: return
         bar.removeAllViews()
         if (!suggestionsOn || isPasswordField) return
+        // in emoji search the query lives in the panel's own field, so the
+        // strip stays empty instead of showing word suggestions for it
+        if (mode == Mode.EMOJI_SEARCH) return
         val kv = keyboardView ?: return
         val prefix = wordBuffer.toString()
 

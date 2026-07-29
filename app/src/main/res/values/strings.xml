@@ -189,6 +189,7 @@
     <string name="key_go">ورتګ</string>
     <string name="key_done">بشپړ</string>
     <string name="key_search_hint">لټون…</string>
+    <string name="emoji_search_hint">ایموجي ولټوئ</string>
     <string name="menu_langs">ژبې</string>
     <string name="menu_numbers">شمېرې</string>
     <string name="menu_emoji">ایموجي</string>
@@ -197,6 +198,7 @@
     <string name="menu_voice">غږ</string>
     <string name="menu_control">کنټرول</string>
     <string name="menu_settings">تنظیمات</string>
+    <string name="menu_hide">کیبورډ پټ کړه</string>
     <string name="menu_split">وېشل</string>
     <string name="clip_back">بیرته</string>
     <string name="clip_title">کلیپ بورډ</string>

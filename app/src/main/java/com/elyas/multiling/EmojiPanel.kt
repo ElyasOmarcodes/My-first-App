@@ -134,6 +134,39 @@ object EmojiData {
 }
 
 /**
+ * One emoji in the grid. Draws a small triangle in the bottom-right corner
+ * when the emoji has skin-tone forms behind a long-press — the same hint
+ * Gboard and Samsung use for "there is more under this key".
+ */
+class EmojiCell(context: Context) : TextView(context) {
+    var hasMore: Boolean = false
+        set(value) {
+            if (field != value) { field = value; invalidate() }
+        }
+    var markColor: Int = 0x99FFFFFF.toInt()
+
+    private val markPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    private val markPath = android.graphics.Path()
+
+    override fun onDraw(canvas: android.graphics.Canvas) {
+        super.onDraw(canvas)
+        if (!hasMore) return
+        val d = resources.displayMetrics.density
+        val size = 4.5f * d
+        val pad = 2.5f * d
+        val r = width - pad
+        val b = height - pad
+        markPath.reset()
+        markPath.moveTo(r, b - size)
+        markPath.lineTo(r, b)
+        markPath.lineTo(r - size, b)
+        markPath.close()
+        markPaint.color = markColor
+        canvas.drawPath(markPath, markPaint)
+    }
+}
+
+/**
  * Full emoji panel (Samsung/Gboard style). Single top bar holding the
  * back-to-letters, search and delete buttons plus a pill-shaped category
  * strip (recents + one emoji per family). The pill takes the normal key
@@ -177,11 +210,12 @@ class EmojiPanel(
         override fun getItemId(position: Int) = position.toLong()
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-            val tv = (convertView as? TextView) ?: TextView(context).apply {
+            val tv = (convertView as? EmojiCell) ?: EmojiCell(context).apply {
                 maxLines = 1
                 gravity = Gravity.CENTER
                 textSize = itemTextSize
                 height = (46 * density).toInt()
+                markColor = theme.hint
             }
             val e = items[position]
             tv.text = e
@@ -189,6 +223,8 @@ class EmojiPanel(
             tv.setOnClickListener { pick(e) }
             val tones =
                 if (skinTones) EmojiData.variantsOf(context, e) else emptyList()
+            // the corner mark tells the user this emoji has skin-tone forms
+            tv.hasMore = tones.isNotEmpty()
             tv.isLongClickable = tones.isNotEmpty()
             tv.setOnLongClickListener(
                 if (tones.isEmpty()) null

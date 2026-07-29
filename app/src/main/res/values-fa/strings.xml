@@ -190,6 +190,7 @@
     <string name="key_go">برو</string>
     <string name="key_done">تمام</string>
     <string name="key_search_hint">جستجو…</string>
+    <string name="emoji_search_hint">جستجوی ایموجی</string>
     <string name="menu_langs">زبان‌ها</string>
     <string name="menu_numbers">اعداد</string>
     <string name="menu_emoji">ایموجی</string>
@@ -198,6 +199,7 @@
     <string name="menu_voice">صدا</string>
     <string name="menu_control">کنترل</string>
     <string name="menu_settings">تنظیمات</string>
+    <string name="menu_hide">بستن صفحه‌کلید</string>
     <string name="menu_split">تقسیم</string>
     <string name="clip_back">بازگشت</string>
     <string name="clip_title">کلیپ‌بورد</string>
