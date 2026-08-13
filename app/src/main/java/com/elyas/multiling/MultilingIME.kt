@@ -2333,8 +2333,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 style == STYLE_TYPED -> {
                     tv.setOnClickListener { commitSuggestion(text) }
                     tv.setOnLongClickListener {
-                        store().learn(text)
-                        store().learn(text) // count 2 → suggested from now on
+                        // The user is telling us this IS a word. That has to
+                        // bypass the typo gate — otherwise the one deliberate
+                        // way to teach the keyboard a word it thinks is a
+                        // near-miss would be silently refused.
+                        store().learnExplicit(text)
+                        rejectedWords.add(text)
                         Toast.makeText(this, R.string.word_saved, Toast.LENGTH_SHORT).show()
                         true
                     }
