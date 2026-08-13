@@ -210,4 +210,8 @@ Contact: Voice Of Hindukush — hindukushen.com</string>
     <string name="site_fa">Dari — hindokosh.com</string>
     <string name="site_en">English — hindukushen.com</string>
     <string name="splash_sub">Voice Of Hindukush</string>
+    <string name="pref_clean_typos">Clean up misspellings</string>
+    <string name="pref_clean_typos_sum">Find learned words that look like typos of real words, and remove them</string>
+    <string name="clean_typos_none">No such words found</string>
+    <string name="clean_typos_q">Found %1$d words that look like typos of real words. Remove them?</string>
 </resources>

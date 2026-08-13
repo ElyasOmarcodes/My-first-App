@@ -111,6 +111,34 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun confusion(): Map<Char, Set<Char>> =
         confusionMaps.getOrPut(lang.code) { Layouts.confusionMap(lang) }
 
+    // ------------------------------------------------------- spatial model
+    /**
+     * Where the finger landed for each character of the word being typed.
+     * Keeping the touch POINT — not just the letter it resolved to — is what
+     * lets the decoder tell a near-miss on the neighbouring key from a
+     * genuinely different letter, the way Gboard's spatial model does.
+     * Parallel to [wordBuffer]; cleared and trimmed with it.
+     */
+    private val wordTaps = ArrayList<SpatialModel.Tap>()
+    private var pendingTap: SpatialModel.Tap? = null
+    private var touchCal: TouchCalibration? = null
+
+    private fun calibration(): TouchCalibration =
+        touchCal ?: TouchCalibration(this).also { touchCal = it }
+
+    override fun onCharTap(text: String, x: Float, y: Float) {
+        pendingTap = if (text.length == 1) SpatialModel.Tap(text[0], x, y) else null
+    }
+
+    /** Per-typed-character alternatives, for the current word. */
+    private fun tapAlternatives(): List<List<Pair<Char, Float>>> {
+        val kv = keyboardView ?: return emptyList()
+        if (wordTaps.isEmpty()) return emptyList()
+        val boxes = kv.letterKeyBoxes()
+        if (boxes.isEmpty()) return emptyList()
+        return wordTaps.map { SpatialModel.alternativesFor(it, boxes) }
+    }
+
     private fun clipboardStore(): ClipboardStore =
         clipStore ?: ClipboardStore(this).also { clipStore = it }
 
@@ -204,6 +232,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onCreateInputView(): View {
         val kv = KeyboardView(this)
         kv.listener = this
+        kv.calibration = calibration()
         keyboardView = kv
 
         val bar = LinearLayout(this)
@@ -588,6 +617,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         shift = 0
         selectMode = false
         wordBuffer.setLength(0)
+        wordTaps.clear()
         lastWord = ""
         // pick up whatever was copied before the keyboard opened
         try {
@@ -623,6 +653,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (newSelStart != newSelEnd) {
             // an active selection has no "current word"
             wordBuffer.setLength(0)
+            wordTaps.clear()
             updateSuggestions()
         } else {
             // re-derive the current word from around the cursor, so moving
@@ -639,6 +670,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val word = before.substring(start)
         if (word != wordBuffer.toString()) {
             wordBuffer.setLength(0)
+            wordTaps.clear()
             wordBuffer.append(word)
         }
         // always refresh: the clipboard chip must re-evaluate on every cursor
@@ -1322,6 +1354,12 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (isLetter) {
             ic.commitText(text, 1)
             wordBuffer.append(text)
+            // keep the tap list aligned with the buffer; a character that did
+            // not come from a tap (popup, autotext) contributes no evidence
+            val tap = pendingTap
+            pendingTap = null
+            if (tap != null && wordTaps.size == wordBuffer.length - 1) wordTaps.add(tap)
+            else wordTaps.clear()
         } else {
             handleSeparator(text)
         }
@@ -1343,6 +1381,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val ic = currentInputConnection
         val word = wordBuffer.toString()
         wordBuffer.setLength(0)
+        wordTaps.clear()
 
         if (word.isNotEmpty() && ic != null && !isPasswordField) {
             var committed = word
@@ -1451,6 +1490,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 feedback()
                 if (tryRevertAutocorrect()) return
                 if (wordBuffer.isNotEmpty()) wordBuffer.setLength(wordBuffer.length - 1)
+                if (wordTaps.size > wordBuffer.length) {
+                    wordTaps.subList(wordBuffer.length, wordTaps.size).clear()
+                }
                 sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
                 updateSuggestions()
             }
@@ -1530,12 +1572,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             Keys.UNDO -> {
                 feedback()
                 wordBuffer.setLength(0)
+                wordTaps.clear()
                 sendCtrlKey(KeyEvent.KEYCODE_Z, withShift = false)
                 updateSuggestions()
             }
             Keys.REDO -> {
                 feedback()
                 wordBuffer.setLength(0)
+                wordTaps.clear()
                 sendCtrlKey(KeyEvent.KEYCODE_Z, withShift = true)
                 updateSuggestions()
             }
@@ -1619,6 +1663,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         rejectedWords.add(original)
         if (learnWordsOn) store().learn(original)
         wordBuffer.setLength(0)
+        wordTaps.clear()
         wordBuffer.append(original)
         updateSuggestions()
         return true
@@ -1824,6 +1869,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (mode != Mode.EMOJI_SEARCH) mode = Mode.LETTERS
         shift = 0
         wordBuffer.setLength(0)
+        wordTaps.clear()
         lastWord = ""
         feedback()
         rebuildKeyboard()
@@ -1839,6 +1885,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             mode = Mode.LETTERS
             shift = 0
             wordBuffer.setLength(0)
+            wordTaps.clear()
             lastWord = ""
             rebuildKeyboard()
             updateSuggestions()
@@ -2143,7 +2190,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
         } else {
             val typedIsKnown = store().contains(prefix)
-            val cands = store().suggestSmart(prefix, 6, seedDictOn, confusion())
+            val cands = store().suggestSmart(prefix, 6, seedDictOn, confusion(), tapAlternatives())
             if (typedIsKnown) {
                 // the typed word is itself a valid word: highlight IT and never
                 // auto-replace it; similar words are only tappable extras
@@ -2350,8 +2397,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         row(getString(R.string.word_boost), R.drawable.ic_key_arrow_up, theme.accent) {
-            // several learns lift it well above equally-scored candidates
-            repeat(6) { store().learn(word) }
+            // an explicit request: trust it outright. repeat(learn) would be
+            // refused now that learning rejects near-misses of real words,
+            // and refusing the user's own instruction is not the intent.
+            store().learnExplicit(word)
             Toast.makeText(this, R.string.word_boosted, Toast.LENGTH_SHORT).show()
         }
         row(getString(R.string.word_delete), R.drawable.ic_key_trash, 0xFFE05B5B.toInt()) {
@@ -2392,6 +2441,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (prefix.isNotEmpty()) ic.deleteSurroundingText(prefix.length, 0)
         ic.commitText("$expansion ", 1)
         wordBuffer.setLength(0)
+        wordTaps.clear()
         lastWord = ""
         bestCandidate = null
         feedback()
@@ -2401,12 +2451,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun commitSuggestion(word: String) {
         val ic = currentInputConnection ?: return
         val prefix = wordBuffer.toString()
+        // Replacing what you typed with something else is the clearest signal
+        // that the typed form was wrong — withdraw the evidence for it, or a
+        // habitual mistyping slowly accumulates its way into the dictionary.
+        if (prefix.isNotEmpty() && prefix != word) store().unlearnRecent(prefix)
         if (prefix.isNotEmpty()) ic.deleteSurroundingText(prefix.length, 0)
         ic.commitText("$word ", 1)
         if (learnWordsOn) store().learn(word)
         if (bigramsOn && lastWord.isNotEmpty()) store().learnBigram(lastWord, word)
         lastWord = word
         wordBuffer.setLength(0)
+        wordTaps.clear()
         feedback()
         updateSuggestions()
     }
@@ -2457,6 +2512,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDestroy() {
+        touchCal?.save()
         unregisterBackCallback()
         soundPool?.release()
         soundPool = null

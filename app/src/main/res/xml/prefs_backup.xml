@@ -13,6 +13,8 @@
             android:summary="@string/pref_dict_import_sum" />
         <Preference android:key="dict_export" android:title="@string/pref_dict_export"
             android:summary="@string/pref_dict_export_sum" />
+        <Preference android:key="clean_typos" android:title="@string/pref_clean_typos"
+            android:summary="@string/pref_clean_typos_sum" />
         <Preference android:key="clear_learned" android:title="@string/pref_clear_learned"
             android:summary="@string/pref_clear_learned_sum" />
     </PreferenceCategory>

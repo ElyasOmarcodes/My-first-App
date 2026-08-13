@@ -21,6 +21,31 @@ import kotlin.math.ln
  */
 class WordStore(private val context: Context, private val langCode: String) {
 
+    companion object {
+        // ---- edit costs, in units where 1.0 is "one whole wrong character"
+        /** Substituting a character the spatial model does not link at all. */
+        private const val MISMATCH = 1.0f
+        /** A substitution known only from the static layout neighbour map. */
+        private const val FALLBACK_SUB = 0.55f
+        /** The user typed a character the word does not have. */
+        private const val INS_COST = 0.9f
+        /** The user missed a character the word has. */
+        private const val DEL_COST = 0.9f
+        /** Two adjacent characters swapped — common and cheap. */
+        private const val TRANSPOSE_COST = 0.7f
+
+        // ---- how much evidence before a typed word counts as a real word
+        /** Seen this often, it may be offered but is never used to correct. */
+        const val LEARN_PROBATION = 3
+        /** Seen this often on separate occasions, it is a dictionary word. */
+        const val LEARN_CONFIRMED = 6
+        /** An explicit "add to dictionary" jumps straight to this. */
+        const val LEARN_EXPLICIT = 50
+
+        /** Only words at least this common count as typo neighbours. */
+        private const val TYPO_NEIGHBOUR_FREQ = 200
+    }
+
     /** A scored suggestion candidate. */
     data class Cand(val word: String, val score: Int, val exact: Boolean, val sameLen: Boolean)
 
@@ -111,11 +136,163 @@ class WordStore(private val context: Context, private val langCode: String) {
         }
     }
 
+    /**
+     * Record that the user typed this word.
+     *
+     * Counting repetitions is NOT enough on its own. Over a month of real
+     * use, a habitual mistyping gets repeated far more than twice, so a
+     * simple threshold — at any value — eventually swallows it, and once a
+     * misspelling is in the dictionary it stops being correctable and starts
+     * being suggested. Raising the bar only delays that.
+     *
+     * So a word also has to look like a word the user MEANT:
+     *
+     *  * it must not be a near-miss of a real dictionary word. If one slip
+     *    away from a common word explains it, it is a typo, not vocabulary —
+     *    this is the rule that keeps "بیولوړي" out while letting a genuinely
+     *    new name in.
+     *  * it must survive. [unlearnRecent] is called when the user deletes
+     *    what they just typed, which withdraws the evidence.
+     *  * it is only trusted for correcting others once it reaches
+     *    [LEARN_CONFIRMED]; below that it can be offered but never used to
+     *    overrule what was typed.
+     *
+     * An explicit "add to dictionary" bypasses all of it — see [learnExplicit].
+     */
     fun learn(word: String) {
         if (word.length < 2 || word.length > 32) return
         ensureLoaded()
-        learned[word] = (learned[word] ?: 0) + 1
+        val cur = learned[word] ?: 0
+        // already trusted, or the user added it by hand: just keep counting
+        if (cur >= LEARN_CONFIRMED) {
+            learned[word] = cur + 1
+            dirty = true
+            return
+        }
+        if (seedSet.contains(word)) return          // already a real word
+        if (looksLikeTypo(word)) return
+        learned[word] = cur + 1
         dirty = true
+    }
+
+    /** The user asked for this word by name; trust it immediately. */
+    fun learnExplicit(word: String) {
+        if (word.isEmpty() || word.length > 32) return
+        ensureLoaded()
+        learned[word] = maxOf(learned[word] ?: 0, LEARN_EXPLICIT)
+        dirty = true
+        save()
+    }
+
+    /**
+     * Withdraw evidence for a word the user typed and then removed. Deleting
+     * what you just wrote is the clearest signal available that it was wrong.
+     */
+    fun unlearnRecent(word: String) {
+        ensureLoaded()
+        val c = learned[word] ?: return
+        if (c >= LEARN_EXPLICIT) return             // hand-added, leave alone
+        if (c <= 1) learned.remove(word) else learned[word] = c - 2
+        dirty = true
+    }
+
+    /**
+     * True when a single slip explains the word as a common dictionary word.
+     * Deliberately strict — one substitution, insertion, deletion or swap
+     * against a word of real corpus frequency.
+     */
+    fun looksLikeTypo(word: String): Boolean {
+        ensureLoaded()
+        if (word.length < 3) return false
+        val lw = word.lowercase()
+        // only lengths within one can be within one edit, so the index keeps
+        // this to a few hundred comparisons instead of the whole dictionary
+        val byLen = commonByLength()
+        for (len in lw.length - 1..lw.length + 1) {
+            val bucket = byLen[len] ?: continue
+            for (cand in bucket) if (withinOneEdit(lw, cand)) return true
+        }
+        return false
+    }
+
+    /** Common seed words bucketed by length, built once on first use. */
+    private var commonIndex: Map<Int, List<String>>? = null
+
+    @Synchronized
+    private fun commonByLength(): Map<Int, List<String>> {
+        commonIndex?.let { return it }
+        val m = HashMap<Int, ArrayList<String>>()
+        for (i in seeds.indices) {
+            if (seedFreq[i] < TYPO_NEIGHBOUR_FREQ) continue
+            val w = seeds[i]
+            if (w.length < 3) continue
+            m.getOrPut(w.length) { ArrayList() }.add(w)
+        }
+        val built: Map<Int, List<String>> = m
+        commonIndex = built
+        return built
+    }
+
+    // ------------------------------------------------- dictionary cleanup
+    /**
+     * Learned words that are one slip away from a common dictionary word.
+     * These are almost certainly typos that the old count-only rule let in,
+     * and the settings screen offers to remove them in bulk.
+     */
+    fun suspiciousLearned(): List<String> {
+        ensureLoaded()
+        return learned.keys
+            .filter { (learned[it] ?: 0) < LEARN_EXPLICIT && looksLikeTypo(it) }
+            .sorted()
+    }
+
+    /** All learned words with their counts, most used first. */
+    fun learnedWords(): List<Pair<String, Int>> {
+        ensureLoaded()
+        return learned.entries.sortedByDescending { it.value }.map { it.key to it.value }
+    }
+
+    fun forgetAll(words: Collection<String>) {
+        ensureLoaded()
+        var any = false
+        for (w in words) if (learned.remove(w) != null) any = true
+        if (any) { dirty = true; save() }
+    }
+
+    /** Cheap "is the edit distance at most 1" test. */
+    private fun withinOneEdit(a: String, b: String): Boolean {
+        val la = a.length
+        val lb = b.length
+        if (kotlin.math.abs(la - lb) > 1) return false
+        if (a == b) return false
+        if (la == lb) {
+            var diff = -1
+            for (i in 0 until la) {
+                if (a[i] != b[i]) {
+                    if (diff >= 0) {
+                        // one swap of adjacent letters also counts as one slip
+                        return diff == i - 1 && a[diff] == b[i] && a[i] == b[diff] &&
+                            a.regionMatches(i + 1, b, i + 1, la - i - 1)
+                    }
+                    diff = i
+                }
+            }
+            return diff >= 0
+        }
+        // lengths differ by one: the longer must contain the shorter in order
+        val shorter = if (la < lb) a else b
+        val longer = if (la < lb) b else a
+        var i = 0
+        var j = 0
+        var skipped = false
+        while (i < shorter.length && j < longer.length) {
+            if (shorter[i] == longer[j]) { i++; j++ } else {
+                if (skipped) return false
+                skipped = true
+                j++
+            }
+        }
+        return true
     }
 
     fun learnBigram(prev: String, next: String) {
@@ -152,7 +329,7 @@ class WordStore(private val context: Context, private val langCode: String) {
         val out = ArrayList<String>()
         learned.entries
             .asSequence()
-            .filter { it.value >= 2 && it.key.startsWith(prefix) && it.key != prefix }
+            .filter { it.value >= LEARN_PROBATION && it.key.startsWith(prefix) && it.key != prefix }
             .sortedByDescending { it.value }
             .take(max)
             .forEach { out.add(it.key) }
@@ -168,34 +345,74 @@ class WordStore(private val context: Context, private val langCode: String) {
     /** True when the word is an established dictionary word (any case). */
     fun contains(word: String): Boolean {
         ensureLoaded()
-        if ((learned[word] ?: 0) >= 2 || seedSet.contains(word)) return true
+        if ((learned[word] ?: 0) >= LEARN_CONFIRMED || seedSet.contains(word)) return true
         val lc = word.lowercase()
-        return lc != word && ((learned[lc] ?: 0) >= 2 || seedSet.contains(lc))
+        return lc != word && ((learned[lc] ?: 0) >= LEARN_CONFIRMED || seedSet.contains(lc))
     }
 
     /**
-     * Smart prefix suggestions with a layout-aware error model: a typed
-     * character also matches its shift/long-press character (missed
-     * long-press) and physically adjacent keys (fat-finger). E.g. typing
-     * "چط" still finds "چې", and "هفه" finds "هغه".
+     * Layout-aware correction and completion.
+     *
+     * The old matcher compared typed[i] against word[i] and allowed only
+     * substitutions from a fixed neighbour set. That alignment is why a
+     * single missing or extra letter broke it completely: every character
+     * after the slip lined up against the wrong position, so "بیولوژي" was
+     * only ever found from a same-length near-miss.
+     *
+     * This is the standard arrangement instead — a weighted edit distance
+     * (substitute / insert / delete / transpose) scored against a spatial
+     * model, then combined with word frequency, which is how Gboard and
+     * Samsung rank candidates. Costs come from where the finger ACTUALLY
+     * landed when we have it ([taps]), so a letter next to the intended key
+     * is cheap and one across the keyboard is not.
+     *
+     * @param taps per-typed-character alternatives with costs, from
+     *   [SpatialModel.alternativesFor]; may be shorter than [typed] (or
+     *   empty), in which case [confusable] supplies a flat fallback.
      */
     fun suggestSmart(
         typed: String,
         max: Int,
         useSeeds: Boolean,
-        confusable: Map<Char, Set<Char>>
+        confusable: Map<Char, Set<Char>>,
+        taps: List<List<Pair<Char, Float>>> = emptyList()
     ): List<Cand> {
         if (typed.isEmpty()) return emptyList()
         ensureLoaded()
+        val lower = typed.lowercase()
+        // per position: character -> cost of having meant it
+        val subCost = ArrayList<Map<Char, Float>>(lower.length)
+        for (i in lower.indices) {
+            val m = HashMap<Char, Float>()
+            m[lower[i]] = 0f
+            taps.getOrNull(i)?.forEach { (ch, c) ->
+                val lc = ch.lowercaseChar()
+                val prev = m[lc]
+                if (prev == null || c < prev) m[lc] = c
+            }
+            if (taps.getOrNull(i) == null) {
+                confusable[lower[i]]?.forEach { ch ->
+                    val lc = ch.lowercaseChar()
+                    if (!m.containsKey(lc)) m[lc] = FALLBACK_SUB
+                }
+            }
+            subCost.add(m)
+        }
+        // cheap pre-filter: a candidate must at least start plausibly
+        val firstOk = subCost[0].keys
+
         val out = ArrayList<Cand>()
+        val budget = maxErrors(lower.length)
         for ((w, c) in learned) {
-            if (c < 2) continue
-            // the user's own words count as if used 100× more than corpus words
-            score(typed, w, freqScore(c * 100), confusable)?.let { out.add(it) }
+            if (c < LEARN_CONFIRMED) continue
+            if (!plausible(w, lower, firstOk)) continue
+            score(lower, w, freqScore(c * 100), subCost, budget)?.let { out.add(it) }
         }
         if (useSeeds) {
             for (i in seeds.indices) {
-                score(typed, seeds[i], freqScore(seedFreq[i]), confusable)?.let { out.add(it) }
+                val w = seeds[i]
+                if (!plausible(w, lower, firstOk)) continue
+                score(lower, w, freqScore(seedFreq[i]), subCost, budget)?.let { out.add(it) }
             }
         }
         return out.asSequence()
@@ -204,6 +421,27 @@ class WordStore(private val context: Context, private val langCode: String) {
             .take(max)
             .map { it.copy(word = recase(typed, it.word)) }
             .toList()
+    }
+
+    /** Rejects most of the dictionary without touching the DP table. */
+    private fun plausible(w: String, typed: String, firstOk: Set<Char>): Boolean {
+        val budget = maxErrors(typed.length)
+        // length: completions may run long, but a correction cannot shrink
+        // or grow the word by more than the error budget
+        if (w.length + budget < typed.length) return false
+        if (w.length > typed.length + 12) return false
+        // the first letter is either right, a plausible slip, or paid for by
+        // an insertion/deletion — which we only allow once at the front
+        if (w.isEmpty()) return false
+        if (budget < 1 && !firstOk.contains(w[0].lowercaseChar())) return false
+        return true
+    }
+
+    private fun maxErrors(len: Int): Int = when {
+        len <= 2 -> 0
+        len <= 4 -> 1
+        len <= 7 -> 2
+        else -> 3
     }
 
     /** Matching is case-insensitive; give the suggestion the user's case:
@@ -221,37 +459,82 @@ class WordStore(private val context: Context, private val langCode: String) {
      * Corpus frequencies span 1 … ~1,000,000, so they are folded onto a log
      * scale (≈ 0–550). One log-unit step (~40 points) weighs the same as one
      * extra character of completion length, keeping very common words ahead
-     * without ever outranking an exact match (+10000) with an error match.
+     * without ever outranking an exact match with an error match.
      */
     private fun freqScore(c: Int): Int = (ln(1.0 + c) * 40.0).toInt()
 
+    /**
+     * Weighted Levenshtein with transposition, where the typed string is
+     * only a PREFIX of the candidate: the trailing characters of a longer
+     * word are free, which is what makes this one routine serve both
+     * completion and correction.
+     */
     private fun score(
         typed: String,
         w: String,
         freq: Int,
-        confusable: Map<Char, Set<Char>>
+        subCost: List<Map<Char, Float>>,
+        budget: Int
     ): Cand? {
         if (w.equals(typed, ignoreCase = true)) return null
-        if (w.length < typed.length || w.length > typed.length + 12) return null
-        val maxErr = if (typed.length <= 3) 1 else 2
-        var errors = 0
-        for (i in typed.indices) {
-            // case-insensitive: "Hel"/"HEL" still finds "hello"
-            val a = typed[i].lowercaseChar()
-            val b = w[i].lowercaseChar()
-            if (a == b) continue
-            if (confusable[a]?.contains(b) == true) {
-                errors++
-                if (errors > maxErr) return null
-            } else {
-                return null
+        val n = typed.length
+        val m = w.length
+        val maxCost = budget.toFloat()
+        val lw = w.lowercase()
+
+        // Three rolling rows over the candidate; cell j = cost of aligning
+        // the first i typed characters against the first j of the word.
+        // Row i-2 is kept because transposition reaches back two cells.
+        var prevPrev = FloatArray(m + 1)
+        var prev = FloatArray(m + 1) { it * DEL_COST }
+        var cur = FloatArray(m + 1)
+
+        for (i in 1..n) {
+            cur[0] = i * INS_COST
+            var rowBest = cur[0]
+            val subs = subCost[i - 1]
+            val ti = typed[i - 1].lowercaseChar()
+            val tiPrev = if (i > 1) typed[i - 2].lowercaseChar() else ' '
+            for (j in 1..m) {
+                val cj = lw[j - 1]
+                var best = prev[j - 1] + (subs[cj] ?: MISMATCH)
+                val del = prev[j] + INS_COST      // typed char not in the word
+                if (del < best) best = del
+                val ins = cur[j - 1] + DEL_COST   // word char the user missed
+                if (ins < best) best = ins
+                if (i > 1 && j > 1 && ti == lw[j - 2] && tiPrev == cj) {
+                    val tr = prevPrev[j - 2] + TRANSPOSE_COST
+                    if (tr < best) best = tr
+                }
+                cur[j] = best
+                if (best < rowBest) rowBest = best
             }
+            // nothing in this row can still come in under budget
+            if (rowBest > maxCost) return null
+            val spare = prevPrev
+            prevPrev = prev
+            prev = cur
+            cur = spare
         }
-        val exact = errors == 0
+
+        // the typed text may stop anywhere in the word (completion): take the
+        // cheapest alignment, charging for how much is left to type
+        var bestCost = Float.MAX_VALUE
+        var bestJ = m
+        for (j in 1..m) {
+            val c = prev[j]
+            if (c < bestCost) { bestCost = c; bestJ = j }
+        }
+        if (bestCost > maxCost) return null
+
+        val exact = bestCost < 0.001f
         var s = freq
-        s += if (exact) 10000 else 5000 - errors * 1500
-        s -= (w.length - typed.length) * 40
-        return Cand(w, s, exact, w.length == typed.length)
+        // an error-free match must always beat a corrected one
+        s += if (exact) 10000 else 5000 - (bestCost * 1600f).toInt()
+        // prefer finishing the word soon over a long completion
+        s -= (m - bestJ) * 40
+        s -= (m - typed.length).coerceAtLeast(0) * 8
+        return Cand(w, s, exact, m == typed.length)
     }
 
     /**

@@ -209,4 +209,8 @@
     <string name="site_fa">دري — hindokosh.com</string>
     <string name="site_en">English — hindukushen.com</string>
     <string name="splash_sub">هندوکش غږ</string>
+    <string name="pref_clean_typos">د غلطو کلمو پاکول</string>
+    <string name="pref_clean_typos_sum">هغه زده شوې کلمې چې د اصلي کلمې غلط ټایپ ښکاري، ولټوه او لرې یې کړه</string>
+    <string name="clean_typos_none">هیڅ داسې کلمه ونه موندل شوه</string>
+    <string name="clean_typos_q">%1$d داسې کلمې وموندل شوې چې د اصلي کلمو غلط ټایپ ښکاري. لرې شي؟</string>
 </resources>

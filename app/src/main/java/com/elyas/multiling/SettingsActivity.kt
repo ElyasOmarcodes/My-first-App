@@ -341,6 +341,10 @@ class SettingsActivity : AppCompatActivity() {
                 chooseLanguage { createDocument(REQ_DICT_EXPORT, "dict_$pendingLang.txt") }
                 true
             }
+            findPreference<Preference>("clean_typos")?.setOnPreferenceClickListener {
+                cleanLearnedTypos()
+                true
+            }
             findPreference<Preference>("clear_learned")?.setOnPreferenceClickListener {
                 AlertDialog.Builder(requireContext())
                     .setTitle(R.string.pref_clear_learned)
@@ -356,6 +360,43 @@ class SettingsActivity : AppCompatActivity() {
                     .show()
                 true
             }
+        }
+
+        /**
+         * Sweep the learned dictionary for words that are one slip away from
+         * a real word. The old rule saved anything typed twice, so a month of
+         * use leaves hundreds of habitual mistypings behind — and once saved,
+         * a misspelling stops being correctable and starts being suggested.
+         * Shows what would go before removing anything.
+         */
+        private fun cleanLearnedTypos() {
+            val ctx = requireContext()
+            val found = LinkedHashMap<String, MutableList<String>>()
+            var total = 0
+            for (l in Layouts.ALL) {
+                val bad = WordStore(ctx, l.code).suspiciousLearned()
+                if (bad.isNotEmpty()) {
+                    found[l.code] = bad.toMutableList()
+                    total += bad.size
+                }
+            }
+            if (total == 0) {
+                toast(getString(R.string.clean_typos_none))
+                return
+            }
+            val preview = found.values.flatten().take(40).joinToString("، ")
+            AlertDialog.Builder(ctx)
+                .setTitle(R.string.pref_clean_typos)
+                .setMessage(getString(R.string.clean_typos_q, total) + "\n\n" + preview)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    for ((code, words) in found) {
+                        WordStore(ctx, code).forgetAll(words)
+                    }
+                    AutoTextStore.bumpDataVersion(ctx)
+                    toast(getString(R.string.done))
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
 
         // -------------------------------------------- settings serialization

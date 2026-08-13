@@ -30,6 +30,9 @@ class KeyboardView(context: Context) : View(context) {
 
     interface Listener {
         fun onChar(text: String)
+        /** Where the finger landed for this character, for the spatial model.
+         *  Null when the character did not come from a tap (popup, autotext). */
+        fun onCharTap(text: String, x: Float, y: Float) {}
         fun onSpecial(code: Int)
         fun onLangSwipe(forward: Boolean)
         fun onSpaceLongPress()
@@ -627,7 +630,7 @@ class KeyboardView(context: Context) : View(context) {
             if (!st.committed && !st.longPressFired && !st.cancelled &&
                 k.def.code == 0 && !st.spaceSwiped
             ) {
-                emit(k)
+                emit(k, st)
                 st.committed = true
             }
         }
@@ -721,7 +724,7 @@ class KeyboardView(context: Context) : View(context) {
             if (key.def.code == Keys.SPACE && st.spaceSwiped) {
                 listener?.onLangSwipe(st.swipeDir < 0)
             } else {
-                emit(key)
+                emit(key, st)
             }
         }
         invalidate()
@@ -734,7 +737,19 @@ class KeyboardView(context: Context) : View(context) {
         repeatPointerId = -1
     }
 
-    private fun keyAt(x: Float, y: Float): PlacedKey? {
+    private fun keyAt(rawX: Float, rawY: Float): PlacedKey? {
+        // Correct for where this user's fingers actually land before deciding
+        // which key was pressed. The offset is learned from their own taps
+        // and stays zero until there is enough of it to mean anything, so a
+        // fresh install behaves exactly as before.
+        var x = rawX
+        var y = rawY
+        val cal = calibration
+        if (cal != null && placed.isNotEmpty()) {
+            val ref = placed.firstOrNull { it.def.code == 0 } ?: placed[0]
+            x -= cal.shiftXFrac() * (ref.rect.width() / 2f)
+            y -= cal.shiftYFrac() * (ref.rect.height() / 2f)
+        }
         for (pk in placed) {
             if (pk.rect.contains(x, y)) return pk
         }
@@ -750,9 +765,41 @@ class KeyboardView(context: Context) : View(context) {
         return if (bestDist < (16 * density) * (16 * density)) best else null
     }
 
-    private fun emit(key: PlacedKey) {
-        if (key.def.code == 0) listener?.onChar(key.displayLabel)
-        else listener?.onSpecial(key.def.code)
+    private fun emit(key: PlacedKey, st: PointerState? = null) {
+        if (key.def.code == 0) {
+            // hand the touch point over BEFORE the character, so the listener
+            // can attach it to the letter it is about to receive
+            if (st != null && key.displayLabel.length == 1) {
+                calibration?.record(
+                    (st.downX - key.rect.centerX()) / (key.rect.width() / 2f),
+                    (st.downY - key.rect.centerY()) / (key.rect.height() / 2f)
+                )
+                listener?.onCharTap(key.displayLabel, st.downX, st.downY)
+            }
+            listener?.onChar(key.displayLabel)
+        } else listener?.onSpecial(key.def.code)
+    }
+
+    /** Learns this user's systematic touch offset; set by the IME. */
+    var calibration: TouchCalibration? = null
+
+    /**
+     * The letter keys of the current layout, for the decoder's spatial model.
+     * Only single-character keys — the decoder reasons about letters.
+     */
+    fun letterKeyBoxes(): List<SpatialModel.KeyBox> {
+        val out = ArrayList<SpatialModel.KeyBox>(placed.size)
+        for (pk in placed) {
+            if (pk.def.code != 0 || pk.displayLabel.length != 1) continue
+            out.add(
+                SpatialModel.KeyBox(
+                    pk.displayLabel[0],
+                    pk.rect.centerX(), pk.rect.centerY(),
+                    pk.rect.width() / 2f, pk.rect.height() / 2f
+                )
+            )
+        }
+        return out
     }
 
     // ---------------------------------------------------------- long press

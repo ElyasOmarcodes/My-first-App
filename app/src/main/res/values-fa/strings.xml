@@ -210,4 +210,8 @@
     <string name="site_fa">دری — hindokosh.com</string>
     <string name="site_en">English — hindukushen.com</string>
     <string name="splash_sub">صدای هندوکش</string>
+    <string name="pref_clean_typos">پاک‌سازی واژه‌های غلط</string>
+    <string name="pref_clean_typos_sum">واژه‌های آموخته‌شده‌ای که غلط تایپی یک واژهٔ واقعی به نظر می‌رسند را بیاب و حذف کن</string>
+    <string name="clean_typos_none">چنین واژه‌ای یافت نشد</string>
+    <string name="clean_typos_q">%1$d واژه یافت شد که غلط تایپی واژه‌های واقعی به نظر می‌رسند. حذف شوند؟</string>
 </resources>
