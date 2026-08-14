@@ -130,13 +130,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         pendingTap = if (text.length == 1) SpatialModel.Tap(text[0], x, y) else null
     }
 
-    /** Per-typed-character alternatives, for the current word. */
-    private fun tapAlternatives(): List<List<Pair<Char, Float>>> {
-        val kv = keyboardView ?: return emptyList()
-        if (wordTaps.isEmpty()) return emptyList()
+    /**
+     * Per-typed-character alternatives for the current word, built once per
+     * character as it is typed. Recomputing the whole word on every keystroke
+     * meant re-measuring every key against every tap for each new letter.
+     */
+    private val wordTapAlts = ArrayList<List<Pair<Char, Float>>>()
+
+    private fun tapAlternatives(): List<List<Pair<Char, Float>>> =
+        if (wordTapAlts.size == wordBuffer.length) wordTapAlts else emptyList()
+
+    private fun recordTapAlternatives(tap: SpatialModel.Tap) {
+        val kv = keyboardView ?: return
         val boxes = kv.letterKeyBoxes()
-        if (boxes.isEmpty()) return emptyList()
-        return wordTaps.map { SpatialModel.alternativesFor(it, boxes) }
+        if (boxes.isEmpty()) return
+        wordTapAlts.add(SpatialModel.alternativesFor(tap, boxes))
     }
 
     private fun clipboardStore(): ClipboardStore =
@@ -618,6 +626,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         selectMode = false
         wordBuffer.setLength(0)
         wordTaps.clear()
+        wordTapAlts.clear()
         lastWord = ""
         // pick up whatever was copied before the keyboard opened
         try {
@@ -654,6 +663,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             // an active selection has no "current word"
             wordBuffer.setLength(0)
             wordTaps.clear()
+            wordTapAlts.clear()
             updateSuggestions()
         } else {
             // re-derive the current word from around the cursor, so moving
@@ -671,6 +681,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (word != wordBuffer.toString()) {
             wordBuffer.setLength(0)
             wordTaps.clear()
+            wordTapAlts.clear()
             wordBuffer.append(word)
         }
         // always refresh: the clipboard chip must re-evaluate on every cursor
@@ -1358,8 +1369,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             // not come from a tap (popup, autotext) contributes no evidence
             val tap = pendingTap
             pendingTap = null
-            if (tap != null && wordTaps.size == wordBuffer.length - 1) wordTaps.add(tap)
-            else wordTaps.clear()
+            if (tap != null && wordTaps.size == wordBuffer.length - 1) {
+                wordTaps.add(tap)
+                recordTapAlternatives(tap)
+            } else {
+                wordTaps.clear()
+                wordTapAlts.clear()
+                wordTapAlts.clear()
+            }
         } else {
             handleSeparator(text)
         }
@@ -1382,6 +1399,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val word = wordBuffer.toString()
         wordBuffer.setLength(0)
         wordTaps.clear()
+        wordTapAlts.clear()
 
         if (word.isNotEmpty() && ic != null && !isPasswordField) {
             var committed = word
@@ -1493,6 +1511,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 if (wordTaps.size > wordBuffer.length) {
                     wordTaps.subList(wordBuffer.length, wordTaps.size).clear()
                 }
+                if (wordTapAlts.size > wordBuffer.length) {
+                    wordTapAlts.subList(wordBuffer.length, wordTapAlts.size).clear()
+                }
                 sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
                 updateSuggestions()
             }
@@ -1573,6 +1594,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 feedback()
                 wordBuffer.setLength(0)
                 wordTaps.clear()
+                wordTapAlts.clear()
                 sendCtrlKey(KeyEvent.KEYCODE_Z, withShift = false)
                 updateSuggestions()
             }
@@ -1580,6 +1602,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 feedback()
                 wordBuffer.setLength(0)
                 wordTaps.clear()
+                wordTapAlts.clear()
                 sendCtrlKey(KeyEvent.KEYCODE_Z, withShift = true)
                 updateSuggestions()
             }
@@ -1664,6 +1687,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (learnWordsOn) store().learn(original)
         wordBuffer.setLength(0)
         wordTaps.clear()
+        wordTapAlts.clear()
         wordBuffer.append(original)
         updateSuggestions()
         return true
@@ -1870,6 +1894,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         shift = 0
         wordBuffer.setLength(0)
         wordTaps.clear()
+        wordTapAlts.clear()
         lastWord = ""
         feedback()
         rebuildKeyboard()
@@ -1886,6 +1911,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             shift = 0
             wordBuffer.setLength(0)
             wordTaps.clear()
+            wordTapAlts.clear()
             lastWord = ""
             rebuildKeyboard()
             updateSuggestions()
@@ -2446,6 +2472,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         ic.commitText("$expansion ", 1)
         wordBuffer.setLength(0)
         wordTaps.clear()
+        wordTapAlts.clear()
         lastWord = ""
         bestCandidate = null
         feedback()
@@ -2466,6 +2493,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         lastWord = word
         wordBuffer.setLength(0)
         wordTaps.clear()
+        wordTapAlts.clear()
         feedback()
         updateSuggestions()
     }

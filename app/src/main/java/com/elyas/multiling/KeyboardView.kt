@@ -349,6 +349,7 @@ class KeyboardView(context: Context) : View(context) {
 
     private fun layoutKeys() {
         placed = ArrayList()
+        keyBoxCache = null
         if (rows.isEmpty() || width == 0) return
         val gap = keyGapDp * density
         val sidePad = keyGapDp * density
@@ -788,6 +789,7 @@ class KeyboardView(context: Context) : View(context) {
      * Only single-character keys — the decoder reasons about letters.
      */
     fun letterKeyBoxes(): List<SpatialModel.KeyBox> {
+        keyBoxCache?.let { return it }
         val out = ArrayList<SpatialModel.KeyBox>(placed.size)
         for (pk in placed) {
             if (pk.def.code != 0 || pk.displayLabel.length != 1) continue
@@ -799,8 +801,12 @@ class KeyboardView(context: Context) : View(context) {
                 )
             )
         }
+        keyBoxCache = out
         return out
     }
+
+    /** Rebuilt only when the keys move, not on every keystroke. */
+    private var keyBoxCache: List<SpatialModel.KeyBox>? = null
 
     // ---------------------------------------------------------- long press
     private fun onLongPress() {
