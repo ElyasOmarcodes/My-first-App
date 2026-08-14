@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ListPreference
+        android:key="theme"
+        android:title="@string/pref_theme"
+        android:entries="@array/theme_names"
+        android:entryValues="@array/theme_values"
+        android:defaultValue="p_multiling"
+        app:useSimpleSummaryProvider="true" />
+    <SwitchPreferenceCompat
+        android:key="key_border"
+        android:title="@string/pref_key_border"
+        android:defaultValue="false" />
+    <SwitchPreferenceCompat
+        android:key="hints"
+        android:title="@string/pref_hints"
+        android:summary="@string/pref_hints_sum"
+        android:defaultValue="true" />
+    <SwitchPreferenceCompat
+        android:key="preview"
+        android:title="@string/pref_preview"
+        android:defaultValue="true" />
+</PreferenceScreen>

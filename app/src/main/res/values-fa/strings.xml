@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_desc">کیبورد هندوکش — یک کیبورد کاملاً آفلاین، سریع و حرفه‌ای برای زبان‌های
+        پشتو، دری/فارسی، عربی، اردو و انگلیسی است.\n محصولی از صدای هندوکش.</string>
+    <string name="about_privacy">سیاست حریم خصوصی (Privacy Policy)</string>
+    <string name="about_publisher">صدای هندوکش \nVoice Of Hindukush</string>
+    <string name="about_sites">وب‌سایت‌های ما</string>
+    <string name="about_title">درباره برنامه</string>
+    <string name="about_version">نسخه %1$s</string>
+    <string name="app_name">کیبورد هندوکش</string>
+    <string name="autotext_add">افزودن ➕</string>
+    <string name="autotext_delete_q">این میان‌بر حذف شود؟</string>
+    <string name="autotext_desc">هنگام نوشتن، میان‌بر را بنویسید و جمله کامل آن در برابرتان نشان داده می‌شود — و با یک کلیک، آن جمله جایگزین حروف نوشته‌شده شما می‌شود.</string>
+    <string name="autotext_edit">ویرایش میان‌بر</string>
+    <string name="autotext_expansion_hint">جمله کامل (مثلاً: السلام علیکم ورحمة الله وبرکاته)</string>
+    <string name="autotext_fill_both">هر دو بخش را پر کنید</string>
+    <string name="autotext_list_hint">برای ویرایش، روی پیشنهاد یک بار کلیک کنید.
+برای حذف پیشنهاد، فشار طولانی دهید</string>
+    <string name="autotext_no_space">میان‌بر نباید فاصله داشته باشد</string>
+    <string name="autotext_shortcut_hint">میان‌بر (مثلاً: سلام)</string>
+    <string name="autotext_title">میان‌برهای کیبورد</string>
+    <string name="btn_enable">فعال‌سازی</string>
+    <string name="btn_pick">انتخاب کیبورد</string>
+    <string name="btn_settings">تنظیمات</string>
+    <string name="cat_dict_backup">واژه‌نامه</string>
+    <string name="cat_settings_backup">تنظیمات</string>
+    <string name="clear_learned_q">مطمئن هستید؟ این کار بازگشت‌پذیر نیست.</string>
+    <string name="clip_prefix">کپی‌شده:</string>
+    <string name="contact_manager">مدیر مسئول صدای هندوکش</string>
+    <string name="contact_manager_name">میرویس سروش</string>
+    <string name="contact_whatsapp_btn">تماس در واتساپ</string>
+    <string name="contact_whatsapp_num">‎+93765893297‎</string>
+    <string name="credit">صدای هندوکش\n2026</string>
+    <string name="done">انجام شد ✔</string>
+    <string name="imported_n_words">%1$d مورد جدید افزوده شد ✔</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_en">English</string>
+    <string name="lang_fa">دری / فارسی</string>
+    <string name="lang_ps">پشتو</string>
+    <string name="lang_ur">اردو</string>
+    <string name="org_intro">صدای هندوکش یک رسانه مستقل خبری و تحلیلی است که برای نشر اطلاعات دقیق، معتبر و مستند، تحلیل همه‌جانبه رویدادهای مهم و تقویت آگاهی عمومی جامعه فعالیت می‌کند. صدای هندوکش مطابق با اصول ژورنالیزم و اخلاق حرفه‌ای، محتوا را بر پایه بی‌طرفی، دقت و مسئولیت‌پذیری آماده می‌کند و تلاش می‌کند اطلاعات روشن، متوازن و قابل اعتماد را به خوانندگان و بینندگان ارائه دهد.</string>
+    <string name="pref_arrow_height">ارتفاع ردیف دکمه‌های چهارجهته (٪)</string>
+    <string name="pref_arrows">فعال‌سازی دکمه‌های چهارجهته</string>
+    <string name="pref_arrows_sum">دکمه‌های جابه‌جایی مکان‌نما در پایین کیبورد</string>
+    <string name="pref_autocaps">حرف اول جمله بزرگ باشد (فقط برای زبان انگلیسی)</string>
+    <string name="pref_autocaps_sum">حرف نخست در آغاز جمله را بزرگ می‌کند</string>
+    <string name="pref_autocorrect">اصلاح خودکار واژه‌ها</string>
+    <string name="pref_autocorrect_sum">با زدن فاصله، واژه نادرست به بهترین پیشنهاد تبدیل می‌شود</string>
+    <string name="pref_autotext_export">ذخیره میان‌برها (Export)</string>
+    <string name="pref_autotext_import">بازآوری میان‌برها (Import)</string>
+    <string name="pref_autotext_import_sum">همه پیشنهادها را یکجا از یک فایل متنی ذخیره‌شده بیفزایید</string>
+    <string name="pref_autotext_manage">مدیریت میان‌برها</string>
+    <string name="pref_autotext_manage_sum">افزودن، دیدن و حذف میان‌برهای جدید</string>
+    <string name="pref_autotext_on">فعال‌سازی میان‌برها</string>
+    <string name="pref_autotext_on_sum">میان‌بر بسازید و تنها آن را تایپ کنید، جمله کامل در نوار پیشنهاد نمایان می‌شود و با یک کلیک جای‌گذاری می‌شود</string>
+    <string name="pref_bigrams">پیش‌بینی واژه بعدی</string>
+    <string name="pref_bigrams_sum">بر پایه واژه پیشین، واژه بعدی را پیشنهاد می‌کند</string>
+    <string name="pref_bottom_gap">فاصله پایینی (Bottom gap)</string>
+    <string name="pref_bottom_gap_sum">فاصله میان کیبورد و دکمه‌های سیستم (dp)</string>
+    <string name="pref_cat_autotext">میان‌برها</string>
+    <string name="pref_cat_colors">رنگ‌ها و ظاهر دلخواه</string>
+    <string name="pref_cat_control">دکمه‌های چهارجهته</string>
+    <string name="pref_cat_dict">واژه‌نامه و پشتیبان‌گیری آن</string>
+    <string name="pref_cat_feedback">بازخورد کلیک</string>
+    <string name="pref_cat_langs">زبان‌ها</string>
+    <string name="pref_cat_look">ظاهر و پوسته</string>
+    <string name="pref_cat_sizes">اندازه‌ها</string>
+    <string name="pref_cat_typing">نوشتن و پیشنهاد</string>
+    <string name="pref_clear_learned">پاک کردن واژه‌های آموخته‌شده</string>
+    <string name="pref_clear_learned_sum">همه واژه‌ها و پیش‌بینی‌های آموخته‌شده را حذف می‌کند</string>
+    <string name="pref_clip_repeat">پیشنهاد تکراری متن کپی‌شده</string>
+    <string name="pref_clip_repeat_sum">اگر فعال باشد: کادر متن کپی‌شده در هر خط خالی نمایان می‌شود
+• اگر غیرفعال باشد: پس از یک بار استفاده، آن کادر دیگر پنهان می‌شود</string>
+    <string name="pref_col_bg">رنگ پس‌زمینه (پشت و میان دکمه‌ها)</string>
+    <string name="pref_col_cat_general">عمومی</string>
+    <string name="pref_col_cat_key_group">دکمه‌های حروف</string>
+    <string name="pref_col_cat_keys">رنگ دکمه‌ها</string>
+    <string name="pref_col_cat_sections">بخش‌ها</string>
+    <string name="pref_col_cat_special_group">دکمه‌های ویژه (شیفت، بازگشت، اعداد و اینتر)</string>
+    <string name="pref_col_cat_text">رنگ متن دکمه‌ها</string>
+    <string name="pref_col_cat_theme">پشتیبان ظاهر</string>
+    <string name="pref_col_custom">فعال‌سازی رنگ‌های دلخواه</string>
+    <string name="pref_col_custom_sum">به‌جای ظاهر داخلی کیبورد از رنگ‌های خود استفاده کنید</string>
+    <string name="pref_col_first">رنگ نخست</string>
+    <string name="pref_col_grad_dir">جهت گرادیانت</string>
+    <string name="pref_col_grad_style">سبک گرادیانت</string>
+    <string name="pref_col_group_sum">یک‌رنگ یا دو‌رنگ، سبک و جهت رنگ</string>
+    <string name="pref_col_hint">رنگ حروف کوچک پس‌زمینه (hint)</string>
+    <string name="pref_col_key">رنگ دکمه‌های حروف</string>
+    <string name="pref_col_key_grad">رنگ دوم</string>
+    <string name="pref_col_mode">نوع رنگ</string>
+    <string name="pref_col_second">رنگ دوم</string>
+    <string name="pref_col_special">دکمه‌های ویژه (شیفت، بازگشت، اعداد و اینتر)</string>
+    <string name="pref_col_special_grad">رنگ دوم</string>
+    <string name="pref_col_text">رنگ حروف/نویسه‌ها</string>
+    <string name="pref_col_text_sum">رنگ حروف و حروف کوچک</string>
+    <string name="pref_corner_radius">گردی گوشه‌های دکمه‌ها</string>
+    <string name="pref_dict_export">ذخیره واژه‌نامه (Export)</string>
+    <string name="pref_dict_export_sum">واژه‌های آموخته‌شده را به یک فایل متنی صادر کنید تا دوباره قابل استفاده باشد</string>
+    <string name="pref_dict_import">بازآوری واژه‌نامه (Import)</string>
+    <string name="pref_dict_import_sum">افزودن دوباره واژه‌ها از یک فایل متنی — هر خط یک واژه (یا واژه + ارزش) باشد</string>
+    <string name="pref_double_space">دو بار فاصله = نقطه + فاصله</string>
+    <string name="pref_font_scale">اندازه حروف درون دکمه‌ها (٪)</string>
+    <string name="pref_hint_scale">اندازه حروف کوچک پس‌زمینه دکمه (٪)</string>
+    <string name="pref_hints">حروف کوچک زیر دکمه‌ها</string>
+    <string name="pref_hints_sum">حرف زیر شیفت یا فشار طولانی را روی دکمه نشان می‌دهد</string>
+    <string name="pref_key_border">نمایش کادر دکمه‌ها</string>
+    <string name="pref_key_gap">فاصله خالی میان دکمه‌ها</string>
+    <string name="pref_key_height">ارتفاع دکمه‌ها (حالت عمودی)</string>
+    <string name="pref_key_height_land">ارتفاع دکمه‌ها (هنگامی که موبایل افقی است)</string>
+    <string name="pref_languages">زبان‌های فعال</string>
+    <string name="pref_languages_sum">کدام زبان‌ها در کیبورد فعال باشند</string>
+    <string name="pref_learn_words">آموختن واژه‌های جدید</string>
+    <string name="pref_learn_words_sum">واژه‌های نوشته‌شده شما را به واژه‌نامه می‌افزاید</string>
+    <string name="pref_longpress">زمان فشار طولانی دکمه</string>
+    <string name="pref_nav_gap_auto">فاصله پایینی خودکار</string>
+    <string name="pref_nav_gap_auto_sum">کیبورد بر پایه دکمه‌های پایینی موبایل، فاصله مناسب را خودکار می‌گیرد (اگر غیرفعال شود، باید نوار پایینی به‌صورت دستی تنظیم شود)</string>
+    <string name="pref_preview">پاپ‌آپ فشار طولانی دکمه</string>
+    <string name="pref_seed_dict">استفاده از واژه‌نامه آماده</string>
+    <string name="pref_seed_dict_sum">واژه‌های رایج درون برنامه را نیز پیشنهاد می‌کند</string>
+    <string name="pref_settings_export">ذخیره تنظیمات (Export)</string>
+    <string name="pref_settings_export_sum">همه تنظیمات را به یک فایل متنی صادر کنید تا دوباره قابل استفاده باشد</string>
+    <string name="pref_settings_import">بازآوری تنظیمات (Import)</string>
+    <string name="pref_settings_import_sum">وارد کردن دوباره از فایل ذخیره‌شده</string>
+    <string name="pref_settings_reset">بازگرداندن تنظیمات به حالت اصلی</string>
+    <string name="pref_settings_reset_sum">همه تنظیمات به حالت اصلی بازمی‌گردند</string>
+    <string name="pref_sound">صدای دکمه‌ها</string>
+    <string name="pref_sound_type">نوع صدا</string>
+    <string name="pref_sound_vol">میزان بلندی صدا (٪)</string>
+    <string name="pref_space_swipe">کشیدن انگشت روی دکمه فاصله = تعویض زبان</string>
+    <string name="pref_space_swipe_sum">کشیدن انگشت به راست/چپ زبان را عوض می‌کند؛ فشار طولانی منو را نشان می‌دهد</string>
+    <string name="pref_sugg_font">اندازه نوشته نوار پیشنهادها</string>
+    <string name="pref_suggestions">پیشنهاد واژه‌ها</string>
+    <string name="pref_suggestions_sum">نمایش پیشنهاد واژه‌ها هنگام نوشتن</string>
+    <string name="pref_theme">ظاهر</string>
+    <string name="pref_theme_export">ذخیره ظاهر (theme.txt)</string>
+    <string name="pref_theme_export_sum">رنگ‌ها و اندازه‌ها در یک فایل ثبت می‌شوند تا هر زمان دوباره قابل استفاده باشند</string>
+    <string name="pref_theme_import">بازآوری ظاهر (Import)</string>
+    <string name="pref_theme_import_sum">وارد کردن دوباره از فایل ذخیره‌شده theme.txt</string>
+    <string name="pref_vibrate">لرزش</string>
+    <string name="pref_vibrate_ms">مدت لرزش به میلی‌ثانیه</string>
+    <string name="privacy_online">باز کردن نسخه آنلاین در مرورگر ↗</string>
+    <string name="privacy_text">کیبورد هندوکش یک کیبورد کاملاً آفلاین است.\n\n
+• این برنامه اجازه اینترنت (INTERNET permission) ندارد، بنابراین اطلاعات نوشته‌شده شما
+نمی‌تواند از دستگاه بیرون فرستاده شود.\n
+• هر چه می‌نویسید، واژه‌های آموخته‌شده، میان‌برها و تاریخچه کلیپ‌بورد تنها در حافظه
+موبایل شما ذخیره می‌شود و تنها شما به آن دسترسی دارید.\n
+• این برنامه هیچ اطلاعات شخصی جمع‌آوری نمی‌کند، به اشتراک نمی‌گذارد و نمی‌فروشد.\n
+• هیچ کدی برای تبلیغات یا تحلیل (Analytics) در آن وجود ندارد.\n
+• در فیلدهای رمز عبور، پیشنهاد، آموختن و ثبت کلیپ‌بورد خودکار غیرفعال می‌شود.\n\n
+تماس: صدای هندوکش — hindukushen.com</string>
+    <string name="resize_kb">اندازه کیبورد</string>
+    <string name="screen_about_sum">نسخه، اداره سازنده، وب‌سایت‌ها و سیاست</string>
+    <string name="screen_autotext_sum">میان‌برها — کوتاه بنویسید، کامل نوشته می‌شود</string>
+    <string name="screen_backup_sum">پشتیبان تنظیمات و واژه‌نامه</string>
+    <string name="screen_colors_sum">رنگ دکمه‌ها، گرادیانت، رنگ متن + پشتیبان ظاهر</string>
+    <string name="screen_control_sum">دکمه‌های چهارجهته و کنترل</string>
+    <string name="screen_feedback_sum">لرزش و صداها</string>
+    <string name="screen_langs_sum">زبان‌های فعال و تعویض زبان</string>
+    <string name="screen_look_sum">ظاهر، کادر، حروف کوچک، پاپ‌آپ</string>
+    <string name="screen_sizes_sum">ارتفاع، فونت، فاصله‌ها، گردی</string>
+    <string name="screen_typing_sum">پیشنهاد، اصلاح خودکار، آموختن</string>
+    <string name="settings_reset_q">مطمئن هستید؟ همه تنظیمات به حالت پیش‌فرض بازمی‌گردند.</string>
+    <string name="settings_title">تنظیمات کیبورد</string>
+    <string name="setup_desc">برای استفاده، این سه گام را کامل کنید:</string>
+    <string name="setup_features">✔ پشتو، دری/فارسی، عربی، اردو و انگلیسی\n✔ فشار طولانی = حروف و اعراب بیشتر\n✔ کشیدن انگشت روی فاصله = تعویض زبان\n✔ فشار طولانی ۱۲۳ = منو (کنترل، اعداد، ایموجی…)\n✔ پیشنهاد، پیش‌بینی و آموختن واژه‌ها\n✔ میان‌بر — کوتاه بنویسید، جمله کامل نوشته می‌شود\n✔ تایپ سریع (Multi-touch)\n✔ کاملاً آفلاین — اجازه اینترنت ندارد</string>
+    <string name="setup_step1">۱. کیبورد را در تنظیمات سیستم فعال کنید</string>
+    <string name="setup_step2">۲. کیبورد هندوکش را به‌عنوان کیبورد کنونی انتخاب کنید</string>
+    <string name="setup_step3">۳. اینجا آن را بیازمایید</string>
+    <string name="setup_title">به کیبورد هندوکش خوش آمدید</string>
+    <string name="test_hint">اینجا کیبورد را بیازمایید…</string>
+    <string name="word_boost">افزایش ارزش واژه</string>
+    <string name="word_boosted">ارزش واژه افزایش یافت ✔</string>
+    <string name="word_delete">حذف واژه</string>
+    <string name="word_deleted">واژه حذف شد ✔</string>
+    <string name="word_saved">واژه در واژه‌نامه ثبت شد ✔</string>
+
+    <!-- ===== app language ===== -->
+    <string name="app_lang_title">زبان برنامه</string>
+    <string name="app_lang_msg">برای برنامه یک زبان انتخاب کنید:</string>
+    <string name="app_lang_sum">زبان منو و تنظیمات برنامه</string>
+    <string name="app_lang_ps">پشتو</string>
+    <string name="app_lang_fa">فارسی / دری</string>
+    <string name="app_lang_en">English</string>
+
+    <!-- ===== keyboard runtime labels ===== -->
+    <string name="key_search">جستجو</string>
+    <string name="key_send">ارسال</string>
+    <string name="key_next">بعدی</string>
+    <string name="key_go">برو</string>
+    <string name="key_done">تمام</string>
+    <string name="key_search_hint">جستجو…</string>
+    <string name="emoji_search_hint">جستجوی ایموجی</string>
+    <string name="menu_langs">زبان‌ها</string>
+    <string name="menu_numbers">اعداد</string>
+    <string name="menu_emoji">ایموجی</string>
+    <string name="menu_kaomoji">کاوموجی</string>
+    <string name="menu_clipboard">کلیپ‌بورد</string>
+    <string name="menu_voice">صدا</string>
+    <string name="menu_control">کنترل</string>
+    <string name="menu_settings">تنظیمات</string>
+    <string name="menu_hide">بستن صفحه‌کلید</string>
+    <string name="menu_split">تقسیم</string>
+    <string name="clip_back">بازگشت</string>
+    <string name="clip_title">کلیپ‌بورد</string>
+    <string name="clip_clear">پاک کردن</string>
+    <string name="clip_empty">کلیپ‌بورد خالی است — یک متن کپی کنید</string>
+    <string name="about_copyright">© 2026 صدای هندوکش — Voice Of Hindukush</string>
+    <string name="site_ps">پشتو — hindukushpa.com</string>
+    <string name="site_fa">دری — hindokosh.com</string>
+    <string name="site_en">English — hindukushen.com</string>
+    <string name="splash_sub">صدای هندوکش</string>
+    <string name="pref_clean_typos">پاک‌سازی واژه‌های غلط</string>
+    <string name="pref_clean_typos_sum">واژه‌های آموخته‌شده‌ای که غلط تایپی یک واژهٔ واقعی به نظر می‌رسند را بیاب و حذف کن</string>
+    <string name="clean_typos_none">چنین واژه‌ای یافت نشد</string>
+    <string name="clean_typos_q">%1$d واژه یافت شد که غلط تایپی واژه‌های واقعی به نظر می‌رسند. حذف شوند؟</string>
+</resources>

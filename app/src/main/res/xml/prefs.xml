@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference android:key="app_lang_pick" android:title="@string/app_lang_title"
+        android:summary="@string/app_lang_sum" android:icon="@drawable/ic_cat_applang" />
+    <Preference android:key="screen_langs" android:title="@string/pref_cat_langs"
+        android:summary="@string/screen_langs_sum" android:icon="@drawable/ic_cat_lang" />
+    <Preference android:key="screen_look" android:title="@string/pref_cat_look"
+        android:summary="@string/screen_look_sum" android:icon="@drawable/ic_cat_look" />
+    <Preference android:key="screen_colors" android:title="@string/pref_cat_colors"
+        android:summary="@string/screen_colors_sum" android:icon="@drawable/ic_cat_look" />
+    <Preference android:key="screen_sizes" android:title="@string/pref_cat_sizes"
+        android:summary="@string/screen_sizes_sum" android:icon="@drawable/ic_cat_size" />
+    <Preference android:key="screen_typing" android:title="@string/pref_cat_typing"
+        android:summary="@string/screen_typing_sum" android:icon="@drawable/ic_cat_typing" />
+    <Preference android:key="screen_autotext" android:title="@string/pref_cat_autotext"
+        android:summary="@string/screen_autotext_sum" android:icon="@drawable/ic_cat_autotext" />
+    <Preference android:key="screen_control" android:title="@string/pref_cat_control"
+        android:summary="@string/screen_control_sum" android:icon="@drawable/ic_cat_control" />
+    <Preference android:key="screen_feedback" android:title="@string/pref_cat_feedback"
+        android:summary="@string/screen_feedback_sum" android:icon="@drawable/ic_cat_feedback" />
+    <Preference android:key="screen_backup" android:title="@string/pref_cat_dict"
+        android:summary="@string/screen_backup_sum" android:icon="@drawable/ic_cat_backup" />
+    <Preference android:key="screen_about" android:title="@string/about_title"
+        android:summary="@string/screen_about_sum" android:icon="@drawable/ic_key_info" />
+</PreferenceScreen>

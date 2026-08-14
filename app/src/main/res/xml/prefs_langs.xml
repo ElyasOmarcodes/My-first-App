@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <MultiSelectListPreference
+        android:key="languages"
+        android:title="@string/pref_languages"
+        android:summary="@string/pref_languages_sum"
+        android:entries="@array/lang_names"
+        android:entryValues="@array/lang_codes"
+        android:defaultValue="@array/lang_codes_default" />
+    <SwitchPreferenceCompat
+        android:key="space_swipe"
+        android:title="@string/pref_space_swipe"
+        android:summary="@string/pref_space_swipe_sum"
+        android:defaultValue="true" />
+</PreferenceScreen>

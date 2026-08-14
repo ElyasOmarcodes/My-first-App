@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- soft violet glow orb -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="52%p"
+        android:startColor="#557C5CFF"
+        android:centerColor="#227C5CFF"
+        android:endColor="#007C5CFF" />
+</shape>

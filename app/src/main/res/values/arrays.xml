@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="lang_names">
+        <item>پښتو</item>
+        <item>دري / فارسی</item>
+        <item>العربية</item>
+        <item>اردو</item>
+        <item>English</item>
+    </string-array>
+    <string-array name="lang_codes">
+        <item>ps</item>
+        <item>fa</item>
+        <item>ar</item>
+        <item>ur</item>
+        <item>en</item>
+    </string-array>
+
+    <string-array name="lang_codes_default">
+        <item>ps</item>
+        <item>fa</item>
+        <item>ar</item>
+        <item>en</item>
+    </string-array>
+
+    <string-array name="theme_names">
+        <item>ملټي لینګ (MultiLing) ✦</item>
+        <item>مډرن (Modern) ✦</item>
+        <item>شین پرو (Green) ✦</item>
+        <item>آبي پرو (Blue) ✦</item>
+        <item>روښانه پرو (Light) ✦</item>
+        <item>تور (Dark)</item>
+        <item>روښانه (Light)</item>
+        <item>بشپړ تور (AMOLED)</item>
+    </string-array>
+    <string-array name="theme_values">
+        <item>p_multiling</item>
+        <item>p_modern</item>
+        <item>p_green</item>
+        <item>p_blue</item>
+        <item>p_light</item>
+        <item>dark</item>
+        <item>light</item>
+        <item>black</item>
+    </string-array>
+
+    <string-array name="sound_type_names">
+        <item>نرم (Pop)</item>
+        <item>کلیک (Click)</item>
+        <item>څاڅکی (Drop)</item>
+        <item>لرګین (Wood)</item>
+        <item>حباب (Bubble)</item>
+        <item>ډېر نرم (Soft)</item>
+        <item>د سیسټم غږ</item>
+    </string-array>
+    <string-array name="sound_type_values">
+        <item>pop</item>
+        <item>click</item>
+        <item>drop</item>
+        <item>wood</item>
+        <item>bubble</item>
+        <item>soft</item>
+        <item>system</item>
+    </string-array>
+
+    <string-array name="col_mode_names">
+        <item>یو رنګ</item>
+        <item>دوه رنګه (ګرادینټ)</item>
+    </string-array>
+    <string-array name="col_mode_values">
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="grad_style_names">
+        <item>خطي (Linear)</item>
+        <item>شعاعي (Radial)</item>
+        <item>څرخي (Sweep)</item>
+    </string-array>
+    <string-array name="grad_style_values">
+        <item>linear</item>
+        <item>radial</item>
+        <item>sweep</item>
+    </string-array>
+
+    <string-array name="grad_dir_names">
+        <item>عمودي ↓ (له پاسه ښکته)</item>
+        <item>افقي ← (له څنډې څنډې ته)</item>
+        <item>اریب ↘ (کونج په کونج)</item>
+        <item>اریب ↗ (کونج په کونج)</item>
+    </string-array>
+    <string-array name="grad_dir_values">
+        <item>v</item>
+        <item>h</item>
+        <item>d1</item>
+        <item>d2</item>
+    </string-array>
+
+    <string-array name="longpress_names">
+        <item>ډېر چټک (200ms)</item>
+        <item>چټک (250ms)</item>
+        <item>منځنی (350ms)</item>
+        <item>ورو (500ms)</item>
+        <item>ډېر ورو (700ms)</item>
+    </string-array>
+    <string-array name="longpress_values">
+        <item>200</item>
+        <item>250</item>
+        <item>350</item>
+        <item>500</item>
+        <item>700</item>
+    </string-array>
+</resources>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreferenceCompat android:key="col_custom"
+        android:title="@string/pref_col_custom"
+        android:summary="@string/pref_col_custom_sum"
+        android:defaultValue="false" />
+
+    <PreferenceCategory android:title="@string/pref_col_cat_general"
+        android:dependency="col_custom">
+        <com.elyas.multiling.ColorPreference android:key="col_bg"
+            android:title="@string/pref_col_bg" android:defaultValue="#15171B" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_col_cat_sections"
+        android:dependency="col_custom">
+        <Preference android:key="screen_col_keys"
+            android:title="@string/pref_col_cat_key_group"
+            android:summary="@string/pref_col_group_sum"
+            android:icon="@drawable/ic_cat_look" />
+        <Preference android:key="screen_col_special"
+            android:title="@string/pref_col_cat_special_group"
+            android:summary="@string/pref_col_group_sum"
+            android:icon="@drawable/ic_cat_look" />
+        <Preference android:key="screen_col_text"
+            android:title="@string/pref_col_cat_text"
+            android:summary="@string/pref_col_text_sum"
+            android:icon="@drawable/ic_cat_look" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_col_cat_theme">
+        <Preference android:key="theme_export" android:title="@string/pref_theme_export"
+            android:summary="@string/pref_theme_export_sum" />
+        <Preference android:key="theme_import" android:title="@string/pref_theme_import"
+            android:summary="@string/pref_theme_import_sum" />
+    </PreferenceCategory>
+</PreferenceScreen>

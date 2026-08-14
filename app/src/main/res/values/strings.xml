@@ -1,3 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Madrasa Manager</string>
+    <string name="about_desc">هندوکش کیبورډ — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
+        بشپړ آفلاین، چټک او مسلکي کیبورډ دی.\n چې د هندوکش غږ محصول دی.</string>
+    <string name="about_privacy">د محرمیت پالیسي (Privacy Policy)</string>
+    <string name="about_publisher">هندوکش غږ \nVoice Of Hindukush</string>
+    <string name="about_sites">زموږ ویب پاڼې</string>
+    <string name="about_title">د پروګرام په اړه</string>
+    <string name="about_version">نسخه %1$s</string>
+    <string name="app_name">هندوکش کیبورډ</string>
+    <string name="autotext_add">زیاتول ➕</string>
+    <string name="autotext_delete_q">دا لنډیز ړنګ شي؟</string>
+    <string name="autotext_desc">د لیکنې پر وخت لنډیز ولیکئ او بشپړه جمله یې مقابل کې تاسو ته ښودل کیږي — او په کلیک سره به هغه جمله ستاسو د لیکل شویو تورو په بدل کې ځای پر ځای شي.</string>
+    <string name="autotext_edit">لنډیز سمول</string>
+    <string name="autotext_expansion_hint">بشپړه جمله (مثلاً: السلام علیکم ورحمة الله وبرکاته)</string>
+    <string name="autotext_fill_both">دواړه برخې ډکې کړئ</string>
+    <string name="autotext_list_hint">د بیا سمولو لپاره په وړاندیز باندې یو کلیک وکړئ. 
+د وړاندیز د ړنګولو لپاره اوږد فشار ورکړئ</string>
+    <string name="autotext_no_space">لنډیز باید سپیس ونه لري</string>
+    <string name="autotext_shortcut_hint">لنډیز (مثلاً: سلام)</string>
+    <string name="autotext_title">د کیبورډ لنډیزونه</string>
+    <string name="btn_enable">فعالول</string>
+    <string name="btn_pick">کیبورډ ټاکل</string>
+    <string name="btn_settings">تنظیمات</string>
+    <string name="cat_dict_backup">لغتنامه</string>
+    <string name="cat_settings_backup">تنظیمات</string>
+    <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
+    <string name="clip_prefix">کاپي شوی:</string>
+    <string name="contact_manager">د هندوکش‌غږ مسئول مدير</string>
+    <string name="contact_manager_name">میرویس سروش</string>
+    <string name="contact_whatsapp_btn">په واټساپ کې اړیکه</string>
+    <string name="contact_whatsapp_num">‎+93765893297‎</string>
+    <string name="credit">هندوکش غږ\n2026</string>
+    <string name="done">ترسره شو ✔</string>
+    <string name="imported_n_words">%1$d نوي توکي ورزیات شول ✔</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_en">English</string>
+    <string name="lang_fa">دري / فارسی</string>
+    <string name="lang_ps">پښتو</string>
+    <string name="lang_ur">اردو</string>
+    <string name="org_intro">هندوکش‌غږ یوه خپلواکه خبري او تحلیلي رسنۍ ده چې د کره، باوري او مستندو معلوماتو د خپرولو، د مهمو پېښو د هر اړخیز تحلیل او د ټولنې د عامه پوهاوي د پیاوړتیا لپاره فعالیت کوي. هندوکش‌غږ د ژورنالېزم له اصولو او مسلکي اخلاقو سره سم، د بې پرېتوب، دقت او مسؤلیت پر بنسټ محتوا برابروي او هڅه کوي چې لوستونکو او لیدونکو ته روښانه، متوازن او د باور وړ معلومات وړاندې کړي.</string>
+    <string name="pref_arrow_height">د څلور طرفه بټنو د قطار لوړوالی (٪)</string>
+    <string name="pref_arrows">د څلور طرفه بټنو فعالول</string>
+    <string name="pref_arrows_sum">د کیبورډ لاندې د کرسر د خوځولو بټنې</string>
+    <string name="pref_autocaps">د جملې لمړی توری لوی وي (فقط دانګلیسي ژبې لپاره)</string>
+    <string name="pref_autocaps_sum">د جملې په پیل کې لومړی توری کاپیټال یعنې لوی کوي</string>
+    <string name="pref_autocorrect">د کلمو اتومات سمون </string>
+    <string name="pref_autocorrect_sum">د سپیس سره غلطه کلمه پخپله په ښه وړاندیز بدلیږي</string>
+    <string name="pref_autotext_export">د لنډیزونو خوندي کول یعنې Export</string>
+    <string name="pref_autotext_import">د لنډیزونو بیا راوړل یعنې Import</string>
+    <string name="pref_autotext_import_sum">له ثبت شوي متني فایل څخه ټول وړاندیزونه یو ځل باندې اضافه کړئ</string>
+    <string name="pref_autotext_manage">لنډیزونه مدیریت کول</string>
+    <string name="pref_autotext_manage_sum">نوي لنډیزونه زیاتول، لیدل او ړنګول</string>
+    <string name="pref_autotext_on">د لڼدیزونو فعالول</string>
+    <string name="pref_autotext_on_sum">لنډيزونه جوړ کړئ بیایې فقط ټایپ کړی، نو بشپړه جمله به د وړاندیز په پټه کې ښکاري، او په کلیک سره ځای پر ځای کیږي</string>
+    <string name="pref_bigrams">د راتلونکې کلمې وړاندوینه</string>
+    <string name="pref_bigrams_sum">د مخکینۍ کلمې پر بنسټ بله کلمه وړاندیز کوي</string>
+    <string name="pref_bottom_gap">لاندینی واټن یعنې Bottom gap</string>
+    <string name="pref_bottom_gap_sum">د کیبورډ او د سیسټم تڼیو ترمنځ واټن (dp)</string>
+    <string name="pref_cat_autotext">لنډیزونه</string>
+    <string name="pref_cat_colors">د خپلې خوښې رنګونه او بڼه</string>
+    <string name="pref_cat_control">د څلور طرف بټنې</string>
+    <string name="pref_cat_dict">لغتنامه او بیوکپ اخیستل یې</string>
+    <string name="pref_cat_feedback">د کلیک غبرګون</string>
+    <string name="pref_cat_langs">ژبې</string>
+    <string name="pref_cat_look">بڼه او تم</string>
+    <string name="pref_cat_sizes">اندازې</string>
+    <string name="pref_cat_typing">لیکل او وړاندیز</string>
+    <string name="pref_clear_learned">زده شوې کلمې پاکول</string>
+    <string name="pref_clear_learned_sum">ټولې زده شوې کلمې او وړاندوینې ړنګوي</string>
+    <string name="pref_clip_repeat">د کاپي شوي متن تکراري وړاندیز</string>
+    <string name="pref_clip_repeat_sum">که فعال وي : د کاپي شوي متن مستطیل په هر تش لاین کې ښکاري 
+• که غیرفعال وي: له یو ځل کارولو وروسته هغه مستطیل نور پټیږي</string>
+    <string name="pref_col_bg">د بک ګراونډ رنګ (د بټنو تر شا او تر منځ)</string>
+    <string name="pref_col_cat_general">عمومي</string>
+    <string name="pref_col_cat_key_group">د حروفو بټنې</string>
+    <string name="pref_col_cat_keys">د بټنو رنګونه</string>
+    <string name="pref_col_cat_sections">برخې</string>
+    <string name="pref_col_cat_special_group">ځانګړې بټنې (شفټ، بک، حساب او اېنټر)</string>
+    <string name="pref_col_cat_text">د بټنو د متن رنګونه</string>
+    <string name="pref_col_cat_theme">د بڼې بیوکپ</string>
+    <string name="pref_col_custom">د خپلې خوښې رنګونه فعالول</string>
+    <string name="pref_col_custom_sum">د کیبورډ د داخلي بڼې پر ځای خپل رنګونه کارول</string>
+    <string name="pref_col_first">لومړی رنګ</string>
+    <string name="pref_col_grad_dir">د ګرادینټ جهت</string>
+    <string name="pref_col_grad_style">د ګرادینټ سټایل</string>
+    <string name="pref_col_group_sum">یو رنګ یا دوه رنګه ، د رنګ سټایل او جهت</string>
+    <string name="pref_col_hint">د شاته کوچنیو تورو یعنې hint رنګ</string>
+    <string name="pref_col_key">د حروفو د بټنو رنګ</string>
+    <string name="pref_col_key_grad">دوهم رنګ </string>
+    <string name="pref_col_mode">د رنګ ډول</string>
+    <string name="pref_col_second">دوهم رنګ </string>
+    <string name="pref_col_special">ځانګړې بټنې (شفټ، بک، حساب او اېنټر)</string>
+    <string name="pref_col_special_grad">دوهم رنګ </string>
+    <string name="pref_col_text">د حروفو/کرکټرونو رنګ</string>
+    <string name="pref_col_text_sum">د حروفو او د کوچنیو تورو رنګ</string>
+    <string name="pref_corner_radius">د بټنو د کونجونو ګردوالی</string>
+    <string name="pref_dict_export">لغتنامه خوندي کول یعنې Export</string>
+    <string name="pref_dict_export_sum">زده شوې کلمې متن فایل ته صادرې کړئ چې بیاهم د کارولو وړ وي</string>
+    <string name="pref_dict_import">لغتنامه راوړل یعنې Import</string>
+    <string name="pref_dict_import_sum">له متن فایل څخه بیرته کلمې ورزیاتول — هره کرښه یوه کلمه ( یا کلمه+ ارزښت) لرونکې اوسي</string>
+    <string name="pref_double_space">دوه ځله سپیس = نقطه + سپیس</string>
+    <string name="pref_font_scale">د بټنو دننه د حروفو کچه (٪)</string>
+    <string name="pref_hint_scale">د بټن شاته کوچنیو تورو کچه (٪)</string>
+    <string name="pref_hints">د بټنو لاندې کوچني توري</string>
+    <string name="pref_hints_sum">د شفټ بټن یا اوږد فشار لاندې توری د بټن په سر کې ښکاره کوي</string>
+    <string name="pref_key_border">د بټنو دېوال ښودل</string>
+    <string name="pref_key_gap">د بټنو ترمنځ تش واټن</string>
+    <string name="pref_key_height">د بټنو لوړوالی (عمودي حالت)</string>
+    <string name="pref_key_height_land">د کیلیو لوړوالی (کله چې مبایل افقي حالت کې کاریږي)</string>
+    <string name="pref_languages">فعالې ژبې</string>
+    <string name="pref_languages_sum">کومې ژبې باید په کیبورډ کې فعالې وي</string>
+    <string name="pref_learn_words">نوې کلمې زده کول</string>
+    <string name="pref_learn_words_sum">ستاسو لیکل شوې کلمې لغتنامې ته ورزیاتوي</string>
+    <string name="pref_longpress">د  بټنې د اوږد فشار لپاره وخت</string>
+    <string name="pref_nav_gap_auto">اتومات لاندینی واټن</string>
+    <string name="pref_nav_gap_auto_sum">کیبورډ د موبایل د لاندینیو تڼیو له مخې پخپله مناسب واټن اخلي (که غیرفعال شي، لاندینی سکبار بیا باید وکاریږي)</string>
+    <string name="pref_preview">د بټن اوږد نیولو پاپ آپ</string>
+    <string name="pref_seed_dict">جوړه شوې لغتنامه کارول</string>
+    <string name="pref_seed_dict_sum">د پروګرام دننه عامې کلمې هم وړاندیز کوي</string>
+    <string name="pref_settings_export">تنظیمات خوندي کول یعنې Export</string>
+    <string name="pref_settings_export_sum">ټول تنظیمات یو متن فایل ته صادر کړی چې بیا د کارولو وړ وي</string>
+    <string name="pref_settings_import">تنظیمات بیرته راوړل یعنې Import</string>
+    <string name="pref_settings_import_sum">له خوندي شوي فایل څخه بیرته واردول</string>
+    <string name="pref_settings_reset">تنظیمات اصلي حالت ته راګرځول</string>
+    <string name="pref_settings_reset_sum">ټول تنظیمات اصلي حالت ته ورګرځي</string>
+    <string name="pref_sound">د بټنو غږ</string>
+    <string name="pref_sound_type">د غږ ډول</string>
+    <string name="pref_sound_vol">د غږ د لوړوالي کچه (٪)</string>
+    <string name="pref_space_swipe">په سپیس بټن ګوته کشول = ژبه بدلول</string>
+    <string name="pref_space_swipe_sum">ښي/چپ طرف ته ګوته کشول ژبه بدلوي؛ اوږد فشار مینو ښکاره کوي</string>
+    <string name="pref_sugg_font">د وړاندیزونه د پټې د لیکنې کچه</string>
+    <string name="pref_suggestions">د کلمو وړاندیز</string>
+    <string name="pref_suggestions_sum">د لیکلو پر مهال د کلمو وړاندیزونه ښودل</string>
+    <string name="pref_theme">بڼه</string>
+    <string name="pref_theme_export">بڼه خوندي کول (theme.txt)</string>
+    <string name="pref_theme_export_sum">رنګونه او اندازې یو فایل کې ثبت کیږي چې بیاځل هر وخت د کارولو وړ وي</string>
+    <string name="pref_theme_import">بڼه بیرته راوړل (Import)</string>
+    <string name="pref_theme_import_sum">له خوندي شوي فایل theme.txt څخه بیرته واردول</string>
+    <string name="pref_vibrate">لړزه</string>
+    <string name="pref_vibrate_ms">د لړزې موده په میلي ثانیې</string>
+    <string name="privacy_online">آنلاین بڼه په براوزر کې پرانیستل ↗</string>
+    <string name="privacy_text">هندوکش کیبورډ یو بشپړ آفلاین کیبورډ دی.\n\n
+• دا اپلیکیشن د انټرنیټ اجازه (INTERNET permission) نه لري، نو ستاسو لیکل شوي معلومات
+له وسیلې بهر نه شي لېږل کېدای.\n
+• هر څه چې لیکئ، زده شوې کلمې، لنډیزونه او د کلیپ بورډ تاریخچه یوازې ستاسو
+د موبایل په حافظه کې خوندي کیږي او یوازې تاسو ورته لاسرسی لرئ.\n
+• دا اپلیکیشن هیڅ شخصي معلومات نه راټولوي، نه یې شریکوي او نه یې چا ته پلوري.\n
+• د اعلاناتو یا تحلیل (Analytics) هیڅ کوډ پکې نشته.\n
+• په پاسورډ فیلډونو کې وړاندیز، زده کړه او د کلیپ بورډ ثبت پخپله بندیږي.\n\n
+اړیکه: هندوکش غږ — hindukushen.com</string>
+    <string name="resize_kb">د کیبورډ اندازه</string>
+    <string name="screen_about_sum">نسخه، جوړونکې اداره، ویب پاڼې او پالیسي</string>
+    <string name="screen_autotext_sum">لنډیزونه — لنډ ولیکئ، بشپړ به ولیکل شي</string>
+    <string name="screen_backup_sum">د تنظیماتو او لغتنامې شاتړ</string>
+    <string name="screen_colors_sum">د بټنو رنګونه، ګرادینټ، د متن رنګ + د بڼې بیوکپ</string>
+    <string name="screen_control_sum">د څلور طرفه بټنې او کنټرول</string>
+    <string name="screen_feedback_sum">لړزه او غږونه</string>
+    <string name="screen_langs_sum">فعالې ژبې او د ژبې بدلول</string>
+    <string name="screen_look_sum">بڼه، دیوال، کوچني توري، پاپ اپ</string>
+    <string name="screen_sizes_sum">لوړوالی، فونټ، واټنونه، ګردوالی</string>
+    <string name="screen_typing_sum">وړاندیز، اتومات سمون، زده کول</string>
+    <string name="settings_reset_q">ډاډه یاست؟ ټول تنظیمات به ډیفالټ شي.</string>
+    <string name="settings_title">د کیبورډ تنظیمات</string>
+    <string name="setup_desc">د کارولو لپاره دا درې ګامونه بشپړ کړئ:</string>
+    <string name="setup_features">✔ پښتو، دري/فارسي، عربي، اردو او انګلیسي\n✔ اوږد فشار = اضافي توري او اعراب\n✔ په سپیس بار ګوته چلول = ژبه بدلول\n✔ د ۱۲۳ اوږد فشار = مینو (کنټرول پینل، شمېرې، ایموجي…)\n✔ د کلمو وړاندیز، وړاندوینه او زده کول\n✔ AutoText — لنډیز ولیکئ، بشپړه جمله به ولیکل شي\n✔ چټک ټایپ (Multi-touch)\n✔ بشپړ آفلاین — د انټرنیټ اجازه نه لري</string>
+    <string name="setup_step1">۱. کیبورډ د سیسټم په تنظیماتو کې فعال کړئ</string>
+    <string name="setup_step2">۲. هندوکش کیبورډ د اوسني کیبورډ په توګه وټاکئ</string>
+    <string name="setup_step3">۳. دلته یې وازمایئ</string>
+    <string name="setup_title">هندوکش کیبورډ ته ښه راغلاست </string>
+    <string name="test_hint">دلته کیبورډ وازمایئ…</string>
+    <string name="word_boost">د کلمې ارزښت لوړول</string>
+    <string name="word_boosted">د کلمې ارزښت لوړ شو ✔</string>
+    <string name="word_delete">کلمه ړنګول</string>
+    <string name="word_deleted">کلمه ړنګه شوه ✔</string>
+    <string name="word_saved">کلمه لغتنامې ته ثبت شوه ✔</string>
+    <!-- ===== app language ===== -->
+    <string name="app_lang_title">د پروګرام ژبه</string>
+    <string name="app_lang_msg">د پروګرام لپاره یوه ژبه وټاکئ:</string>
+    <string name="app_lang_sum">د پروګرام د مینو او تنظیماتو ژبه</string>
+    <string name="app_lang_ps">پښتو</string>
+    <string name="app_lang_fa">فارسي / دري</string>
+    <string name="app_lang_en">English</string>
+
+    <!-- ===== keyboard runtime labels ===== -->
+    <string name="key_search">لټون</string>
+    <string name="key_send">لېږل</string>
+    <string name="key_next">بل</string>
+    <string name="key_go">ورتګ</string>
+    <string name="key_done">بشپړ</string>
+    <string name="key_search_hint">لټون…</string>
+    <string name="emoji_search_hint">ایموجي ولټوئ</string>
+    <string name="menu_langs">ژبې</string>
+    <string name="menu_numbers">شمېرې</string>
+    <string name="menu_emoji">ایموجي</string>
+    <string name="menu_kaomoji">کاوموجي</string>
+    <string name="menu_clipboard">کلیپ بورډ</string>
+    <string name="menu_voice">غږ</string>
+    <string name="menu_control">کنټرول</string>
+    <string name="menu_settings">تنظیمات</string>
+    <string name="menu_hide">کیبورډ پټ کړه</string>
+    <string name="menu_split">وېشل</string>
+    <string name="clip_back">بیرته</string>
+    <string name="clip_title">کلیپ بورډ</string>
+    <string name="clip_clear">پاکول</string>
+    <string name="clip_empty">کلیپ بورډ تش دی — یو متن کاپي کړئ</string>
+    <string name="about_copyright">© 2026 هندوکش غږ — Voice Of Hindukush</string>
+    <string name="site_ps">پښتو — hindukushpa.com</string>
+    <string name="site_fa">دري — hindokosh.com</string>
+    <string name="site_en">English — hindukushen.com</string>
+    <string name="splash_sub">هندوکش غږ</string>
+    <string name="pref_clean_typos">د غلطو کلمو پاکول</string>
+    <string name="pref_clean_typos_sum">هغه زده شوې کلمې چې د اصلي کلمې غلط ټایپ ښکاري، ولټوه او لرې یې کړه</string>
+    <string name="clean_typos_none">هیڅ داسې کلمه ونه موندل شوه</string>
+    <string name="clean_typos_q">%1$d داسې کلمې وموندل شوې چې د اصلي کلمو غلط ټایپ ښکاري. لرې شي؟</string>
 </resources>
