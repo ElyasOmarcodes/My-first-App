@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One settings row, used for plain, switch, list and dialog preferences
+  alike. The widget_frame on the end is where the framework drops the
+  switch or the value, so the same layout serves every row type.
+  The badge colour is tinted per category at runtime.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/row_min"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/ds_row"
+    android:clipToPadding="false"
+    android:paddingStart="@dimen/sp_4"
+    android:paddingEnd="@dimen/sp_4"
+    android:paddingTop="@dimen/sp_3"
+    android:paddingBottom="@dimen/sp_3">
+
+    <FrameLayout
+        android:id="@+id/icon_frame"
+        android:layout_width="@dimen/badge"
+        android:layout_height="@dimen/badge"
+        android:layout_marginEnd="@dimen/sp_3"
+        android:background="@drawable/ds_badge">
+
+        <ImageView
+            android:id="@android:id/icon"
+            android:layout_width="@dimen/badge_icon"
+            android:layout_height="@dimen/badge_icon"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@android:id/title"
+            style="@style/T.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@android:id/summary"
+            style="@style/T.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:lineSpacingExtra="2dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@android:id/widget_frame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/sp_2"
+        android:gravity="center"
+        android:orientation="vertical" />
+
+</LinearLayout>

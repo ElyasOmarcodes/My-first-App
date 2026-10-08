@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App background: a deep vertical fall from midnight to near-black, so
+     glass surfaces laid over it read as lit from above. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="270"
+        android:startColor="#121A33"
+        android:centerColor="#0A0F1E"
+        android:endColor="#05070E" />
+</shape>

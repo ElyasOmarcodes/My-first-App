@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Section heading between groups of rows. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/sp_4"
+    android:paddingEnd="@dimen/sp_4"
+    android:paddingTop="@dimen/sp_5"
+    android:paddingBottom="@dimen/sp_2">
+
+    <TextView
+        android:id="@android:id/title"
+        style="@style/T.Section"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</LinearLayout>

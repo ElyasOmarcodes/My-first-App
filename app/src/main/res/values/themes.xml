@@ -1,15 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- ===================================================== app theme -->
     <style name="Theme.MultiKeyboard" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimary">@color/brand_1</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/accent</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="colorAccent">@color/brand_1</item>
+        <!-- switches, checkboxes and seek bars all take their "on" colour
+             from these, so styling them here covers every settings screen -->
+        <item name="colorControlActivated">@color/brand_1</item>
+        <item name="colorControlNormal">@color/text_tertiary</item>
+        <item name="colorControlHighlight">@color/ripple</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="preferenceTheme">@style/Pref.Hindukush</item>
+        <!-- edge to edge: the screens pad themselves from window insets -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/ds_bg_app</item>
+        <item name="android:windowAnimationStyle">@style/Anim.Hindukush</item>
+        <item name="alertDialogTheme">@style/Dialog.Hindukush</item>
     </style>
 
     <style name="Theme.MultiKeyboard.Splash">
-        <item name="android:windowBackground">@color/splash_bg</item>
-        <item name="android:statusBarColor">@color/splash_bg</item>
-        <item name="android:navigationBarColor">@color/splash_bg</item>
+        <item name="android:windowBackground">@drawable/ds_bg_app</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <!-- =================================================== transitions -->
+    <!-- A short slide + fade. Long enough to read as motion, short enough
+         that it never stands between the user and the next screen. -->
+    <style name="Anim.Hindukush" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/ds_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/ds_exit_back</item>
+        <item name="android:activityCloseEnterAnimation">@anim/ds_enter_back</item>
+        <item name="android:activityCloseExitAnimation">@anim/ds_exit</item>
+    </style>
+
+    <!-- ======================================================= dialogs -->
+    <style name="Dialog.Hindukush" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="colorAccent">@color/brand_1</item>
+        <item name="android:windowBackground">@drawable/ds_sheet</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:windowMinWidthMajor">88%</item>
+        <item name="android:windowMinWidthMinor">88%</item>
+    </style>
+
+    <!-- =================================== preference screen styling -->
+    <style name="Pref.Hindukush" parent="PreferenceThemeOverlay">
+        <item name="preferenceCategoryStyle">@style/Pref.Category</item>
+        <item name="preferenceStyle">@style/Pref.Row</item>
+        <item name="switchPreferenceCompatStyle">@style/Pref.Switch</item>
+        <item name="seekBarPreferenceStyle">@style/Pref.Seek</item>
+        <item name="dialogPreferenceStyle">@style/Pref.Row</item>
+        <item name="editTextPreferenceStyle">@style/Pref.Row</item>
+    </style>
+
+    <style name="Pref.Row" parent="Preference.Material">
+        <item name="android:layout">@layout/ds_pref_row</item>
+    </style>
+
+    <style name="Pref.Switch" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:layout">@layout/ds_pref_row</item>
+    </style>
+
+    <style name="Pref.Seek" parent="Preference.SeekBarPreference.Material">
+        <item name="android:layout">@layout/ds_pref_seek</item>
+    </style>
+
+    <style name="Pref.Category" parent="Preference.Category.Material">
+        <item name="android:layout">@layout/ds_pref_category</item>
+    </style>
+
+    <!-- ==================================================== type roles -->
+    <style name="T.Display">
+        <item name="android:textSize">@dimen/t_display</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="T.Title">
+        <item name="android:textSize">@dimen/t_title</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="T.Section">
+        <item name="android:textSize">@dimen/t_section</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.12</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
+    <style name="T.Row">
+        <item name="android:textSize">@dimen/t_row</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="T.Body">
+        <item name="android:textSize">@dimen/t_body</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:lineSpacingExtra">5dp</item>
+    </style>
+
+    <style name="T.Caption">
+        <item name="android:textSize">@dimen/t_caption</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+    </style>
+
 </resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Round icon badge. The solid colour is replaced at runtime per category,
+     which is where the app gets its colour: one hue per settings area. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#2E6C7BFF" />
+</shape>
