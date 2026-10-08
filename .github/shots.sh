@@ -15,12 +15,20 @@ adb install -r -g "$APK"
 IM=""
 command -v magick >/dev/null && IM=magick
 [ -z "$IM" ] && command -v convert >/dev/null && IM=convert
+# no ImageMagick on the runner: fall back to Pillow
+PY=""
+if [ -z "$IM" ]; then
+  python3 -c "import PIL" 2>/dev/null || pip3 install -q pillow >/dev/null 2>&1
+  python3 -c "import PIL" 2>/dev/null && PY=1
+fi
 
 shot() {   # shot <name> [seconds to settle]
   sleep "${2:-2.5}"
   adb exec-out screencap -p > "$OUT/$1.png"
   if [ -n "$IM" ]; then
     $IM "$OUT/$1.png" -resize 540x -quality 84 "$OUT/$1.jpg" && rm -f "$OUT/$1.png"
+  elif [ -n "$PY" ]; then
+    python3 -c "import sys;from PIL import Image;i=Image.open(sys.argv[1]).convert('RGB');i=i.resize((540,round(i.height*540/i.width)),Image.LANCZOS);i.save(sys.argv[2],quality=84,optimize=True)" "$OUT/$1.png" "$OUT/$1.jpg" && rm -f "$OUT/$1.png"
   fi
 }
 open() {   # open <Activity> [am extras...]

@@ -58,6 +58,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         Ui.tone(view.findViewById(R.id.intro_icon_box), view.findViewById(R.id.intro_icon), Ui.Tone.VIOLET)
         startTyping(view.findViewById(R.id.org_intro))
 
+        view.findViewById<View>(R.id.hero).clipToOutline = true
         Ui.rise(view.findViewById(R.id.hero), 0)
     }
 

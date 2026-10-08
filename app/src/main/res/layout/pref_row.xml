@@ -37,11 +37,13 @@
         android:orientation="vertical">
         <TextView
             android:id="@android:id/title"
+                android:textAlignment="viewStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Hk.RowTitle" />
         <TextView
             android:id="@android:id/summary"
+                android:textAlignment="viewStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"

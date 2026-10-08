@@ -121,8 +121,11 @@
         <item name="android:insetBottom">0dp</item>
         <item name="android:minHeight">56dp</item>
         <item name="iconGravity">textStart</item>
-        <item name="iconPadding">10dp</item>
-        <item name="android:textSize">15sp</item>
+        <item name="iconPadding">6dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <!-- floating bottom navigation -->
@@ -160,6 +163,9 @@
         <item name="android:textSize">30sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.BarTitle" parent="TextAppearance.Hk.PageTitle">
+        <item name="android:textSize">26sp</item>
     </style>
     <style name="TextAppearance.Hk.CardTitle" parent="TextAppearance.Material3.TitleLarge">
         <item name="android:textSize">19sp</item>

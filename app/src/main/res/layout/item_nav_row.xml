@@ -34,12 +34,14 @@
         android:orientation="vertical">
         <TextView
             android:id="@+id/row_title"
+                android:textAlignment="viewStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Hk.RowTitle"
             android:textStyle="bold" />
         <TextView
             android:id="@+id/row_sub"
+                android:textAlignment="viewStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"

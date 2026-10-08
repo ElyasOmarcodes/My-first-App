@@ -2,13 +2,13 @@
 <resources>
     <string name="about_desc">هندوکش کیبورډ — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
         بشپړ آفلاین، چټک او مسلکي کیبورډ دی.\n چې د هندوکش غږ محصول دی.</string>
-    <string name="about_privacy">د محرمیت پالیسي (Privacy Policy)</string>
+    <string name="about_privacy">د محرمیت پالیسي</string>
     <string name="about_publisher">هندوکش غږ \nVoice Of Hindukush</string>
     <string name="about_sites">زموږ ویب پاڼې</string>
     <string name="about_title">د پروګرام په اړه</string>
     <string name="about_version">نسخه %1$s</string>
     <string name="app_name">هندوکش کیبورډ</string>
-    <string name="autotext_add">زیاتول ➕</string>
+    <string name="autotext_add">زیاتول</string>
     <string name="autotext_delete_q">دا لنډیز ړنګ شي؟</string>
     <string name="autotext_desc">د لیکنې پر وخت لنډیز ولیکئ او بشپړه جمله یې مقابل کې تاسو ته ښودل کیږي — او په کلیک سره به هغه جمله ستاسو د لیکل شویو تورو په بدل کې ځای پر ځای شي.</string>
     <string name="autotext_edit">لنډیز سمول</string>
@@ -205,9 +205,9 @@
     <string name="clip_clear">پاکول</string>
     <string name="clip_empty">کلیپ بورډ تش دی — یو متن کاپي کړئ</string>
     <string name="about_copyright">© 2026 هندوکش غږ — Voice Of Hindukush</string>
-    <string name="site_ps">پښتو — hindukushpa.com</string>
-    <string name="site_fa">دري — hindokosh.com</string>
-    <string name="site_en">English — hindukushen.com</string>
+    <string name="site_ps">پښتو</string>
+    <string name="site_fa">دري</string>
+    <string name="site_en">English</string>
     <string name="splash_sub">هندوکش غږ</string>
     <string name="pref_clean_typos">د غلطو کلمو پاکول</string>
     <string name="pref_clean_typos_sum">هغه زده شوې کلمې چې د اصلي کلمې غلط ټایپ ښکاري، ولټوه او لرې یې کړه</string>

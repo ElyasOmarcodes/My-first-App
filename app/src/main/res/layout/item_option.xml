@@ -30,12 +30,14 @@
             android:orientation="vertical">
             <TextView
                 android:id="@+id/opt_title"
+                android:textAlignment="viewStart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="18sp"
                 android:textStyle="bold" />
             <TextView
                 android:id="@+id/opt_sub"
+                android:textAlignment="viewStart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"

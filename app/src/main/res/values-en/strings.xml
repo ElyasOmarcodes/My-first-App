@@ -8,7 +8,7 @@
     <string name="about_title">About the app</string>
     <string name="about_version">Version %1$s</string>
     <string name="app_name">Hindukush Keyboard</string>
-    <string name="autotext_add">Add ➕</string>
+    <string name="autotext_add">Add</string>
     <string name="autotext_delete_q">Delete this shortcut?</string>
     <string name="autotext_desc">While typing, write the shortcut and its full phrase is shown to you — one tap replaces the letters you typed with that phrase.</string>
     <string name="autotext_edit">Edit shortcut</string>
@@ -206,9 +206,9 @@ Contact: Voice Of Hindukush — hindukushen.com</string>
     <string name="clip_clear">Clear</string>
     <string name="clip_empty">The clipboard is empty — copy some text</string>
     <string name="about_copyright">© 2026 Voice Of Hindukush</string>
-    <string name="site_ps">Pashto — hindukushpa.com</string>
-    <string name="site_fa">Dari — hindokosh.com</string>
-    <string name="site_en">English — hindukushen.com</string>
+    <string name="site_ps">Pashto</string>
+    <string name="site_fa">Dari</string>
+    <string name="site_en">English</string>
     <string name="splash_sub">Voice Of Hindukush</string>
     <string name="pref_clean_typos">Clean up misspellings</string>
     <string name="pref_clean_typos_sum">Find learned words that look like typos of real words, and remove them</string>
