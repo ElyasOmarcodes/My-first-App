@@ -76,6 +76,10 @@
     </style>
 
     <!-- ==================================================== type roles -->
+    <!-- A dot in a style name declares an implicit parent, so T.Display and
+         its siblings all inherit from a style called "T". It has to exist. -->
+    <style name="T" />
+
     <style name="T.Display">
         <item name="android:textSize">@dimen/t_display</item>
         <item name="android:textColor">@color/text_primary</item>
