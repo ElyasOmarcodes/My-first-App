@@ -3,20 +3,26 @@ package com.elyas.multiling
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
+import android.view.View
 import android.webkit.WebView
+import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
- * Full-page privacy policy. The page is the SAME PRIVACY.md that is hosted
- * online, bundled in assets and rendered offline — the app has no INTERNET
- * permission, so remote pages can't be loaded in-app; the button at the
- * bottom opens the hosted copy in the browser instead.
+ * The privacy policy, read offline.
+ *
+ * It is the same PRIVACY.md that is published online, bundled in assets —
+ * the app holds no INTERNET permission, so a remote page cannot be loaded
+ * in-app; the button at the bottom hands the hosted copy to the browser.
+ *
+ * The page is a WebView, so it cannot be built from [Ui] like the other
+ * screens. Instead it is dropped into the same chrome: the app background,
+ * the same top bar, and a transparent WebView so the gradient shows through.
  */
 class PrivacyActivity : AppCompatActivity() {
 
@@ -24,46 +30,63 @@ class PrivacyActivity : AppCompatActivity() {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
-
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.setTitle(R.string.about_privacy)
-        val d = resources.displayMetrics.density
+        val c = this
 
-        val root = LinearLayout(this)
-        root.orientation = LinearLayout.VERTICAL
+        val root = FrameLayout(c)
+        root.setBackgroundResource(R.drawable.ds_bg_app)
 
-        val web = WebView(this)
+        val column = LinearLayout(c)
+        column.orientation = LinearLayout.VERTICAL
+
+        val bar = Ui.topBar(c, getString(R.string.about_privacy)) {
+            onBackPressedDispatcher.onBackPressed()
+        }
+        column.addView(bar, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 60f)))
+
+        val web = WebView(c)
         web.settings.javaScriptEnabled = false
+        web.setBackgroundColor(Color.TRANSPARENT)
+        web.overScrollMode = View.OVER_SCROLL_NEVER
         web.loadUrl("file:///android_asset/privacy.html")
-        root.addView(web, LinearLayout.LayoutParams(
+        column.addView(web, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
-        val online = TextView(this)
-        online.text = getString(R.string.privacy_online)
-        online.textSize = 15f
-        online.gravity = Gravity.CENTER
-        online.setTextColor(Color.WHITE)
-        val bg = GradientDrawable()
-        bg.setColor(0xFF1A73E8.toInt())
-        bg.cornerRadius = 12 * d
-        online.background = bg
-        online.setPadding(0, (12 * d).toInt(), 0, (12 * d).toInt())
-        val lp = LinearLayout.LayoutParams(
+        val footer = LinearLayout(c)
+        footer.orientation = LinearLayout.VERTICAL
+        val g = resources.getDimensionPixelSize(R.dimen.gutter)
+        footer.setPadding(g, Ui.dp(c, 10f), g, Ui.dp(c, 14f))
+        footer.addView(
+            Ui.ghostButton(c, getString(R.string.privacy_online)) {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://github.com/ElyasOmarcodes/My-first-App/blob/main/PRIVACY.md")))
+                } catch (_: Exception) {
+                }
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT)
+        )
+        column.addView(footer, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT)
-        lp.setMargins((16 * d).toInt(), (10 * d).toInt(),
-            (16 * d).toInt(), (14 * d).toInt())
-        online.setOnClickListener {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW,
-                    Uri.parse(AboutActivity.PRIVACY_URL)))
-            } catch (_: Exception) {
-            }
-        }
-        root.addView(online, lp)
+            LinearLayout.LayoutParams.WRAP_CONTENT))
 
+        root.addView(column, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT))
+
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            bar.setPadding(0, sys.top, 0, 0)
+            bar.layoutParams.height = Ui.dp(c, 60f) + sys.top
+            bar.requestLayout()
+            footer.setPadding(g, Ui.dp(c, 10f), g, Ui.dp(c, 14f) + sys.bottom)
+            insets
+        }
         setContentView(root)
     }
 }

@@ -1,159 +1,188 @@
 package com.elyas.multiling
 
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
-/** «د پروګرام په اړه» — app, publisher (Voice Of Hindukush), policy info. */
+/**
+ * About page: who made this, where to find it, and how to reach the people
+ * behind it. Built from [Ui] so it carries the same surfaces and spacing as
+ * the rest of the app.
+ */
 class AboutActivity : AppCompatActivity() {
+
+    companion object {
+        /** No spaces: the number has to stay a single LTR run inside RTL text. */
+        private const val WHATSAPP_NUMBER = "93765893297"
+    }
 
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
-
-    companion object {
-        /** manager's WhatsApp number in international format, digits only */
-        const val WHATSAPP_NUMBER = "93765893297"
-
-        /** hosted privacy policy — the same PRIVACY.md used for Play */
-        const val PRIVACY_URL =
-            "https://raw.githubusercontent.com/ElyasOmarcodes/My-first-App/" +
-                "claude/multilingual-keyboard-clone-2effuu/PRIVACY.md"
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.setTitle(R.string.about_title)
-        val d = resources.displayMetrics.density
+        val page = Ui.page(this, getString(R.string.about_title))
+        val c = this
 
-        val root = LinearLayout(this)
-        root.orientation = LinearLayout.VERTICAL
-        root.gravity = Gravity.CENTER_HORIZONTAL
-        root.setPadding((24 * d).toInt(), (28 * d).toInt(), (24 * d).toInt(), (28 * d).toInt())
+        // ---------------------------------------------------- identity card
+        val id = Ui.card(c)
+        id.gravity = Gravity.CENTER_HORIZONTAL
+        id.setPadding(Ui.dp(c, 20f), Ui.dp(c, 26f), Ui.dp(c, 20f), Ui.dp(c, 24f))
 
-        val logo = ImageView(this)
+        val plate = LinearLayout(c)
+        plate.gravity = Gravity.CENTER
+        val plateBg = android.graphics.drawable.GradientDrawable()
+        plateBg.setColor(android.graphics.Color.WHITE)
+        plateBg.cornerRadius = 24f * resources.displayMetrics.density
+        plate.background = plateBg
+        val logo = ImageView(c)
         logo.setImageResource(R.drawable.logo_hindukush)
         logo.adjustViewBounds = true
-        root.addView(logo, LinearLayout.LayoutParams(
-            (220 * d).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT))
+        plate.addView(logo, LinearLayout.LayoutParams(
+            Ui.dp(c, 164f), LinearLayout.LayoutParams.WRAP_CONTENT))
+        id.addView(plate, LinearLayout.LayoutParams(Ui.dp(c, 208f), Ui.dp(c, 104f)))
 
-        fun text(t: CharSequence, sizeSp: Float, bold: Boolean = false,
-                 topDp: Int = 8, colorAttr: Int = 0): TextView {
-            val tv = TextView(this)
-            tv.text = t
-            tv.textSize = sizeSp
-            if (bold) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
-            tv.gravity = Gravity.CENTER
-            if (colorAttr != 0) tv.setTextColor(colorAttr)
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = (topDp * d).toInt()
-            lp.gravity = Gravity.CENTER_HORIZONTAL
-            root.addView(tv, lp)
-            return tv
+        val name = TextView(c)
+        name.text = getString(R.string.app_name)
+        name.textSize = 23f
+        name.setTypeface(name.typeface, Typeface.BOLD)
+        name.setTextColor(Ui.color(c, R.color.text_primary))
+        name.gravity = Gravity.CENTER
+        id.addView(name, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).also { it.topMargin = Ui.dp(c, 16f) })
+
+        // version as a chip — a fact, not a sentence
+        val ver = TextView(c)
+        ver.text = getString(R.string.about_version, versionName())
+        ver.textSize = 12.5f
+        ver.setTextColor(Ui.color(c, R.color.brand_3))
+        ver.gravity = Gravity.CENTER
+        ver.setBackgroundResource(R.drawable.ds_chip)
+        ver.setPadding(Ui.dp(c, 12f), Ui.dp(c, 5f), Ui.dp(c, 12f), Ui.dp(c, 5f))
+        id.addView(ver, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).also { it.topMargin = Ui.dp(c, 10f); it.gravity = Gravity.CENTER_HORIZONTAL })
+
+        Ui.addCard(page, id, 8f)
+
+        // ------------------------------------------------------- publisher
+        val pub = Ui.card(c)
+        pub.setPadding(Ui.dp(c, 18f), Ui.dp(c, 18f), Ui.dp(c, 18f), Ui.dp(c, 18f))
+        val pubTitle = TextView(c)
+        pubTitle.text = getString(R.string.about_publisher)
+        pubTitle.textSize = 16.5f
+        pubTitle.setTypeface(pubTitle.typeface, Typeface.BOLD)
+        pubTitle.setTextColor(Ui.color(c, R.color.c_amber))
+        pub.addView(pubTitle)
+        val desc = Ui.body(c, getString(R.string.about_desc))
+        desc.setPadding(0, Ui.dp(c, 8f), 0, 0)
+        pub.addView(desc)
+        Ui.addCard(page, pub)
+
+        // ----------------------------------------------------------- sites
+        page.addView(Ui.sectionHeader(c, getString(R.string.about_sites)))
+        val sites = Ui.card(c)
+        val siteList = listOf(
+            Triple(getString(R.string.site_ps), "https://hindukushpa.com", R.color.c_teal),
+            Triple(getString(R.string.site_fa), "https://hindokosh.com/", R.color.c_violet),
+            Triple(getString(R.string.site_en), "https://hindukushen.com/", R.color.c_sky)
+        )
+        for ((i, s) in siteList.withIndex()) {
+            if (i > 0) Ui.addDivider(sites)
+            sites.addView(
+                Ui.row(c, R.drawable.ic_key_info, Ui.color(c, s.third), s.first, s.second) {
+                    open(s.second)
+                },
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT)
+            )
         }
+        Ui.addCard(page, sites, 4f)
 
-        text(getString(R.string.app_name), 24f, bold = true, topDp = 14)
-        text(getString(R.string.about_version, versionName()), 13f, topDp = 2)
-        text(getString(R.string.about_publisher), 17f, bold = true, topDp = 22)
-        text(getString(R.string.about_desc), 14f, topDp = 8)
+        // --------------------------------------------------------- contact
+        page.addView(Ui.sectionHeader(c, getString(R.string.contact_manager)))
+        val contact = Ui.card(c)
+        contact.setPadding(Ui.dp(c, 18f), Ui.dp(c, 18f), Ui.dp(c, 18f), Ui.dp(c, 18f))
 
-        fun linkRow(label: String, url: String) {
-            val tv = TextView(this)
-            tv.text = label
-            tv.textSize = 15f
-            tv.gravity = Gravity.CENTER
-            tv.setTextColor(0xFF4FA3FF.toInt())
-            val bg = GradientDrawable()
-            bg.setColor(0x144FA3FF)
-            bg.cornerRadius = 12 * d
-            tv.background = bg
-            tv.setPadding((20 * d).toInt(), (12 * d).toInt(),
-                (20 * d).toInt(), (12 * d).toInt())
-            val lp = LinearLayout.LayoutParams(
+        val person = LinearLayout(c)
+        person.orientation = LinearLayout.HORIZONTAL
+        person.gravity = Gravity.CENTER_VERTICAL
+        person.addView(
+            Ui.badge(c, R.drawable.ic_key_info, Ui.color(c, R.color.c_mint)),
+            LinearLayout.LayoutParams(Ui.dp(c, 44f), Ui.dp(c, 44f))
+                .also { it.marginEnd = Ui.dp(c, 12f) })
+        val who = LinearLayout(c)
+        who.orientation = LinearLayout.VERTICAL
+        val pName = TextView(c)
+        pName.text = getString(R.string.contact_manager_name)
+        pName.textSize = 16f
+        pName.setTextColor(Ui.color(c, R.color.text_primary))
+        who.addView(pName)
+        val pNum = TextView(c)
+        pNum.text = getString(R.string.contact_whatsapp_num)
+        pNum.textSize = 14f
+        pNum.setTextColor(Ui.color(c, R.color.text_secondary))
+        // force the number to render left-to-right inside an RTL page
+        pNum.textDirection = View.TEXT_DIRECTION_LTR
+        who.addView(pNum)
+        person.addView(who, LinearLayout.LayoutParams(
+            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        contact.addView(person)
+
+        contact.addView(
+            Ui.primaryButton(c, getString(R.string.contact_whatsapp_btn)) { openWhatsApp() },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.topMargin = Ui.dp(c, 16f) })
+        Ui.addCard(page, contact, 4f)
+
+        // --------------------------------------------------------- privacy
+        val legal = Ui.card(c)
+        legal.addView(
+            Ui.row(c, R.drawable.ic_cat_backup, Ui.color(c, R.color.c_indigo),
+                getString(R.string.about_privacy)) {
+                startActivity(Intent(c, PrivacyActivity::class.java))
+            },
+            LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = (10 * d).toInt()
-            tv.setOnClickListener {
-                try {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                } catch (_: Exception) {
-                }
-            }
-            root.addView(tv, lp)
-        }
+        )
+        Ui.addCard(page, legal)
 
-        text(getString(R.string.about_sites), 15f, bold = true, topDp = 24)
-        linkRow(getString(R.string.site_ps), "https://hindukushpa.com")
-        linkRow(getString(R.string.site_fa), "https://hindokosh.com/")
-        linkRow(getString(R.string.site_en), "https://hindukushen.com/")
-
-        // ---- responsible manager + WhatsApp contact
-        text(getString(R.string.contact_manager), 15f, bold = true, topDp = 26)
-        text(getString(R.string.contact_manager_name), 16f, topDp = 4)
-        text(getString(R.string.contact_whatsapp_num), 15f, topDp = 2)
-
-        val wa = TextView(this)
-        wa.text = getString(R.string.contact_whatsapp_btn)
-        wa.textSize = 16f
-        wa.gravity = Gravity.CENTER
-        wa.setTextColor(Color.WHITE)
-        wa.setTypeface(wa.typeface, android.graphics.Typeface.BOLD)
-        val waBg = GradientDrawable()
-        waBg.setColor(0xFF25D366.toInt())   // WhatsApp green
-        waBg.cornerRadius = 14 * d
-        wa.background = waBg
-        wa.setPadding((20 * d).toInt(), (14 * d).toInt(),
-            (20 * d).toInt(), (14 * d).toInt())
-        val waLp = LinearLayout.LayoutParams(
+        val copy = TextView(c)
+        copy.text = getString(R.string.about_copyright)
+        copy.textSize = 12.5f
+        copy.setTextColor(Ui.color(c, R.color.text_tertiary))
+        copy.gravity = Gravity.CENTER
+        page.addView(copy, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT)
-        waLp.topMargin = (12 * d).toInt()
-        wa.setOnClickListener { openWhatsApp() }
-        root.addView(wa, waLp)
-
-        // privacy policy: full text offline, in a dialog
-        val privacy = TextView(this)
-        privacy.text = getString(R.string.about_privacy)
-        privacy.textSize = 15f
-        privacy.gravity = Gravity.CENTER
-        privacy.setTextColor(0xFF4FA3FF.toInt())
-        privacy.setPadding(0, (26 * d).toInt(), 0, 0)
-        privacy.setOnClickListener {
-            startActivity(Intent(this, PrivacyActivity::class.java))
-        }
-        root.addView(privacy)
-
-        text(getString(R.string.about_copyright), 12.5f, topDp = 30,
-            colorAttr = Color.GRAY)
-
-        val scroll = ScrollView(this)
-        scroll.addView(root)
-        setContentView(scroll)
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).also { it.topMargin = Ui.dp(c, 26f) })
     }
 
-    /**
-     * Open the chat with the manager. wa.me works with WhatsApp and
-     * WhatsApp Business (the chooser appears when both are installed);
-     * if neither handles it, the link opens in the browser.
-     */
-    private fun openWhatsApp() {
-        val url = "https://wa.me/$WHATSAPP_NUMBER"
+    private fun open(url: String) {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (_: Exception) {
         }
+    }
+
+    /** wa.me opens the chat in WhatsApp or WhatsApp Business, whichever is installed. */
+    private fun openWhatsApp() {
+        open("https://wa.me/$WHATSAPP_NUMBER")
     }
 
     private fun versionName(): String = try {
