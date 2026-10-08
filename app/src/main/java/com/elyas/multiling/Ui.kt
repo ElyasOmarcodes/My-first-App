@@ -18,6 +18,25 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 /**
+ * Keep activity content clear of the status bar, navigation bar and the
+ * on-screen keyboard (edge-to-edge is enforced on Android 15+).
+ *
+ * Blunt but safe, and still used by screens that are not built from [Ui.page]
+ * — that one handles its own insets per region instead, so the top bar can sit
+ * under the status bar while the list clears the navigation bar.
+ */
+fun AppCompatActivity.applyEdgePadding() {
+    val content = findViewById<View>(android.R.id.content) ?: return
+    ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
+        val bars = insets.getInsets(
+            WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+        )
+        v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+        WindowInsetsCompat.CONSUMED
+    }
+}
+
+/**
  * The app's shared UI vocabulary.
  *
  * Most screens here are built in Kotlin rather than XML, so "consistent"
