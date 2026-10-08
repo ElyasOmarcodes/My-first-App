@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
@@ -14,8 +15,8 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 
 /**
- * Settings: a main screen with one entry per category; each entry opens its
- * own sub-screen. Appearance/size screens show a live keyboard preview that
+ * Settings. [SettingsHome] is the hand-built index; each entry opens its own
+ * preference sub-screen here. Appearance/size screens show a live keyboard preview that
  * updates as options change. The backup screen imports/exports everything.
  */
 class SettingsActivity : AppCompatActivity() {
@@ -27,6 +28,36 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var preview: KeyboardView
     private lateinit var previewHolder: FrameLayout
+    private lateinit var topBar: LinearLayout
+    private var bottomInset = 0
+
+    /** The navigation-bar gap belongs to whatever sits lowest on screen. */
+    private fun applyBottomInset() {
+        val previewShown = previewHolder.visibility == android.view.View.VISIBLE
+        previewHolder.setPadding(0, 0, 0, if (previewShown) bottomInset else 0)
+        val host = findViewById<FrameLayout>(R.id.settings_host)
+        host?.setPadding(0, 0, 0, if (previewShown) 0 else bottomInset)
+    }
+
+    /** Lets the hand-built home screen reuse the activity's dialog. */
+    fun showAppLanguagePicker() {
+        val codes = arrayOf(AppLocale.PS, AppLocale.FA, AppLocale.EN)
+        val labels = arrayOf(
+            getString(R.string.app_lang_ps),
+            getString(R.string.app_lang_fa),
+            getString(R.string.app_lang_en)
+        )
+        val current = codes.indexOf(AppLocale.current(this)).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.app_lang_title)
+            .setSingleChoiceItems(labels, current) { dlg, which ->
+                AppLocale.setLanguage(this, codes[which])
+                dlg.dismiss()
+                recreate()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
 
     private val prefListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshPreview() }
@@ -35,8 +66,21 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ThemePresets.bootstrap(this)
 
+        // The theme is NoActionBar, so supportActionBar is null and every
+        // setTitle call on it was a no-op — this screen had no title bar at
+        // all. It gets the app's own top bar instead.
+        val shell = android.widget.FrameLayout(this)
+        shell.setBackgroundResource(R.drawable.ds_bg_app)
+
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
+
+        topBar = Ui.topBar(this, getString(R.string.settings_title)) {
+            onBackPressedDispatcher.onBackPressed()
+        }
+        root.addView(topBar, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 60f)))
+
         val host = FrameLayout(this)
         host.id = R.id.settings_host
         root.addView(
@@ -54,16 +98,30 @@ class SettingsActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
-        setContentView(root)
-        applyEdgePadding()
+        shell.addView(root, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        setContentView(shell)
+
+        // insets per region: the bar clears the status bar, the bottom-most
+        // visible thing clears the navigation bar
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(shell) { _, insets ->
+            val sys = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            topBar.setPadding(0, sys.top, 0, 0)
+            topBar.layoutParams.height = Ui.dp(this, 60f) + sys.top
+            topBar.requestLayout()
+            bottomInset = sys.bottom
+            applyBottomInset()
+            insets
+        }
 
         if (savedInstanceState == null) {
             supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.settings_host, SettingsFragment.create("main"))
+                .replace(R.id.settings_host, SettingsHome())
                 .commit()
         }
-        supportActionBar?.setTitle(R.string.settings_title)
         supportFragmentManager.addOnBackStackChangedListener { updatePreviewVisibility() }
 
         // the keyboard's menu can deep-link straight to a settings page
@@ -92,8 +150,13 @@ class SettingsActivity : AppCompatActivity() {
             .replace(R.id.settings_host, SettingsFragment.create(screen))
             .addToBackStack(screen)
             .commit()
-        supportActionBar?.title = title
+        setBarTitle(title)
         updatePreviewVisibility(screen)
+    }
+
+    private fun setBarTitle(title: CharSequence) {
+        // the title is the second child of the bar, after the back button
+        (topBar.getChildAt(1) as? TextView)?.text = title
     }
 
     private fun currentScreen(): String {
@@ -106,8 +169,9 @@ class SettingsActivity : AppCompatActivity() {
         val show = screen == "look" || screen == "sizes" || screen == "colors" ||
             screen.startsWith("col_")
         previewHolder.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
-        if (screen == "main") supportActionBar?.setTitle(R.string.settings_title)
-        if (screen == "colors") supportActionBar?.setTitle(R.string.pref_cat_colors)
+        if (screen == "main") setBarTitle(getString(R.string.settings_title))
+        if (screen == "colors") setBarTitle(getString(R.string.pref_cat_colors))
+        applyBottomInset()
         if (show) refreshPreview()
     }
 
@@ -181,60 +245,12 @@ class SettingsActivity : AppCompatActivity() {
                 else -> R.xml.prefs
             }
             setPreferencesFromResource(res, rootKey)
-            if (screen == "main") wireMain() else if (screen == "autotext") wireAutoText()
+            if (screen == "autotext") wireAutoText()
             if (screen == "look") wireLook()
             if (screen == "backup") wireBackup()
             if (screen == "colors") wireColors()
             if (screen == "col_keys") wireColorGroup("col_key", "col_key_grad_on")
             if (screen == "col_special") wireColorGroup("col_special", "col_special_grad_on")
-        }
-
-        private fun wireMain() {
-            val map = listOf(
-                "screen_langs" to "langs", "screen_look" to "look",
-                "screen_sizes" to "sizes", "screen_typing" to "typing",
-                "screen_autotext" to "autotext", "screen_control" to "control",
-                "screen_feedback" to "feedback", "screen_backup" to "backup"
-            )
-            for ((key, screen) in map) {
-                findPreference<Preference>(key)?.setOnPreferenceClickListener { pref ->
-                    (activity as? SettingsActivity)?.openScreen(screen, pref.title ?: "")
-                    true
-                }
-            }
-            findPreference<Preference>("screen_colors")?.setOnPreferenceClickListener { pref ->
-                (activity as? SettingsActivity)?.openScreen("colors", pref.title ?: "")
-                true
-            }
-            findPreference<Preference>("screen_about")?.setOnPreferenceClickListener {
-                startActivity(Intent(requireContext(), AboutActivity::class.java))
-                true
-            }
-            findPreference<Preference>("app_lang_pick")?.setOnPreferenceClickListener {
-                showAppLanguageDialog()
-                true
-            }
-        }
-
-        /** Pick the language of the app's own menus and settings. */
-        private fun showAppLanguageDialog() {
-            val ctx = requireContext()
-            val codes = arrayOf(AppLocale.PS, AppLocale.FA, AppLocale.EN)
-            val labels = arrayOf(
-                getString(R.string.app_lang_ps),
-                getString(R.string.app_lang_fa),
-                getString(R.string.app_lang_en)
-            )
-            val current = codes.indexOf(AppLocale.current(ctx)).coerceAtLeast(0)
-            AlertDialog.Builder(ctx)
-                .setTitle(R.string.app_lang_title)
-                .setSingleChoiceItems(labels, current) { dlg, which ->
-                    AppLocale.setLanguage(ctx, codes[which])
-                    dlg.dismiss()
-                    activity?.recreate()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
         }
 
         private fun wireLook() {
