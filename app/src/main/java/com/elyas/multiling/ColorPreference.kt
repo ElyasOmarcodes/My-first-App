@@ -1,6 +1,6 @@
 package com.elyas.multiling
 
-import android.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.Color

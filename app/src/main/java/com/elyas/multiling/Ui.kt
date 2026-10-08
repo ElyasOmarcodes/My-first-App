@@ -66,6 +66,20 @@ object Ui {
         return d
     }
 
+    /**
+     * Let the gradient run behind the system bars, and keep their icons
+     * light — every surface in this app is dark, so dark icons would
+     * disappear. Each page then pads the regions that need it.
+     */
+    fun edgeToEdge(a: AppCompatActivity) {
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(a.window, false)
+        androidx.core.view.WindowCompat
+            .getInsetsController(a.window, a.window.decorView).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+    }
+
     // --------------------------------------------------------------- page
     /**
      * The standard page: gradient background, three colour orbs bled behind
@@ -75,6 +89,7 @@ object Ui {
      * gutter, so callers add children without padding of their own.
      */
     fun page(a: AppCompatActivity, title: String, onBack: (() -> Unit)? = null): LinearLayout {
+        edgeToEdge(a)
         val root = FrameLayout(a)
         root.setBackgroundResource(R.drawable.ds_bg_app)
 

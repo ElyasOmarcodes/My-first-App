@@ -1,7 +1,7 @@
 package com.elyas.multiling
 
 import android.app.Activity
-import android.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -69,6 +69,7 @@ class SettingsActivity : AppCompatActivity() {
         // The theme is NoActionBar, so supportActionBar is null and every
         // setTitle call on it was a no-op — this screen had no title bar at
         // all. It gets the app's own top bar instead.
+        Ui.edgeToEdge(this)
         val shell = android.widget.FrameLayout(this)
         shell.setBackgroundResource(R.drawable.ds_bg_app)
 

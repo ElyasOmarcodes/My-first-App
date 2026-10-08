@@ -17,9 +17,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 /**
@@ -41,9 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = false   // dark backdrop -> light icons
+        Ui.edgeToEdge(this)
         build()
         if (!AppLocale.isChosen(this)) showLanguagePicker()
     }
@@ -329,7 +327,7 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.app_lang_en)
         )
         val current = codes.indexOf(AppLocale.current(this)).coerceAtLeast(0)
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.app_lang_title)
             .setSingleChoiceItems(labels, current) { dlg, which ->
                 AppLocale.setLanguage(this, codes[which])

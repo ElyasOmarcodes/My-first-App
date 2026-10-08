@@ -33,6 +33,7 @@ class PrivacyActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Ui.edgeToEdge(this)
         val c = this
 
         val root = FrameLayout(c)

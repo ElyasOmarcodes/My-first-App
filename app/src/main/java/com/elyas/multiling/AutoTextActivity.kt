@@ -1,6 +1,6 @@
 package com.elyas.multiling
 
-import android.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.InputType

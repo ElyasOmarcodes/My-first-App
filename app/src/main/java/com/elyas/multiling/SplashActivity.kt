@@ -32,6 +32,7 @@ class SplashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Ui.edgeToEdge(this)
         val d = resources.displayMetrics.density
         fun dp(v: Float) = (v * d).toInt()
 
