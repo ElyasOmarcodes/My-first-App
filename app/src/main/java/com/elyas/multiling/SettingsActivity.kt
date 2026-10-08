@@ -251,6 +251,71 @@ class SettingsActivity : AppCompatActivity() {
             if (screen == "colors") wireColors()
             if (screen == "col_keys") wireColorGroup("col_key", "col_key_grad_on")
             if (screen == "col_special") wireColorGroup("col_special", "col_special_grad_on")
+            tintIcons(screen)
+        }
+
+        /**
+         * Each settings area carries one accent, matching the badge it was
+         * opened from, so a sub-screen still reads as part of that area.
+         * Preference icons are tinted to it here; rows without an icon hide
+         * their badge on their own, because androidx drops the icon frame
+         * when no icon is set and no space is reserved.
+         */
+        private fun tintIcons(screen: String) {
+            val accentRes = when (screen) {
+                "langs" -> R.color.c_indigo
+                "look" -> R.color.c_sky
+                "colors", "col_keys", "col_special", "col_text" -> R.color.c_pink
+                "sizes" -> R.color.c_cyan
+                "typing" -> R.color.c_mint
+                "autotext" -> R.color.c_lime
+                "control" -> R.color.c_amber
+                "feedback" -> R.color.c_orange
+                "backup" -> R.color.c_teal
+                else -> R.color.brand_1
+            }
+            val accent = Ui.color(requireContext(), accentRes)
+            val root = preferenceScreen ?: return
+            fun walk(group: androidx.preference.PreferenceGroup) {
+                for (i in 0 until group.preferenceCount) {
+                    val p = group.getPreference(i)
+                    p.icon?.let {
+                        androidx.core.graphics.drawable.DrawableCompat.setTint(
+                            it.mutate(), accent)
+                    }
+                    if (p is androidx.preference.PreferenceGroup) walk(p)
+                }
+            }
+            walk(root)
+        }
+
+        /**
+         * The preference list itself becomes one glass card, so a sub-screen
+         * matches the index it came from instead of being a bare system list.
+         */
+        override fun onViewCreated(view: android.view.View, savedInstanceState: Bundle?) {
+            super.onViewCreated(view, savedInstanceState)
+            val c = requireContext()
+            val list = listView ?: return
+            val g = c.resources.getDimensionPixelSize(R.dimen.gutter)
+            list.setBackgroundResource(R.drawable.ds_card)
+            list.clipToOutline = true
+            list.isVerticalScrollBarEnabled = false
+            list.overScrollMode = android.view.View.OVER_SCROLL_NEVER
+            val pad = Ui.dp(c, 6f)
+            list.setPadding(pad, pad, pad, pad)
+            list.clipToPadding = true
+            (list.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let {
+                it.setMargins(g, Ui.dp(c, 8f), g, Ui.dp(c, 12f))
+                list.layoutParams = it
+            }
+            // the card's own edge is the separation; stock dividers fight it
+            setDivider(null)
+            setDividerHeight(0)
+
+            list.alpha = 0f
+            list.translationY = Ui.dp(c, 16f).toFloat()
+            list.animate().alpha(1f).translationY(0f).setDuration(300).start()
         }
 
         private fun wireLook() {
