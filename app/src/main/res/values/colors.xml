@@ -1,62 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Hindukush Keyboard — design tokens (dark is the default surface).
-  Screens never hard-code a hex value; they reference these names, so the
-  whole app re-themes from one file and a light variant stays possible.
+  Hindukush Keyboard — Material 3 colour scheme, LIGHT.
+  values-night/colors.xml mirrors every name with its dark value, so any
+  screen written against these names (or against the theme's ?attr colour
+  roles they feed) gets both themes for free.
 -->
 <resources>
 
-    <!-- ============ legacy names kept: manifest + themes reference them -->
-    <color name="primary">#0E1320</color>
-    <color name="primary_dark">#070A12</color>
-    <color name="accent">#6C7BFF</color>
+    <!-- launcher icon background (used by the adaptive icon, theme-independent) -->
     <color name="launcher_bg">#242A38</color>
-    <color name="splash_bg">#070A12</color>
 
-    <!-- ============ surfaces, darkest to lightest -->
-    <color name="bg">#070A12</color>
-    <color name="bg_raised">#0D1220</color>
-    <color name="surface">#141B2D</color>
-    <color name="surface_high">#1B2439</color>
-    <color name="surface_press">#222D47</color>
+    <!-- ===================================================== M3 roles -->
+    <color name="m3_primary">#6B50F2</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#E8E2FF</color>
+    <color name="m3_on_primary_container">#20105E</color>
 
-    <!-- translucent glass fills, layered over the gradient background -->
-    <color name="glass_fill">#14FFFFFF</color>
-    <color name="glass_fill_soft">#0AFFFFFF</color>
-    <color name="glass_stroke">#1FFFFFFF</color>
-    <color name="glass_stroke_soft">#14FFFFFF</color>
-    <color name="scrim">#A6000000</color>
+    <color name="m3_secondary">#5E5A78</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#ECE8FC</color>
+    <color name="m3_on_secondary_container">#241B57</color>
 
-    <!-- ============ text -->
-    <color name="text_primary">#F3F6FF</color>
-    <color name="text_secondary">#A3B0D0</color>
-    <color name="text_tertiary">#6E7B9C</color>
-    <color name="text_on_accent">#FFFFFF</color>
+    <color name="m3_tertiary">#0E9FB8</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#D6F4FA</color>
+    <color name="m3_on_tertiary_container">#00363F</color>
 
-    <!-- ============ brand gradient (header, primary button, splash) -->
-    <color name="brand_1">#6C7BFF</color>
-    <color name="brand_2">#A972FF</color>
-    <color name="brand_3">#33D6E8</color>
+    <color name="m3_error">#D93A52</color>
+    <color name="m3_on_error">#FFFFFF</color>
+    <color name="m3_error_container">#FFE1E5</color>
+    <color name="m3_on_error_container">#5C0016</color>
 
-    <!-- ============ the colourful accents: one per settings category -->
-    <color name="c_indigo">#6C7BFF</color>
-    <color name="c_violet">#A972FF</color>
-    <color name="c_cyan">#33D6E8</color>
-    <color name="c_teal">#2DD4A7</color>
-    <color name="c_mint">#34D399</color>
-    <color name="c_lime">#9BE564</color>
-    <color name="c_amber">#FFB03A</color>
-    <color name="c_orange">#FF8A4C</color>
-    <color name="c_rose">#FF6B8A</color>
-    <color name="c_pink">#FF5CA8</color>
-    <color name="c_sky">#38BDF8</color>
-    <color name="c_blue">#4FA3FF</color>
+    <color name="m3_background">#F6F5FB</color>
+    <color name="m3_on_background">#1B1A22</color>
+    <color name="m3_surface">#F6F5FB</color>
+    <color name="m3_on_surface">#1B1A22</color>
+    <color name="m3_surface_variant">#E7E4F0</color>
+    <color name="m3_on_surface_variant">#64607A</color>
+    <color name="m3_outline">#8E8AA0</color>
+    <color name="m3_outline_variant">#E3E0EC</color>
 
-    <!-- ============ states -->
-    <color name="ok">#34D399</color>
-    <color name="warn">#FFB03A</color>
-    <color name="danger">#FF6B6B</color>
-    <color name="ripple">#26FFFFFF</color>
-    <color name="divider">#16FFFFFF</color>
+    <color name="m3_surface_container_lowest">#FFFFFF</color>
+    <color name="m3_surface_container_low">#F9F8FD</color>
+    <color name="m3_surface_container">#F2F0F8</color>
+    <color name="m3_surface_container_high">#ECEAF4</color>
+    <color name="m3_surface_container_highest">#E6E4EF</color>
+
+    <color name="m3_inverse_surface">#302F37</color>
+    <color name="m3_inverse_on_surface">#F3F0F8</color>
+    <color name="m3_inverse_primary">#C9BEFF</color>
+
+    <!-- ======================================== cards & small semantics -->
+    <!-- the white cards of the inspiration; a lifted surface in dark -->
+    <color name="card">#FFFFFF</color>
+    <color name="card_stroke">#E9E6F1</color>
+    <color name="nav_bar">#FFFFFF</color>
+    <color name="success">#1F9D57</color>
+    <color name="success_container">#DDF5E6</color>
+    <color name="on_success">#FFFFFF</color>
+
+    <!-- ============================== tonal hue pairs: icon containers
+         bg = soft container fill, fg = the icon / accent drawn on it -->
+    <color name="tone_violet_bg">#EDE7FF</color>
+    <color name="tone_violet_fg">#6B50F2</color>
+    <color name="tone_indigo_bg">#E6E8FF</color>
+    <color name="tone_indigo_fg">#4F5FE6</color>
+    <color name="tone_blue_bg">#E3EEFF</color>
+    <color name="tone_blue_fg">#2F74E8</color>
+    <color name="tone_cyan_bg">#DCF4F9</color>
+    <color name="tone_cyan_fg">#0C97B2</color>
+    <color name="tone_teal_bg">#DCF5EE</color>
+    <color name="tone_teal_fg">#0F9C75</color>
+    <color name="tone_green_bg">#E2F5E4</color>
+    <color name="tone_green_fg">#2B9845</color>
+    <color name="tone_amber_bg">#FFF0D6</color>
+    <color name="tone_amber_fg">#DB9010</color>
+    <color name="tone_orange_bg">#FFE8DA</color>
+    <color name="tone_orange_fg">#E8702A</color>
+    <color name="tone_rose_bg">#FFE3E8</color>
+    <color name="tone_rose_fg">#E0435F</color>
+    <color name="tone_pink_bg">#FFE3F1</color>
+    <color name="tone_pink_fg">#D8418A</color>
+
+    <!-- ===================================== gradient fills (hero, tiles) -->
+    <color name="grad_violet_a">#6347EC</color>
+    <color name="grad_violet_b">#8C70FA</color>
+    <color name="grad_rose_a">#F05A7E</color>
+    <color name="grad_rose_b">#D23A60</color>
+    <color name="grad_amber_a">#F6B43E</color>
+    <color name="grad_amber_b">#DE8A12</color>
+    <color name="grad_cyan_a">#2FC4DA</color>
+    <color name="grad_cyan_b">#0F98B2</color>
 
 </resources>

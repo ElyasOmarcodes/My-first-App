@@ -1,6 +1,6 @@
 package com.elyas.multiling
 
-import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.Color
@@ -73,21 +73,20 @@ class ColorPreference(context: Context, attrs: AttributeSet?) : Preference(conte
         } catch (_: Exception) { fallback }
     }
 
-    /** The row's badge becomes the swatch, ringed so white reads on white. */
+    /** The current colour as a ringed circle at the end of the row. */
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
-        val icon = holder.findViewById(android.R.id.icon) as? ImageView ?: return
+        val frame = holder.findViewById(android.R.id.widget_frame) as? android.view.ViewGroup ?: return
+        frame.removeAllViews()
+        frame.visibility = View.VISIBLE
+        val sw = View(context)
         val d = GradientDrawable()
         d.shape = GradientDrawable.OVAL
         d.setColor(value)
-        d.setStroke(Ui.dp(context, 1.5f), 0x59FFFFFF)
-        val sz = Ui.dp(context, 26f)
-        icon.layoutParams?.width = sz
-        icon.layoutParams?.height = sz
-        icon.setImageDrawable(d)
-        icon.visibility = View.VISIBLE
-        // the badge plate behind it would tint the swatch, so clear it
-        holder.findViewById(R.id.icon_frame)?.background = null
+        d.setStroke(Ui.dp(context, 1.5f), Ui.color(context, R.color.card_stroke))
+        sw.background = d
+        val s = Ui.dp(context, 30f)
+        frame.addView(sw, android.view.ViewGroup.LayoutParams(s, s))
     }
 
     override fun onClick() {
@@ -115,7 +114,7 @@ class ColorPreference(context: Context, attrs: AttributeSet?) : Preference(conte
             val d = GradientDrawable()
             d.setColor(picked)
             d.cornerRadius = Ui.dp(c, 18f).toFloat()
-            d.setStroke(Ui.dp(c, 1f), 0x33FFFFFF)
+            d.setStroke(Ui.dp(c, 1f), Ui.color(c, R.color.card_stroke))
             patch.background = d
             patchLabel.text = String.format("#%08X", picked)
             // label in whichever of black/white stays legible on the colour
@@ -128,8 +127,11 @@ class ColorPreference(context: Context, attrs: AttributeSet?) : Preference(conte
         hex.setText(String.format("#%08X", picked))
         hex.setSingleLine()
         hex.gravity = Gravity.CENTER
-        hex.setTextColor(Ui.color(c, R.color.text_primary))
-        hex.setBackgroundResource(R.drawable.ds_field)
+        hex.setTextColor(Ui.attr(c, com.google.android.material.R.attr.colorOnSurface))
+        hex.background = GradientDrawable().apply {
+            cornerRadius = Ui.dp(c, 16f).toFloat()
+            setColor(Ui.attr(c, com.google.android.material.R.attr.colorSurfaceContainerHighest))
+        }
         hex.setPadding(Ui.dp(c, 12f), Ui.dp(c, 10f), Ui.dp(c, 12f), Ui.dp(c, 10f))
 
         // ----------------------------------------------------- swatch grid
@@ -145,7 +147,8 @@ class ColorPreference(context: Context, attrs: AttributeSet?) : Preference(conte
                 val on = col == picked
                 d.setStroke(
                     Ui.dp(c, if (on) 2.5f else 1f),
-                    if (on) Ui.color(c, R.color.text_primary) else 0x33FFFFFF
+                    if (on) Ui.attr(c, com.google.android.material.R.attr.colorOnSurface)
+                    else Ui.color(c, R.color.card_stroke)
                 )
                 sw.background = d
             }
@@ -197,7 +200,7 @@ class ColorPreference(context: Context, attrs: AttributeSet?) : Preference(conte
         renderPatch()
         renderSelection()
 
-        AlertDialog.Builder(c)
+        MaterialAlertDialogBuilder(c)
             .setTitle(title)
             .setView(root)
             .setPositiveButton(android.R.string.ok) { _, _ ->

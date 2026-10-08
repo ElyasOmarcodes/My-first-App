@@ -1,28 +1,21 @@
 package com.elyas.multiling
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.view.View
 import android.webkit.WebView
-import android.widget.FrameLayout
-import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.google.android.material.appbar.MaterialToolbar
 
 /**
- * The privacy policy, read offline.
+ * The privacy policy, read offline under a large collapsing app bar.
  *
  * It is the same PRIVACY.md that is published online, bundled in assets —
- * the app holds no INTERNET permission, so a remote page cannot be loaded
- * in-app; the button at the bottom hands the hosted copy to the browser.
- *
- * The page is a WebView, so it cannot be built from [Ui] like the other
- * screens. Instead it is dropped into the same chrome: the app background,
- * the same top bar, and a transparent WebView so the gradient shows through.
+ * the app holds no INTERNET permission, so the hosted copy opens in the
+ * browser instead. The page is restyled with the app's own colours so it
+ * reads correctly in both light and dark.
  */
 class PrivacyActivity : AppCompatActivity() {
 
@@ -30,64 +23,51 @@ class PrivacyActivity : AppCompatActivity() {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Ui.edgeToEdge(this)
-        val c = this
+        setContentView(R.layout.activity_privacy)
+        findViewById<CollapsingToolbarLayout>(R.id.collapsing).title = getString(R.string.about_privacy)
+        findViewById<MaterialToolbar>(R.id.toolbar)
+            .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        Ui.padForBars(findViewById(R.id.scroll), top = false, bottom = true)
 
-        val root = FrameLayout(c)
-        root.setBackgroundResource(R.drawable.ds_bg_app)
-
-        val column = LinearLayout(c)
-        column.orientation = LinearLayout.VERTICAL
-
-        val bar = Ui.topBar(c, getString(R.string.about_privacy)) {
-            onBackPressedDispatcher.onBackPressed()
-        }
-        column.addView(bar, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(c, 60f)))
-
-        val web = WebView(c)
+        val web = findViewById<WebView>(R.id.web)
         web.settings.javaScriptEnabled = false
         web.setBackgroundColor(Color.TRANSPARENT)
-        web.overScrollMode = View.OVER_SCROLL_NEVER
-        web.loadUrl("file:///android_asset/privacy.html")
-        column.addView(web, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        web.isVerticalScrollBarEnabled = false
+        val html = try {
+            assets.open("privacy.html").bufferedReader().use { it.readText() }
+        } catch (_: Exception) { "" }
+        web.loadDataWithBaseURL("file:///android_asset/", themed(html), "text/html", "utf-8", null)
 
-        val footer = LinearLayout(c)
-        footer.orientation = LinearLayout.VERTICAL
-        val g = resources.getDimensionPixelSize(R.dimen.gutter)
-        footer.setPadding(g, Ui.dp(c, 10f), g, Ui.dp(c, 14f))
-        footer.addView(
-            Ui.ghostButton(c, getString(R.string.privacy_online)) {
-                try {
-                    startActivity(Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/ElyasOmarcodes/My-first-App/blob/main/PRIVACY.md")))
-                } catch (_: Exception) {
-                }
-            },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT)
-        )
-        column.addView(footer, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT))
-
-        root.addView(column, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT))
-
-        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
-            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            bar.setPadding(0, sys.top, 0, 0)
-            bar.layoutParams.height = Ui.dp(c, 60f) + sys.top
-            bar.requestLayout()
-            footer.setPadding(g, Ui.dp(c, 10f), g, Ui.dp(c, 14f) + sys.bottom)
-            insets
+        findViewById<android.view.View>(R.id.btn_online).setOnClickListener {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/ElyasOmarcodes/My-first-App/blob/main/PRIVACY.md")))
+            } catch (_: Exception) {
+            }
         }
-        setContentView(root)
+    }
+
+    /** Append a stylesheet in the current theme's colours; it wins by order. */
+    private fun themed(html: String): String {
+        fun hex(c: Int) = String.format("#%06X", 0xFFFFFF and c)
+        val text = hex(Ui.attr(this, com.google.android.material.R.attr.colorOnSurface))
+        val muted = hex(Ui.attr(this, com.google.android.material.R.attr.colorOnSurfaceVariant))
+        val link = hex(Ui.attr(this, androidx.appcompat.R.attr.colorPrimary))
+        val line = hex(Ui.color(this, R.color.card_stroke))
+        val css = """<style>
+            html,body{background:transparent!important;color:$text!important;
+              font-family:sans-serif;line-height:1.7;margin:0;padding:8px 10px;}
+            h1,h2,h3{color:$text!important;line-height:1.35}
+            p,li,td{color:$text!important}
+            small,.muted,blockquote{color:$muted!important}
+            a{color:$link!important}
+            hr,table,td,th{border-color:$line!important}
+            </style>"""
+        return if (html.contains("</head>", ignoreCase = true))
+            html.replaceFirst("</head>", "$css</head>", ignoreCase = true)
+        else css + html
     }
 }

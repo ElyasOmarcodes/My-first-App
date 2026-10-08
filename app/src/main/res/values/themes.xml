@@ -1,119 +1,221 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- ===================================================== app theme -->
-    <style name="Theme.MultiKeyboard" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/brand_1</item>
-        <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/brand_1</item>
-        <!-- switches, checkboxes and seek bars all take their "on" colour
-             from these, so styling them here covers every settings screen -->
-        <item name="colorControlActivated">@color/brand_1</item>
-        <item name="colorControlNormal">@color/text_tertiary</item>
-        <item name="colorControlHighlight">@color/ripple</item>
-        <item name="android:colorBackground">@color/bg</item>
-        <item name="android:textColorPrimary">@color/text_primary</item>
-        <item name="android:textColorSecondary">@color/text_secondary</item>
-        <item name="preferenceTheme">@style/Pref.Hindukush</item>
-        <!-- edge to edge: the screens pad themselves from window insets -->
+    <!-- ================================================================
+         App theme — Material 3, DayNight. Every colour role is fed from
+         colors.xml / values-night/colors.xml, so light and dark come from
+         the same theme and no screen hard-codes a colour.
+         ================================================================ -->
+    <style name="Theme.MultiKeyboard" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorOnPrimary">@color/m3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/m3_inverse_primary</item>
+
+        <item name="colorSecondary">@color/m3_secondary</item>
+        <item name="colorOnSecondary">@color/m3_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/m3_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/m3_on_secondary_container</item>
+
+        <item name="colorTertiary">@color/m3_tertiary</item>
+        <item name="colorOnTertiary">@color/m3_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/m3_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/m3_on_tertiary_container</item>
+
+        <item name="colorError">@color/m3_error</item>
+        <item name="colorOnError">@color/m3_on_error</item>
+        <item name="colorErrorContainer">@color/m3_error_container</item>
+        <item name="colorOnErrorContainer">@color/m3_on_error_container</item>
+
+        <item name="android:colorBackground">@color/m3_background</item>
+        <item name="colorOnBackground">@color/m3_on_background</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurface">@color/m3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface_variant</item>
+        <item name="colorSurfaceInverse">@color/m3_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/m3_inverse_on_surface</item>
+        <item name="colorOutline">@color/m3_outline</item>
+        <item name="colorOutlineVariant">@color/m3_outline_variant</item>
+
+        <item name="colorSurfaceContainerLowest">@color/m3_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/m3_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/m3_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/m3_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/m3_surface_container_highest</item>
+
+        <!-- generous, friendly radii — the inspiration's softest feature -->
+        <item name="shapeAppearanceCornerSmall">@style/Shape.Hk.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/Shape.Hk.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/Shape.Hk.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/Shape.Hk.ExtraLarge</item>
+
+        <item name="android:windowBackground">@color/m3_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@drawable/ds_bg_app</item>
-        <item name="android:windowAnimationStyle">@style/Anim.Hindukush</item>
-        <item name="alertDialogTheme">@style/Dialog.Hindukush</item>
+
+        <item name="preferenceTheme">@style/Pref.Hk</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Hk.AlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Hk.MaterialAlertDialog</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Hk.BottomSheet</item>
     </style>
 
-    <style name="Theme.MultiKeyboard.Splash">
-        <item name="android:windowBackground">@drawable/ds_bg_app</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+    <style name="Theme.MultiKeyboard.Splash" />
+
+    <!-- ========================================================= shapes -->
+    <style name="Shape.Hk.Small" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="Shape.Hk.Medium" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="Shape.Hk.Large" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">22dp</item>
+    </style>
+    <style name="Shape.Hk.ExtraLarge" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
     </style>
 
-    <!-- =================================================== transitions -->
-    <!-- A short slide + fade. Long enough to read as motion, short enough
-         that it never stands between the user and the next screen. -->
-    <style name="Anim.Hindukush" parent="@android:style/Animation.Activity">
-        <item name="android:activityOpenEnterAnimation">@anim/ds_enter</item>
-        <item name="android:activityOpenExitAnimation">@anim/ds_exit_back</item>
-        <item name="android:activityCloseEnterAnimation">@anim/ds_enter_back</item>
-        <item name="android:activityCloseExitAnimation">@anim/ds_exit</item>
+    <!-- ======================================================== dialogs -->
+    <!-- MaterialAlertDialogBuilder: rounded M3 dialog on a lifted surface -->
+    <style name="ThemeOverlay.Hk.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/Shape.Hk.ExtraLarge</item>
+        <item name="colorSurface">@color/m3_surface_container_high</item>
     </style>
 
-    <!-- ======================================================= dialogs -->
-    <style name="Dialog.Hindukush" parent="Theme.AppCompat.Dialog.Alert">
-        <item name="colorAccent">@color/brand_1</item>
-        <item name="android:windowBackground">@drawable/ds_sheet</item>
-        <item name="android:textColorPrimary">@color/text_primary</item>
-        <item name="android:textColorSecondary">@color/text_secondary</item>
-        <item name="android:windowMinWidthMajor">88%</item>
-        <item name="android:windowMinWidthMinor">88%</item>
+    <!-- AppCompat AlertDialog, which androidx.preference uses for list
+         choices: give it the same rounded lifted surface -->
+    <style name="ThemeOverlay.Hk.AlertDialog" parent="ThemeOverlay.Material3.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
     </style>
 
-    <!-- =================================== preference screen styling -->
-    <style name="Pref.Hindukush" parent="PreferenceThemeOverlay">
-        <item name="preferenceCategoryStyle">@style/Pref.Category</item>
-        <item name="preferenceStyle">@style/Pref.Row</item>
-        <item name="switchPreferenceCompatStyle">@style/Pref.Switch</item>
-        <item name="seekBarPreferenceStyle">@style/Pref.Seek</item>
-        <item name="dialogPreferenceStyle">@style/Pref.Row</item>
-        <item name="editTextPreferenceStyle">@style/Pref.Row</item>
+    <style name="ThemeOverlay.Hk.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Hk.BottomSheet</item>
+    </style>
+    <style name="Widget.Hk.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/m3_surface_container_low</item>
     </style>
 
-    <style name="Pref.Row" parent="Preference.Material">
-        <item name="android:layout">@layout/ds_pref_row</item>
+    <!-- ======================================================== widgets -->
+    <!-- the white section card -->
+    <style name="Widget.Hk.Card" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardBackgroundColor">@color/card</item>
+        <item name="strokeColor">@color/card_stroke</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cardCornerRadius">28dp</item>
+        <item name="cardElevation">0dp</item>
     </style>
 
-    <style name="Pref.Switch" parent="Preference.SwitchPreferenceCompat.Material">
-        <item name="android:layout">@layout/ds_pref_row</item>
+    <!-- segmented button segment: tonal fill when checked -->
+    <style name="Widget.Hk.Segment" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="backgroundTint">@color/seg_bg</item>
+        <item name="android:textColor">@color/seg_fg</item>
+        <item name="iconTint">@color/seg_fg</item>
+        <item name="strokeColor">@color/m3_outline</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">10dp</item>
+        <item name="android:textSize">15sp</item>
     </style>
 
-    <style name="Pref.Seek" parent="Preference.SeekBarPreference.Material">
-        <item name="android:layout">@layout/ds_pref_seek</item>
+    <!-- floating bottom navigation -->
+    <style name="Widget.Hk.BottomNav" parent="Widget.Material3.BottomNavigationView">
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="elevation">0dp</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Hk.NavIndicator</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.Hk.NavLabel.Active</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.Hk.NavLabel</item>
+        <item name="itemIconTint">@color/nav_item</item>
+        <item name="itemTextColor">@color/nav_item</item>
+        <item name="itemPaddingTop">12dp</item>
+        <item name="itemPaddingBottom">12dp</item>
+    </style>
+    <style name="Widget.Hk.NavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/m3_secondary_container</item>
+        <item name="android:width">64dp</item>
+        <item name="android:height">34dp</item>
     </style>
 
-    <style name="Pref.Category" parent="Preference.Category.Material">
-        <item name="android:layout">@layout/ds_pref_category</item>
+    <style name="Widget.Hk.Button.Filled" parent="Widget.Material3.Button">
+        <item name="android:minHeight">52dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
-
-    <!-- ==================================================== type roles -->
-    <!-- A dot in a style name declares an implicit parent, so T.Display and
-         its siblings all inherit from a style called "T". It has to exist. -->
-    <style name="T" />
-
-    <style name="T.Display">
-        <item name="android:textSize">@dimen/t_display</item>
-        <item name="android:textColor">@color/text_primary</item>
+    <style name="Widget.Hk.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:minHeight">52dp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="T.Title">
-        <item name="android:textSize">@dimen/t_title</item>
-        <item name="android:textColor">@color/text_primary</item>
+    <!-- ======================================================= type -->
+    <style name="TextAppearance.Hk.PageTitle" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textSize">30sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.CardTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">19sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.RowTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/m3_on_surface_variant</item>
+        <item name="android:lineSpacingExtra">4dp</item>
+    </style>
+    <style name="TextAppearance.Hk.Caption" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/m3_on_surface_variant</item>
+    </style>
+    <style name="TextAppearance.Hk.Section" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/m3_primary</item>
+    </style>
+    <style name="TextAppearance.Hk.NavLabel" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">12.5sp</item>
+    </style>
+    <style name="TextAppearance.Hk.NavLabel.Active">
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="T.Section">
-        <item name="android:textSize">@dimen/t_section</item>
-        <item name="android:textColor">@color/text_tertiary</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.12</item>
-        <item name="android:textAllCaps">true</item>
+    <!-- ============================================ preference screens -->
+    <style name="Pref.Hk" parent="PreferenceThemeOverlay">
+        <item name="preferenceStyle">@style/Pref.Hk.Row</item>
+        <item name="switchPreferenceCompatStyle">@style/Pref.Hk.Switch</item>
+        <item name="seekBarPreferenceStyle">@style/Pref.Hk.Seek</item>
+        <item name="preferenceCategoryStyle">@style/Pref.Hk.Category</item>
+        <item name="dialogPreferenceStyle">@style/Pref.Hk.Row</item>
+        <item name="editTextPreferenceStyle">@style/Pref.Hk.Row</item>
     </style>
-
-    <style name="T.Row">
-        <item name="android:textSize">@dimen/t_row</item>
-        <item name="android:textColor">@color/text_primary</item>
+    <style name="Pref.Hk.Row" parent="Preference.Material">
+        <item name="android:layout">@layout/pref_row</item>
+        <item name="iconSpaceReserved">false</item>
     </style>
-
-    <style name="T.Body">
-        <item name="android:textSize">@dimen/t_body</item>
-        <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:lineSpacingExtra">5dp</item>
+    <style name="Pref.Hk.Switch" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:layout">@layout/pref_row</item>
+        <item name="android:widgetLayout">@layout/pref_widget_switch</item>
+        <item name="iconSpaceReserved">false</item>
     </style>
-
-    <style name="T.Caption">
-        <item name="android:textSize">@dimen/t_caption</item>
-        <item name="android:textColor">@color/text_tertiary</item>
+    <style name="Pref.Hk.Seek" parent="Preference.SeekBarPreference.Material">
+        <item name="android:layout">@layout/pref_seek</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+    <style name="Pref.Hk.Category" parent="Preference.Category.Material">
+        <item name="android:layout">@layout/pref_category</item>
+        <item name="iconSpaceReserved">false</item>
     </style>
 
 </resources>

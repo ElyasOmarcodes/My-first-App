@@ -1,63 +1,57 @@
 package com.elyas.multiling
 
 import android.app.Activity
-import androidx.appcompat.app.AlertDialog
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.View
 import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 
 /**
- * Settings. [SettingsHome] is the hand-built index; each entry opens its own
- * preference sub-screen here. Appearance/size screens show a live keyboard preview that
- * updates as options change. The backup screen imports/exports everything.
+ * One settings area (look, typing, colours…) under a large collapsing app
+ * bar. The index of areas is the Settings tab of [MainActivity]; this screen
+ * shows a single area and anything nested inside it. Look, size and colour
+ * areas dock a live keyboard preview at the bottom.
  */
 class SettingsActivity : AppCompatActivity() {
+
+    companion object {
+        /** Open one settings area, e.g. "look", "typing", "colors". */
+        fun intent(c: android.content.Context, screen: String): Intent =
+            Intent(c, SettingsActivity::class.java).putExtra("open_screen", screen)
+
+        /** Title for each screen, shown in the large collapsing app bar. */
+        fun titleOf(screen: String): Int = when (screen) {
+            "langs" -> R.string.pref_cat_langs
+            "look" -> R.string.pref_cat_look
+            "colors" -> R.string.pref_cat_colors
+            "col_keys" -> R.string.pref_col_cat_key_group
+            "col_special" -> R.string.pref_col_cat_special_group
+            "col_text" -> R.string.pref_col_cat_text
+            "sizes" -> R.string.pref_cat_sizes
+            "typing" -> R.string.pref_cat_typing
+            "autotext" -> R.string.pref_cat_autotext
+            "control" -> R.string.pref_cat_control
+            "feedback" -> R.string.pref_cat_feedback
+            "backup" -> R.string.pref_cat_dict
+            else -> R.string.settings_title
+        }
+    }
 
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
-
     private lateinit var preview: KeyboardView
-    private lateinit var previewHolder: FrameLayout
-    private lateinit var topBar: LinearLayout
-    private var bottomInset = 0
-
-    /** The navigation-bar gap belongs to whatever sits lowest on screen. */
-    private fun applyBottomInset() {
-        val previewShown = previewHolder.visibility == android.view.View.VISIBLE
-        previewHolder.setPadding(0, 0, 0, if (previewShown) bottomInset else 0)
-        val host = findViewById<FrameLayout>(R.id.settings_host)
-        host?.setPadding(0, 0, 0, if (previewShown) 0 else bottomInset)
-    }
-
-    /** Lets the hand-built home screen reuse the activity's dialog. */
-    fun showAppLanguagePicker() {
-        val codes = arrayOf(AppLocale.PS, AppLocale.FA, AppLocale.EN)
-        val labels = arrayOf(
-            getString(R.string.app_lang_ps),
-            getString(R.string.app_lang_fa),
-            getString(R.string.app_lang_en)
-        )
-        val current = codes.indexOf(AppLocale.current(this)).coerceAtLeast(0)
-        AlertDialog.Builder(this)
-            .setTitle(R.string.app_lang_title)
-            .setSingleChoiceItems(labels, current) { dlg, which ->
-                AppLocale.setLanguage(this, codes[which])
-                dlg.dismiss()
-                recreate()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
+    private lateinit var previewCard: View
+    private lateinit var collapsing: com.google.android.material.appbar.CollapsingToolbarLayout
+    private var rootScreen = "look"
 
     private val prefListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshPreview() }
@@ -66,70 +60,38 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ThemePresets.bootstrap(this)
 
-        // The theme is NoActionBar, so supportActionBar is null and every
-        // setTitle call on it was a no-op — this screen had no title bar at
-        // all. It gets the app's own top bar instead.
+        // Without a screen (the system's "keyboard settings" gear, or the
+        // keyboard's own settings key) the right destination is the
+        // Settings tab of the main app, which lists every area.
+        val screen = intent?.getStringExtra("open_screen")
+        if (screen.isNullOrEmpty() || screen == "main") {
+            startActivity(MainActivity.intent(this, MainActivity.TAB_SETTINGS))
+            finish()
+            return
+        }
+        rootScreen = screen
+
         Ui.edgeToEdge(this)
-        val shell = android.widget.FrameLayout(this)
-        shell.setBackgroundResource(R.drawable.ds_bg_app)
+        setContentView(R.layout.activity_settings)
+        collapsing = findViewById(R.id.collapsing)
+        findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+            .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
-        val root = LinearLayout(this)
-        root.orientation = LinearLayout.VERTICAL
-
-        topBar = Ui.topBar(this, getString(R.string.settings_title)) {
-            onBackPressedDispatcher.onBackPressed()
-        }
-        root.addView(topBar, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 60f)))
-
-        val host = FrameLayout(this)
-        host.id = R.id.settings_host
-        root.addView(
-            host,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
-        )
-        previewHolder = FrameLayout(this)
+        previewCard = findViewById(R.id.preview_card)
         preview = KeyboardView(this)
-        previewHolder.addView(preview)
-        previewHolder.visibility = android.view.View.GONE
-        root.addView(
-            previewHolder,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-        shell.addView(root, android.widget.FrameLayout.LayoutParams(
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
-        setContentView(shell)
-
-        // insets per region: the bar clears the status bar, the bottom-most
-        // visible thing clears the navigation bar
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(shell) { _, insets ->
-            val sys = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            topBar.setPadding(0, sys.top, 0, 0)
-            topBar.layoutParams.height = Ui.dp(this, 60f) + sys.top
-            topBar.requestLayout()
-            bottomInset = sys.bottom
-            applyBottomInset()
-            insets
-        }
+        findViewById<FrameLayout>(R.id.preview_holder).addView(preview)
+        // the preview panel is the lowest thing on screen: it clears the
+        // navigation bar; without it the list does
+        Ui.padForBars(findViewById(R.id.preview_holder), top = false, bottom = true)
+        Ui.padForBars(findViewById(R.id.settings_host), top = false, bottom = true)
 
         if (savedInstanceState == null) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.settings_host, SettingsHome())
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.settings_host, SettingsFragment.create(screen))
                 .commit()
         }
-        supportFragmentManager.addOnBackStackChangedListener { updatePreviewVisibility() }
-
-        // the keyboard's menu can deep-link straight to a settings page
-        // (e.g. the active-languages screen)
-        when (intent?.getStringExtra("open_screen")) {
-            "langs" -> openScreen("langs", getString(R.string.pref_cat_langs))
-        }
+        supportFragmentManager.addOnBackStackChangedListener { onScreenChanged() }
+        onScreenChanged()
     }
 
     override fun onResume() {
@@ -145,40 +107,33 @@ class SettingsActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    fun openScreen(screen: String, title: CharSequence) {
-        supportFragmentManager
-            .beginTransaction()
+    /** Go one level deeper inside this activity (colours → key colours). */
+    fun openScreen(screen: String, @Suppress("UNUSED_PARAMETER") title: CharSequence) {
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.tab_in, R.anim.tab_out, R.anim.tab_in, R.anim.tab_out)
             .replace(R.id.settings_host, SettingsFragment.create(screen))
             .addToBackStack(screen)
             .commit()
-        setBarTitle(title)
-        updatePreviewVisibility(screen)
-    }
-
-    private fun setBarTitle(title: CharSequence) {
-        // the title is the second child of the bar, after the back button
-        (topBar.getChildAt(1) as? TextView)?.text = title
     }
 
     private fun currentScreen(): String {
         val i = supportFragmentManager.backStackEntryCount
-        return if (i == 0) "main"
-        else supportFragmentManager.getBackStackEntryAt(i - 1).name ?: "main"
+        return if (i == 0) rootScreen
+        else supportFragmentManager.getBackStackEntryAt(i - 1).name ?: rootScreen
     }
 
-    private fun updatePreviewVisibility(screen: String = currentScreen()) {
+    private fun onScreenChanged() {
+        val screen = currentScreen()
+        collapsing.title = getString(titleOf(screen))
         val show = screen == "look" || screen == "sizes" || screen == "colors" ||
             screen.startsWith("col_")
-        previewHolder.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
-        if (screen == "main") setBarTitle(getString(R.string.settings_title))
-        if (screen == "colors") setBarTitle(getString(R.string.pref_cat_colors))
-        applyBottomInset()
+        previewCard.visibility = if (show) View.VISIBLE else View.GONE
         if (show) refreshPreview()
     }
 
     /** Live keyboard preview reflecting the current preferences. */
     private fun refreshPreview() {
-        if (previewHolder.visibility != android.view.View.VISIBLE) return
+        if (!::previewCard.isInitialized || previewCard.visibility != View.VISIBLE) return
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         preview.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
         val custom = p.getBoolean("col_custom", false)
@@ -208,8 +163,6 @@ class SettingsActivity : AppCompatActivity() {
         preview.keyGapDp = p.getInt("key_gap", 2) / 1.33f
         preview.showHints = p.getBoolean("hints", true)
         preview.keyBorder = p.getBoolean("key_border", false)
-        val density = resources.displayMetrics.density
-        preview.setPadding(0, 0, 0, (p.getInt("bottom_gap", 10) * density).toInt())
         val rows = ArrayList<List<KeyDef>>(Layouts.PASHTO.rows)
         rows.add(
             listOf(
@@ -243,7 +196,7 @@ class SettingsActivity : AppCompatActivity() {
                 "control" -> R.xml.prefs_control
                 "feedback" -> R.xml.prefs_feedback
                 "backup" -> R.xml.prefs_backup
-                else -> R.xml.prefs
+                else -> R.xml.prefs_look
             }
             setPreferencesFromResource(res, rootKey)
             if (screen == "autotext") wireAutoText()
@@ -252,71 +205,26 @@ class SettingsActivity : AppCompatActivity() {
             if (screen == "colors") wireColors()
             if (screen == "col_keys") wireColorGroup("col_key", "col_key_grad_on")
             if (screen == "col_special") wireColorGroup("col_special", "col_special_grad_on")
-            tintIcons(screen)
         }
 
         /**
-         * Each settings area carries one accent, matching the badge it was
-         * opened from, so a sub-screen still reads as part of that area.
-         * Preference icons are tinted to it here; rows without an icon hide
-         * their badge on their own, because androidx drops the icon frame
-         * when no icon is set and no space is reserved.
-         */
-        private fun tintIcons(screen: String) {
-            val accentRes = when (screen) {
-                "langs" -> R.color.c_indigo
-                "look" -> R.color.c_sky
-                "colors", "col_keys", "col_special", "col_text" -> R.color.c_pink
-                "sizes" -> R.color.c_cyan
-                "typing" -> R.color.c_mint
-                "autotext" -> R.color.c_lime
-                "control" -> R.color.c_amber
-                "feedback" -> R.color.c_orange
-                "backup" -> R.color.c_teal
-                else -> R.color.brand_1
-            }
-            val accent = Ui.color(requireContext(), accentRes)
-            val root = preferenceScreen ?: return
-            fun walk(group: androidx.preference.PreferenceGroup) {
-                for (i in 0 until group.preferenceCount) {
-                    val p = group.getPreference(i)
-                    p.icon?.let {
-                        androidx.core.graphics.drawable.DrawableCompat.setTint(
-                            it.mutate(), accent)
-                    }
-                    if (p is androidx.preference.PreferenceGroup) walk(p)
-                }
-            }
-            walk(root)
-        }
-
-        /**
-         * The preference list itself becomes one glass card, so a sub-screen
-         * matches the index it came from instead of being a bare system list.
+         * The rows of each section sit in one rounded card, like a native
+         * settings screen, with the section heading above it. The cards are
+         * drawn by [PrefGroupCards] behind the rows rather than being real
+         * views, which keeps the stock preference list and its recycling.
          */
         override fun onViewCreated(view: android.view.View, savedInstanceState: Bundle?) {
             super.onViewCreated(view, savedInstanceState)
             val c = requireContext()
             val list = listView ?: return
-            val g = c.resources.getDimensionPixelSize(R.dimen.gutter)
-            list.setBackgroundResource(R.drawable.ds_card)
-            list.clipToOutline = true
+            val pad = Ui.dp(c, 16f)
+            list.setPadding(pad, Ui.dp(c, 4f), pad, Ui.dp(c, 24f))
+            list.clipToPadding = false
             list.isVerticalScrollBarEnabled = false
             list.overScrollMode = android.view.View.OVER_SCROLL_NEVER
-            val pad = Ui.dp(c, 6f)
-            list.setPadding(pad, pad, pad, pad)
-            list.clipToPadding = true
-            (list.layoutParams as? android.view.ViewGroup.MarginLayoutParams)?.let {
-                it.setMargins(g, Ui.dp(c, 8f), g, Ui.dp(c, 12f))
-                list.layoutParams = it
-            }
-            // the card's own edge is the separation; stock dividers fight it
+            list.addItemDecoration(PrefGroupCards(c))
             setDivider(null)
             setDividerHeight(0)
-
-            list.alpha = 0f
-            list.translationY = Ui.dp(c, 16f).toFloat()
-            list.animate().alpha(1f).translationY(0f).setDuration(300).start()
         }
 
         private fun wireLook() {
@@ -381,7 +289,7 @@ class SettingsActivity : AppCompatActivity() {
 
         private fun wireAutoText() {
             findPreference<Preference>("autotext_manage")?.setOnPreferenceClickListener {
-                startActivity(Intent(requireContext(), AutoTextActivity::class.java))
+                startActivity(MainActivity.intent(requireContext(), MainActivity.TAB_SHORTCUTS))
                 true
             }
             findPreference<Preference>("autotext_import")?.setOnPreferenceClickListener {
@@ -404,7 +312,7 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
             findPreference<Preference>("settings_reset")?.setOnPreferenceClickListener {
-                AlertDialog.Builder(requireContext())
+                MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.pref_settings_reset)
                     .setMessage(R.string.settings_reset_q)
                     .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -428,7 +336,7 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
             findPreference<Preference>("clear_learned")?.setOnPreferenceClickListener {
-                AlertDialog.Builder(requireContext())
+                MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.pref_clear_learned)
                     .setMessage(R.string.clear_learned_q)
                     .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -467,7 +375,7 @@ class SettingsActivity : AppCompatActivity() {
                 return
             }
             val preview = found.values.flatten().take(40).joinToString("، ")
-            AlertDialog.Builder(ctx)
+            MaterialAlertDialogBuilder(ctx)
                 .setTitle(R.string.pref_clean_typos)
                 .setMessage(getString(R.string.clean_typos_q, total) + "\n\n" + preview)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -553,7 +461,7 @@ class SettingsActivity : AppCompatActivity() {
         // ------------------------------------------------------ SAF helpers
         private fun chooseLanguage(then: () -> Unit) {
             val names = Layouts.ALL.map { it.nativeName }.toTypedArray()
-            AlertDialog.Builder(requireContext())
+            MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.pref_languages)
                 .setItems(names) { _, which ->
                     pendingLang = Layouts.ALL[which].code

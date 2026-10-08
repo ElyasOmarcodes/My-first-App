@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Incoming page: fades in while settling up a few dp. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_quint">
+    <alpha android:fromAlpha="0" android:toAlpha="1" android:duration="220" />
+    <translate android:fromYDelta="12dp" android:toYDelta="0" android:duration="260" />
+</set>

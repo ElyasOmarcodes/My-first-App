@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindukush Keyboard — Material 3 colour scheme, DARK. Same names as
+     values/colors.xml; only the values change. -->
+<resources>
+
+    <color name="launcher_bg">#242A38</color>
+
+    <color name="m3_primary">#C2B5FF</color>
+    <color name="m3_on_primary">#2B1980</color>
+    <color name="m3_primary_container">#3A2F7A</color>
+    <color name="m3_on_primary_container">#E6DFFF</color>
+
+    <color name="m3_secondary">#C9C3E3</color>
+    <color name="m3_on_secondary">#322D4A</color>
+    <color name="m3_secondary_container">#2E2848</color>
+    <color name="m3_on_secondary_container">#E7E1FF</color>
+
+    <color name="m3_tertiary">#7FDCEB</color>
+    <color name="m3_on_tertiary">#00363F</color>
+    <color name="m3_tertiary_container">#004E5B</color>
+    <color name="m3_on_tertiary_container">#CBF4FB</color>
+
+    <color name="m3_error">#FFB3BC</color>
+    <color name="m3_on_error">#680021</color>
+    <color name="m3_error_container">#8C1D36</color>
+    <color name="m3_on_error_container">#FFD9DE</color>
+
+    <color name="m3_background">#121118</color>
+    <color name="m3_on_background">#E6E3EE</color>
+    <color name="m3_surface">#121118</color>
+    <color name="m3_on_surface">#E6E3EE</color>
+    <color name="m3_surface_variant">#2B2936</color>
+    <color name="m3_on_surface_variant">#ACA8BB</color>
+    <color name="m3_outline">#77738A</color>
+    <color name="m3_outline_variant">#2F2D3A</color>
+
+    <color name="m3_surface_container_lowest">#0D0C12</color>
+    <color name="m3_surface_container_low">#1A1921</color>
+    <color name="m3_surface_container">#1E1D26</color>
+    <color name="m3_surface_container_high">#26252F</color>
+    <color name="m3_surface_container_highest">#302F3A</color>
+
+    <color name="m3_inverse_surface">#E6E3EE</color>
+    <color name="m3_inverse_on_surface">#302F37</color>
+    <color name="m3_inverse_primary">#6B50F2</color>
+
+    <color name="card">#1B1A23</color>
+    <color name="card_stroke">#2A2834</color>
+    <color name="nav_bar">#201F29</color>
+    <color name="success">#7EE0A4</color>
+    <color name="success_container">#163A25</color>
+    <color name="on_success">#0B2E19</color>
+
+    <color name="tone_violet_bg">#2D2557</color>
+    <color name="tone_violet_fg">#C6B9FF</color>
+    <color name="tone_indigo_bg">#252A55</color>
+    <color name="tone_indigo_fg">#B3BCFF</color>
+    <color name="tone_blue_bg">#1C2C49</color>
+    <color name="tone_blue_fg">#A6C6FF</color>
+    <color name="tone_cyan_bg">#12333B</color>
+    <color name="tone_cyan_fg">#7FDCEB</color>
+    <color name="tone_teal_bg">#123930</color>
+    <color name="tone_teal_fg">#7FDFC0</color>
+    <color name="tone_green_bg">#1A381F</color>
+    <color name="tone_green_fg">#93DCA2</color>
+    <color name="tone_amber_bg">#3B2E12</color>
+    <color name="tone_amber_fg">#FFCB6E</color>
+    <color name="tone_orange_bg">#3D2618</color>
+    <color name="tone_orange_fg">#FFB48A</color>
+    <color name="tone_rose_bg">#41202A</color>
+    <color name="tone_rose_fg">#FFA8B9</color>
+    <color name="tone_pink_bg">#41203A</color>
+    <color name="tone_pink_fg">#FFA7D1</color>
+
+    <color name="grad_violet_a">#4C35C7</color>
+    <color name="grad_violet_b">#6D54E6</color>
+    <color name="grad_rose_a">#C9405F</color>
+    <color name="grad_rose_b">#A22A49</color>
+    <color name="grad_amber_a">#C98E26</color>
+    <color name="grad_amber_b">#A96910</color>
+    <color name="grad_cyan_a">#1C9DB2</color>
+    <color name="grad_cyan_b">#0B768B</color>
+
+</resources>

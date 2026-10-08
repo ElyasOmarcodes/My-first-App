@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- M3-style slider track: a thick rounded rail, filled in primary. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background" android:gravity="center_vertical|fill_horizontal">
+        <shape android:shape="rectangle">
+            <size android:height="6dp" />
+            <corners android:radius="3dp" />
+            <solid android:color="@color/m3_surface_container_highest" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress" android:gravity="center_vertical|fill_horizontal">
+        <scale android:scaleWidth="100%">
+            <shape android:shape="rectangle">
+                <size android:height="6dp" />
+                <corners android:radius="3dp" />
+                <solid android:color="@color/m3_primary" />
+            </shape>
+        </scale>
+    </item>
+</layer-list>

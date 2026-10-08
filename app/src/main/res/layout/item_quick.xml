@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tinted quick-action card: soft hue fill, matching hairline, a white
+     icon plate and a title. Hue is set in code. -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.Hk.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="26dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="18dp">
+        <FrameLayout
+            android:id="@+id/quick_icon_box"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_tone">
+            <ImageView
+                android:id="@+id/quick_icon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+        <TextView
+            android:id="@+id/quick_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textAppearance="@style/TextAppearance.Hk.CardTitle"
+            android:textSize="17sp" />
+        <TextView
+            android:id="@+id/quick_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textAppearance="@style/TextAppearance.Hk.Caption" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

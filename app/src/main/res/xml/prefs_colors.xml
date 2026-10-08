@@ -15,16 +15,13 @@
         android:dependency="col_custom">
         <Preference android:key="screen_col_keys"
             android:title="@string/pref_col_cat_key_group"
-            android:summary="@string/pref_col_group_sum"
-            android:icon="@drawable/ic_cat_look" />
+            android:summary="@string/pref_col_group_sum" />
         <Preference android:key="screen_col_special"
             android:title="@string/pref_col_cat_special_group"
-            android:summary="@string/pref_col_group_sum"
-            android:icon="@drawable/ic_cat_look" />
+            android:summary="@string/pref_col_group_sum" />
         <Preference android:key="screen_col_text"
             android:title="@string/pref_col_cat_text"
-            android:summary="@string/pref_col_text_sum"
-            android:icon="@drawable/ic_cat_look" />
+            android:summary="@string/pref_col_text_sum" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_col_cat_theme">

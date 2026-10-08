@@ -15,7 +15,7 @@ android {
     applicationId = "com.hindukush.kb.elyas.test"
     minSdk = 21
     targetSdk = 36
-    versionCode = 35
+    versionCode = 36
     versionName = "1.0"
     // the app ships Pashto (default), Farsi and English; keep exactly those
     // locales so androidx's other translations are trimmed from the APK.
@@ -68,6 +68,9 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.preference)
+  // Material 3 components: the native switches, sliders, segmented buttons,
+  // bottom navigation and app bars that make the app feel like an app
+  implementation(libs.material)
   // pure-Java LZMA2 decoder for the .xz-compressed frequency dictionaries
   implementation(libs.xz)
 }

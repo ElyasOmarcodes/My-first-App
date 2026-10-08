@@ -1835,9 +1835,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private fun openSettings(screen: String?) {
         try {
-            val intent = Intent(this, SettingsActivity::class.java)
+            // no particular area: the Settings tab, which lists all of them
+            val intent = if (screen == null) MainActivity.intent(this, MainActivity.TAB_SETTINGS)
+                else SettingsActivity.intent(this, screen)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            if (screen != null) intent.putExtra("open_screen", screen)
             startActivity(intent)
         } catch (_: Exception) {
         }
