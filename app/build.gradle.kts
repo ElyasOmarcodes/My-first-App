@@ -8,7 +8,11 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.hindukush.kb.elyas"
+    // TEMPORARY: a separate id so this build installs ALONGSIDE the one
+    // already on the phone instead of replacing it. Revert to
+    // "com.hindukush.kb.elyas" before any Play upload — Play identifies an
+    // app by this, so a release under the test id would be a different app.
+    applicationId = "com.hindukush.kb.elyas.test"
     minSdk = 21
     targetSdk = 36
     versionCode = 35
