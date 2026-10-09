@@ -268,6 +268,7 @@ class EmojiPanel(
                 tv.text = label
                 tv.gravity = Gravity.CENTER
                 tv.textSize = 15f
+                tv.typeface = Fonts.get(tv.context)
                 tv.setTextColor(theme.text)
                 tv
             }
@@ -311,6 +312,7 @@ class EmojiPanel(
             tv.maxLines = 1
             tv.gravity = Gravity.CENTER
             tv.textSize = tabTextSize
+            tv.typeface = Fonts.get(tv.context)
             if (iconRes != 0) {
                 val d = try {
                     androidx.appcompat.content.res.AppCompatResources
@@ -370,6 +372,7 @@ class EmojiPanel(
             tv.maxLines = 1
             tv.gravity = Gravity.CENTER
             tv.textSize = itemTextSize
+            tv.typeface = Fonts.get(tv.context)
             tv.setOnClickListener {
                 tonePopup?.dismiss()
                 tonePopup = null

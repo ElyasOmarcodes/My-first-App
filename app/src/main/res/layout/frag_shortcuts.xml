@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Shortcuts tab: a gradient explainer with a live example, a search
+     field, then the shortcuts as cards; the add button floats above the
+     tab bar. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -18,57 +21,147 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/tab_shortcuts"
-                android:textAppearance="@style/TextAppearance.Hk.PageTitle" />
-            <TextView
-                android:id="@+id/count"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textAppearance="@style/TextAppearance.Hk.Body" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/tab_shortcuts"
+                    android:textAlignment="viewStart"
+                    android:textAppearance="@style/TextAppearance.Hk.PageTitle" />
+                <TextView
+                    android:id="@+id/count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_tone"
+                    android:backgroundTint="?attr/colorSecondaryContainer"
+                    android:paddingStart="14dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="6dp"
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
-            <!-- what shortcuts are, on a tonal card -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Hk.Card"
+            <!-- explainer with a worked example -->
+            <FrameLayout
+                android:id="@+id/sc_hero"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="?attr/colorPrimaryContainer"
-                app:strokeWidth="0dp">
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_hero_teal"
+                android:elevation="6dp">
+                <ImageView
+                    android:layout_width="130dp"
+                    android:layout_height="130dp"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginStart="-26dp"
+                    android:layout_marginBottom="-34dp"
+                    android:alpha="0.14"
+                    android:src="@drawable/ic_m_snippet"
+                    app:tint="@android:color/white"
+                    android:importantForAccessibility="no" />
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="18dp">
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_marginEnd="14dp"
-                        android:src="@drawable/ic_m_sparkle"
-                        app:tint="?attr/colorOnPrimaryContainer"
-                        android:importantForAccessibility="no" />
+                    android:orientation="vertical"
+                    android:padding="20dp">
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:lineSpacingExtra="3dp"
+                        android:lineSpacingExtra="4dp"
                         android:text="@string/autotext_desc"
-                        android:textColor="?attr/colorOnPrimaryContainer"
+                        android:textAlignment="viewStart"
+                        android:textColor="@android:color/white"
                         android:textSize="14sp" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_glass_chip"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="8dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="6dp">
+                        <TextView
+                            android:id="@+id/demo_key"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_nav_pill"
+                            android:backgroundTint="@android:color/white"
+                            android:paddingStart="12dp"
+                            android:paddingTop="3dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="3dp"
+                            android:text="سلام"
+                            android:textColor="@color/grad_violet_a"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold" />
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_m_next"
+                            app:tint="@android:color/white"
+                            android:importantForAccessibility="no" />
+                        <TextView
+                            android:id="@+id/demo_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:text="السلام علیکم ورحمة الله وبرکاته!"
+                            android:textColor="@android:color/white"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
+
+            <!-- search -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/search_box"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:hint="@string/shortcuts_search"
+                app:boxCornerRadiusBottomEnd="22dp"
+                app:boxCornerRadiusBottomStart="22dp"
+                app:boxCornerRadiusTopEnd="22dp"
+                app:boxCornerRadiusTopStart="22dp"
+                app:boxBackgroundColor="@color/card"
+                app:boxStrokeColor="?attr/colorPrimary"
+                app:endIconMode="clear_text"
+                app:hintEnabled="false"
+                app:startIconDrawable="@drawable/ic_m_zoom">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/search_in"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/shortcuts_search"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:id="@+id/list"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:orientation="vertical" />
 
             <!-- empty state -->
@@ -76,7 +169,7 @@
                 android:id="@+id/empty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="48dp"
+                android:layout_marginTop="40dp"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
                 android:visibility="gone">
@@ -94,12 +187,14 @@
                         android:importantForAccessibility="no" />
                 </FrameLayout>
                 <TextView
+                    android:id="@+id/empty_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="@string/shortcuts_empty"
                     android:textAppearance="@style/TextAppearance.Hk.CardTitle" />
                 <TextView
+                    android:id="@+id/empty_sub"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"

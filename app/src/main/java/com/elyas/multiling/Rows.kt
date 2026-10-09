@@ -27,6 +27,7 @@ object Rows {
         s.visibility = if (sub.isNullOrEmpty()) View.GONE else View.VISIBLE
         row.findViewById<ImageView>(R.id.row_end).setImageResource(endIcon)
         row.setOnClickListener { onClick() }
+        Ui.tip(row, Ui.tipText(title, sub))
     }
 
     fun addNav(

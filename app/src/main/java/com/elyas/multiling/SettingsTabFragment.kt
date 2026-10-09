@@ -68,7 +68,7 @@ class SettingsTabFragment : Fragment(R.layout.frag_settings) {
                 R.id.look_dark -> AppLook.DARK
                 else -> AppLook.SYSTEM
             }
-            if (mode != AppLook.current(c)) AppLook.set(c.applicationContext, mode)
+            if (mode != AppLook.current(c)) AppLook.switchTo(requireActivity(), mode)
         }
 
         // ---- keyboard areas, grouped

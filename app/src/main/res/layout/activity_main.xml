@@ -15,13 +15,13 @@
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/nav_card"
         android:layout_width="match_parent"
-        android:layout_height="68dp"
+        android:layout_height="70dp"
         android:layout_gravity="bottom"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="14dp"
         app:cardBackgroundColor="@color/nav_bar"
-        app:cardCornerRadius="34dp"
+        app:cardCornerRadius="35dp"
         app:cardElevation="12dp"
         app:strokeColor="@color/card_stroke"
         app:strokeWidth="1dp">
@@ -30,7 +30,7 @@
             android:id="@+id/tab_bar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp" />
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp" />
     </com.google.android.material.card.MaterialCardView>
 </FrameLayout>

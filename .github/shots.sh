@@ -38,8 +38,11 @@ open() {   # open <Activity> [am extras...]
 
 # ---- first run: the language sheet, before any preference exists
 adb shell cmd uimode night no
-open MainActivity
-shot 00_first_run_light 3.5
+open IntroActivity
+shot 00a_intro_welcome 3
+adb shell input swipe 150 1300 950 1300 120;   shot 00b_intro_language 1.5
+adb shell input swipe 150 1300 950 1300 120;   shot 00c_intro_features 1.5
+adb shell input swipe 150 1300 950 1300 120;   shot 00d_intro_setup 1.5
 
 # ---- from here on: language chosen (Pashto), everything else default
 cat > /tmp/prefs.xml <<EOF
@@ -47,6 +50,7 @@ cat > /tmp/prefs.xml <<EOF
 <map>
     <string name="app_lang">ps</string>
     <boolean name="app_lang_chosen" value="true" />
+    <boolean name="intro_done" value="true" />
 </map>
 EOF
 adb shell am force-stop "$PKG"
@@ -63,6 +67,12 @@ for mode in light dark; do
   sleep 2
   open MainActivity --es tab home;                    shot "${mode}_02_home"
   adb shell input swipe 540 1700 540 500 400;         shot "${mode}_02b_home_scrolled" 1.5
+  if [ "$mode" = light ]; then
+    open MainActivity --es tab home
+    # the theme button sits at the far end of the header (left in RTL)
+    adb shell input tap 115 250;                       shot "light_02c_after_theme_tap" 2.5
+    adb shell input tap 115 250;                       shot "light_02d_after_second_tap" 2.5
+  fi
   open MainActivity --es tab shortcuts;               shot "${mode}_03_shortcuts"
   open MainActivity --es tab settings;                shot "${mode}_04_settings"
   open MainActivity --es tab about;                   shot "${mode}_05_about"

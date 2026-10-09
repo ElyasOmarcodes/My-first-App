@@ -154,6 +154,7 @@ class KeyboardView(context: Context) : View(context) {
     private val flashFillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val flashTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
+        typeface = Fonts.get(context)
     }
 
     private fun drawLangFlash(canvas: Canvas) {
@@ -249,17 +250,18 @@ class KeyboardView(context: Context) : View(context) {
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT
+        typeface = Fonts.get(context)
     }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.RIGHT
+        typeface = Fonts.get(context)
     }
 
     /**
      * Typeface for key labels, hints and the language flash — the system
      * font by default, Vazirmatn when the user picks it in Look settings.
      */
-    var labelTypeface: Typeface = Typeface.DEFAULT
+    var labelTypeface: Typeface = Fonts.get(context)
         set(value) {
             if (field === value) return
             field = value
@@ -890,6 +892,7 @@ class KeyboardView(context: Context) : View(context) {
                 tv.gravity = Gravity.CENTER
                 tv.setTextColor(theme.text)
                 tv.textSize = if (chars[i].length > 2) 14f else 22f
+                tv.typeface = Fonts.get(tv.context)
                 tv.maxLines = 1
                 tv.layoutParams = LinearLayout.LayoutParams(cellW.toInt(), cellH.toInt())
                 rowLayout.addView(tv)
@@ -990,8 +993,10 @@ class KeyboardView(context: Context) : View(context) {
                         tv.setPadding(0, (12 * density).toInt(), 0, 0)
                     }
                     tv.textSize = 11.5f
+                    tv.typeface = Fonts.get(tv.context)
                 } else {
                     tv.textSize = if (cols == 1) 14f else 17f
+                    tv.typeface = Fonts.get(tv.context)
                 }
                 tv.layoutParams =
                     LinearLayout.LayoutParams(gridCellW.toInt(), gridCellH.toInt())
@@ -1113,6 +1118,7 @@ class KeyboardView(context: Context) : View(context) {
         tv.gravity = Gravity.CENTER
         tv.setTextColor(theme.text)
         tv.textSize = 30f
+        tv.typeface = Fonts.get(tv.context)
         val bg = GradientDrawable()
         bg.setColor(theme.keyPressed)
         bg.cornerRadius = 8 * density

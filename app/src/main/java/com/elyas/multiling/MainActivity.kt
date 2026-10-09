@@ -46,9 +46,9 @@ class MainActivity : AppCompatActivity() {
         bar = findViewById(R.id.tab_bar)
         bar.setTabs(listOf(
             FloatingTabBar.Tab(TAB_HOME, R.drawable.ic_m_home, R.drawable.ic_m_home_filled, R.string.tab_home),
-            FloatingTabBar.Tab(TAB_SHORTCUTS, R.drawable.ic_m_snippet, R.drawable.ic_m_snippet, R.string.tab_shortcuts),
+            FloatingTabBar.Tab(TAB_SHORTCUTS, R.drawable.ic_m_doc_outline, R.drawable.ic_m_snippet, R.string.tab_shortcuts),
             FloatingTabBar.Tab(TAB_SETTINGS, R.drawable.ic_m_tune, R.drawable.ic_m_tune, R.string.tab_settings),
-            FloatingTabBar.Tab(TAB_ABOUT, R.drawable.ic_m_person, R.drawable.ic_m_person, R.string.tab_about)
+            FloatingTabBar.Tab(TAB_ABOUT, R.drawable.ic_m_person_outline, R.drawable.ic_m_person, R.string.tab_about)
         ))
         bar.onSelect = { show(it) }
         bar.onReselect = { scrollToTop(it) }

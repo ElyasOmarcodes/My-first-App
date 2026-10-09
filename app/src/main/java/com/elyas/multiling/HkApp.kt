@@ -19,6 +19,7 @@ class HkApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AppLook.apply(this)
+        AutoTextStore.bootstrapDefaults(this)
     }
 }
 
@@ -34,6 +35,34 @@ object AppLook {
     fun set(app: android.content.Context, mode: String) {
         PreferenceManager.getDefaultSharedPreferences(app).edit().putString(PREF_KEY, mode).apply()
         apply(app)
+    }
+
+    /** The night state a screen should be in right now. */
+    fun wantsNight(c: android.content.Context): Boolean = when (current(c.applicationContext)) {
+        LIGHT -> false
+        DARK -> true
+        else -> (c.applicationContext.resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+
+    /** Header button: flip what is showing now. */
+    fun toggle(a: android.app.Activity, nightNow: Boolean) =
+        switchTo(a, if (nightNow) LIGHT else DARK)
+
+    /**
+     * Change the look and make sure the screen follows. AppCompat normally
+     * recreates the activity itself; because our activities sit on a
+     * locale-wrapped context that path can be skipped, so if the screen did
+     * not change by the next frame it is recreated here.
+     */
+    fun switchTo(a: android.app.Activity, mode: String) {
+        set(a.applicationContext, mode)
+        val want = wantsNight(a)
+        a.window.decorView.post {
+            if (a.isFinishing || a.isChangingConfigurations) return@post
+            if (Ui.isNight(a) != want) a.recreate()
+        }
     }
 
     fun apply(app: android.content.Context) {

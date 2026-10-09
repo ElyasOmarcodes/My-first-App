@@ -58,6 +58,12 @@ class PrivacyActivity : AppCompatActivity() {
         val link = hex(Ui.attr(this, androidx.appcompat.R.attr.colorPrimary))
         val line = hex(Ui.color(this, R.color.card_stroke))
         val css = """<style>
+            @font-face{font-family:'Vazirmatn';font-weight:400;
+              src:url('file:///android_res/font/vazirmatn_regular.ttf')}
+            @font-face{font-family:'Vazirmatn';font-weight:700;
+              src:url('file:///android_res/font/vazirmatn_bold.ttf')}
+            *{font-family:'Vazirmatn',sans-serif!important}
+            code{font-family:monospace!important}
             html,body{background:transparent!important;color:$text!important;
               font-family:sans-serif;line-height:1.7;margin:0;padding:8px 10px;}
             h1,h2,h3{color:$text!important;line-height:1.35}

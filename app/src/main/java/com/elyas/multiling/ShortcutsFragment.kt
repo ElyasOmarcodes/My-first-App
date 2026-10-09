@@ -22,6 +22,11 @@ import com.google.android.material.textfield.TextInputLayout
 class ShortcutsFragment : Fragment(R.layout.frag_shortcuts) {
 
     private lateinit var store: AutoTextStore
+    private var query = ""
+
+    /** Hues the rows cycle through, so a long list does not read as a wall. */
+    private val tones = arrayOf(Ui.Tone.VIOLET, Ui.Tone.TEAL, Ui.Tone.AMBER, Ui.Tone.BLUE,
+        Ui.Tone.ROSE, Ui.Tone.GREEN, Ui.Tone.INDIGO, Ui.Tone.ORANGE)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val c = requireContext()
@@ -39,6 +44,17 @@ class ShortcutsFragment : Fragment(R.layout.frag_shortcuts) {
         })
 
         Ui.tone(view.findViewById(R.id.empty_icon_box), view.findViewById(R.id.empty_icon), Ui.Tone.TEAL)
+        view.findViewById<View>(R.id.sc_hero).clipToOutline = true
+        // live filter over shortcut and phrase
+        view.findViewById<TextInputEditText>(R.id.search_in).addTextChangedListener(
+            object : android.text.TextWatcher {
+                override fun afterTextChanged(e: android.text.Editable?) {
+                    query = e?.toString()?.trim() ?: ""
+                    refresh(animate = false)
+                }
+                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            })
         refresh()
     }
 
@@ -47,27 +63,44 @@ class ShortcutsFragment : Fragment(R.layout.frag_shortcuts) {
         if (!hidden) refresh()
     }
 
-    private fun refresh() {
+    private fun refresh(animate: Boolean = true) {
         val v = view ?: return
         val c = requireContext()
         AutoTextStore.bumpDataVersion(c)
-        val entries = store.all()
+        val all = store.all()
         v.findViewById<TextView>(R.id.count).text =
-            getString(R.string.shortcuts_count, Ui.digits(c, entries.size))
+            getString(R.string.shortcuts_count, Ui.digits(c, all.size))
+        val entries = if (query.isEmpty()) all else all.filter { (k, t) ->
+            k.contains(query, ignoreCase = true) || t.contains(query, ignoreCase = true)
+        }
         val list = v.findViewById<LinearLayout>(R.id.list)
         list.removeAllViews()
         v.findViewById<View>(R.id.empty).visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+        v.findViewById<TextView>(R.id.empty_title).setText(
+            if (all.isEmpty()) R.string.shortcuts_empty else R.string.shortcuts_no_match)
+        v.findViewById<View>(R.id.empty_sub).visibility = if (all.isEmpty()) View.VISIBLE else View.GONE
 
         val inflater = LayoutInflater.from(c)
         for ((i, e) in entries.withIndex()) {
             val item = inflater.inflate(R.layout.item_shortcut, list, false)
-            item.findViewById<TextView>(R.id.sc_key).text = e.first
+            val tone = tones[i % tones.size]
+            item.findViewById<TextView>(R.id.sc_initial).apply {
+                text = e.first.take(1)
+                androidx.core.view.ViewCompat.setBackgroundTintList(this,
+                    android.content.res.ColorStateList.valueOf(Ui.color(c, tone.bg)))
+                setTextColor(Ui.color(c, tone.fg))
+            }
+            item.findViewById<TextView>(R.id.sc_key).apply {
+                text = e.first
+                setTextColor(Ui.color(c, tone.fg))
+            }
             // a line break inside a phrase is shown as a mark, not a broken card
             item.findViewById<TextView>(R.id.sc_text).text = e.second.replace("\n", " ⏎ ")
             item.setOnClickListener { edit(e.first, e.second) }
             item.findViewById<View>(R.id.sc_delete).setOnClickListener { confirmDelete(e.first, e.second) }
+            Ui.tip(item.findViewById(R.id.sc_delete), getString(R.string.learned_delete))
             list.addView(item)
-            if (i < 12) Ui.rise(item, i)
+            if (animate && i < 12) Ui.rise(item, i)
         }
     }
 

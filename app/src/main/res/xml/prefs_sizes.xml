@@ -13,9 +13,9 @@
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/cat_text_size">
         <com.elyas.multiling.SliderPreference android:key="font_scale" android:title="@string/pref_font_scale"
-            android:defaultValue="70" android:max="140" app:min="70" />
+            android:defaultValue="70" android:max="130" app:min="35" />
         <com.elyas.multiling.SliderPreference android:key="hint_scale" android:title="@string/pref_hint_scale"
-            android:defaultValue="96" android:max="150" app:min="60" />
+            android:defaultValue="96" android:max="150" app:min="40" />
         <com.elyas.multiling.SliderPreference android:key="sugg_font" android:title="@string/pref_sugg_font"
             android:defaultValue="17" android:max="24" app:min="13" />
     </PreferenceCategory>

@@ -24,9 +24,5 @@
             android:key="preview"
             android:title="@string/pref_preview"
             android:defaultValue="true" />
-        <SwitchPreferenceCompat android:key="key_font_vazir"
-            android:title="@string/pref_key_font"
-            android:summary="@string/pref_key_font_sum"
-            android:defaultValue="false" />
     </PreferenceCategory>
 </PreferenceScreen>

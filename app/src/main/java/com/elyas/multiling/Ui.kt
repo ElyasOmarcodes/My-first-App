@@ -129,4 +129,20 @@ object Ui {
     }
 
     fun padBottom(v: View, px: Int) = v.updatePadding(bottom = px)
+
+    /**
+     * Long-press tooltip, as native apps show on icons and controls. On
+     * Android 8+ it is the system tooltip; older versions get AppCompat's.
+     */
+    fun tip(v: View?, text: CharSequence?) {
+        if (v == null || text.isNullOrBlank()) return
+        androidx.appcompat.widget.TooltipCompat.setTooltipText(v, text)
+    }
+
+    /** Tooltip text from a title and an optional explanation under it. */
+    fun tipText(title: CharSequence?, sub: CharSequence?): CharSequence? = when {
+        title.isNullOrBlank() -> sub
+        sub.isNullOrBlank() -> title
+        else -> "$title\n$sub"
+    }
 }

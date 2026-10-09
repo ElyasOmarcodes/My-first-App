@@ -24,6 +24,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
 
     private val main = Handler(Looper.getMainLooper())
     private var typing: Runnable? = null
+    private var artAnim: android.animation.Animator? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val c = requireContext()
@@ -34,7 +35,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         view.findViewById<ImageView>(R.id.img_theme)
             .setImageResource(if (night) R.drawable.ic_m_light else R.drawable.ic_m_dark)
         view.findViewById<View>(R.id.btn_theme).setOnClickListener {
-            AppLook.set(c.applicationContext, if (night) AppLook.LIGHT else AppLook.DARK)
+            AppLook.toggle(requireActivity(), night)
         }
 
         // ---- stat tiles: gradient, icon, label, and a glow in their own colour
@@ -53,6 +54,33 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         quick(view.findViewById(R.id.quick_langs), R.drawable.ic_m_globe, Ui.Tone.TEAL,
             R.string.quick_langs_title, R.string.quick_langs_sub) {
             startActivity(SettingsActivity.intent(c, "langs"))
+        }
+        quick(view.findViewById(R.id.quick_typing), R.drawable.ic_m_spellcheck, Ui.Tone.GREEN,
+            R.string.quick_typing_title, R.string.quick_typing_sub) {
+            startActivity(SettingsActivity.intent(c, "typing"))
+        }
+        quick(view.findViewById(R.id.quick_sizes), R.drawable.ic_m_format_size, Ui.Tone.AMBER,
+            R.string.quick_sizes_title, R.string.quick_sizes_sub) {
+            startActivity(SettingsActivity.intent(c, "sizes"))
+        }
+        view.findViewById<View>(R.id.sec_quick).let { sec ->
+            Ui.tone(sec.findViewById(R.id.sec_icon_box),
+                sec.findViewById<ImageView>(R.id.sec_icon).also { it.setImageResource(R.drawable.ic_m_sparkle) },
+                Ui.Tone.VIOLET)
+            sec.findViewById<TextView>(R.id.sec_title).setText(R.string.quick_access)
+        }
+        Ui.tone(view.findViewById(R.id.try_icon_box), view.findViewById(R.id.try_icon), Ui.Tone.BLUE)
+        Ui.tip(view.findViewById(R.id.btn_theme), getString(R.string.look_title))
+
+        // the keyboard illustration floats gently
+        view.findViewById<View>(R.id.hero_art).let { art ->
+            artAnim = android.animation.ObjectAnimator.ofFloat(art, View.TRANSLATION_Y, 0f, -Ui.dp(c, 6f).toFloat()).apply {
+                duration = 2600
+                repeatMode = android.animation.ValueAnimator.REVERSE
+                repeatCount = android.animation.ValueAnimator.INFINITE
+                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+                start()
+            }
         }
 
         Ui.tone(view.findViewById(R.id.intro_icon_box), view.findViewById(R.id.intro_icon), Ui.Tone.AMBER)
@@ -85,6 +113,8 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         val btn = v.findViewById<MaterialButton>(R.id.hero_btn)
         val chip = v.findViewById<TextView>(R.id.hero_chip)
         chip.text = "v" + versionName(c)
+        step(v.findViewById(R.id.step_enable), 1, enabled)
+        step(v.findViewById(R.id.step_select), 2, selected)
         when {
             !enabled -> {
                 title.setText(R.string.status_enable_title)
@@ -108,6 +138,27 @@ class HomeFragment : Fragment(R.layout.frag_home) {
                 body.setText(R.string.status_ready_body)
                 btn.visibility = View.GONE
             }
+        }
+    }
+
+    /** A setup step: white with a check when done, glassy with its number when not. */
+    private fun step(tv: TextView, n: Int, done: Boolean) {
+        val c = tv.context
+        val violet = Ui.color(c, R.color.grad_violet_a)
+        androidx.core.view.ViewCompat.setBackgroundTintList(tv, android.content.res.ColorStateList.valueOf(
+            if (done) android.graphics.Color.WHITE else 0x33FFFFFF))
+        tv.setTextColor(if (done) violet else android.graphics.Color.WHITE)
+        val label = tv.text.toString().substringAfter("  ")
+        if (done) {
+            val d = androidx.appcompat.content.res.AppCompatResources.getDrawable(c, R.drawable.ic_m_check_circle)?.mutate()
+            d?.setTint(violet)
+            val s = Ui.dp(c, 18f)
+            d?.setBounds(0, 0, s, s)
+            tv.setCompoundDrawablesRelative(d, null, null, null)
+            tv.text = label
+        } else {
+            tv.setCompoundDrawablesRelative(null, null, null, null)
+            tv.text = Ui.digits(c, n) + "  " + label
         }
     }
 
@@ -158,6 +209,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         t.setBackgroundResource(bg)
         t.findViewById<ImageView>(R.id.tile_icon).setImageResource(icon)
         t.findViewById<TextView>(R.id.tile_label).setText(label)
+        Ui.tip(t, getString(label))
         t.findViewById<TextView>(R.id.tile_value).text = "–"
         t.clipToOutline = true
         // a shadow in the tile's own colour, as in the inspiration
@@ -185,6 +237,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         card.findViewById<TextView>(R.id.quick_title).setText(title)
         card.findViewById<TextView>(R.id.quick_sub).setText(sub)
         card.setOnClickListener { onClick() }
+        Ui.tip(card, Ui.tipText(getString(title), getString(sub)))
     }
 
     // ------------------------------------------------------- typing tips
@@ -221,6 +274,8 @@ class HomeFragment : Fragment(R.layout.frag_home) {
     }
 
     override fun onDestroyView() {
+        artAnim?.cancel()
+        artAnim = null
         main.removeCallbacksAndMessages(null)
         typing = null
         super.onDestroyView()

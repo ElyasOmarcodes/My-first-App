@@ -167,7 +167,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------ lifecycle
     override fun attachBaseContext(newBase: android.content.Context) {
         // the keyboard's own labels follow the chosen app language too
-        super.attachBaseContext(AppLocale.wrap(newBase))
+        // the keyboard has its own themes; only the language is applied
+        super.attachBaseContext(AppLocale.wrap(newBase, withLook = false))
     }
 
     /**
@@ -193,9 +194,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onCreate() {
+        // Vazirmatn for every text the keyboard shows (must precede super)
+        setTheme(R.style.Theme_Hk_Ime)
         super.onCreate()
         ThemePresets.bootstrap(this)
-        bootstrapAutoText()
+        AutoTextStore.bootstrapDefaults(this)
         try {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             cm.addPrimaryClipChangedListener {
@@ -204,22 +207,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 captureClipboard(cm, freshCopy = true)
                 // refresh the strip so a freshly copied text shows at once
                 if (keyboardView?.visibility == View.VISIBLE) updateSuggestions()
-            }
-        } catch (_: Exception) {
-        }
-    }
-
-    /** First run: load the bundled default AutoText shortcuts. */
-    private fun bootstrapAutoText() {
-        val p = PreferenceManager.getDefaultSharedPreferences(this)
-        if (p.getBoolean("autotext_init", false)) return
-        p.edit().putBoolean("autotext_init", true).apply()
-        try {
-            val store = autoTextStore()
-            if (store.all().isEmpty()) {
-                val text = assets.open("default_autotext.txt")
-                    .bufferedReader().readText()
-                store.importText(text)
             }
         } catch (_: Exception) {
         }
@@ -926,7 +913,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.showHints = p.getBoolean("hints", true)
         kv.showPreview = p.getBoolean("preview", true)
         kv.keyBorder = p.getBoolean("key_border", false)
-        kv.labelTypeface = keyTypeface(p.getBoolean("key_font_vazir", false))
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.splitMode = p.getBoolean("split_kb", false)
         kv.longPressTimeout = (p.getString("longpress", "200") ?: "200").toLong()
@@ -1168,6 +1154,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             tv.text = text
             tv.gravity = android.view.Gravity.CENTER
             tv.textSize = 15f
+            tv.typeface = Fonts.get(tv.context)
             tv.setTextColor(theme.text)
             if (iconRes != 0) {
                 val d = tintedIcon(iconRes, theme.text, (18 * density).toInt())
@@ -1202,6 +1189,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             tv.text = getString(R.string.clip_empty)
             tv.setTextColor(theme.hint)
             tv.textSize = 15f
+            tv.typeface = Fonts.get(tv.context)
             tv.gravity = android.view.Gravity.CENTER
             tv.setPadding((10 * density).toInt(), (30 * density).toInt(),
                 (10 * density).toInt(), 0)
@@ -1226,6 +1214,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 tv.ellipsize = android.text.TextUtils.TruncateAt.END
                 tv.setTextColor(theme.text)
                 tv.textSize = 12.5f
+                tv.typeface = Fonts.get(tv.context)
                 tv.setPadding((10 * density).toInt(), (22 * density).toInt(),
                     (10 * density).toInt(), (8 * density).toInt())
                 cell.addView(tv, android.widget.FrameLayout.LayoutParams(
@@ -1703,19 +1692,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
-    private var vazirmatn: android.graphics.Typeface? = null
-
-    /** Vazirmatn for the keys when chosen, else the system font. */
-    private fun keyTypeface(vazir: Boolean): android.graphics.Typeface {
-        if (!vazir) return android.graphics.Typeface.DEFAULT
-        vazirmatn?.let { return it }
-        val t = try {
-            androidx.core.content.res.ResourcesCompat.getFont(this, R.font.vazirmatn)
-        } catch (_: Exception) { null } ?: android.graphics.Typeface.DEFAULT
-        vazirmatn = t
-        return t
-    }
-
     // ------------------------------------------------------------ learning
     private fun queueLearn(word: String, signal: WordStore.Signal, suspect: Boolean) {
         if (!suggestionsOn || noLearnField) return
@@ -2122,6 +2098,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val field = TextView(this)
         field.maxLines = 1
         field.textSize = 16f
+        field.typeface = Fonts.get(field.context)
         field.gravity = android.view.Gravity.CENTER_VERTICAL
         field.setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
         val fieldBg = android.graphics.drawable.GradientDrawable()
@@ -2429,9 +2406,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 tv.maxWidth = (200 * density).toInt()
                 tv.ellipsize = android.text.TextUtils.TruncateAt.END
             }
-            keyboardView?.labelTypeface?.let { tf ->
-                if (tf !== android.graphics.Typeface.DEFAULT) tv.typeface = tf
-            }
+            tv.typeface = Fonts.get(this)
             if (style == STYLE_ACCENT) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
             tv.textSize = when {
                 isClip -> 12.5f
@@ -2521,6 +2496,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val tv = TextView(this)
             tv.text = label
             tv.textSize = 14.5f
+            tv.typeface = Fonts.get(tv.context)
             tv.setTextColor(theme.text)
             tv.gravity = android.view.Gravity.CENTER_VERTICAL
             tv.setPadding((14 * density).toInt(), (12 * density).toInt(),

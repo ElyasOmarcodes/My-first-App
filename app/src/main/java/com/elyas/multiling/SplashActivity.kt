@@ -40,7 +40,8 @@ class SplashActivity : AppCompatActivity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             if (isFinishing) return@postDelayed
-            startActivity(Intent(this, MainActivity::class.java))
+            val next = if (IntroActivity.needed(this)) IntroActivity::class.java else MainActivity::class.java
+            startActivity(Intent(this, next))
             finish()
             @Suppress("DEPRECATION")
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)

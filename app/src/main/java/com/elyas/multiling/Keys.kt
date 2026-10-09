@@ -60,8 +60,8 @@ object Keys {
     const val ICON_MIC = 1
 
     // edit-panel actions
-    const val ESC = -30
-    const val TAB = -31
+    const val ESC = -42   // (was -30, which collided with HIDE)
+    const val TAB = -43   // (was -31, which collided with LANG_CYCLE and drew a globe)
     const val COPY = -32
     const val CUT = -33
     const val PASTE = -34

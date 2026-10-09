@@ -15,16 +15,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.ViewCompat
 import android.view.animation.PathInterpolator
-import android.transition.AutoTransition
-import android.transition.TransitionManager
 
 /**
  * The floating tab bar of the app shell.
  *
- * Each tab is a pill: just an icon when idle; the selected one fills with
- * the tonal container colour and opens to icon + label. Switching tabs
- * animates the pills' widths, colours and the icon swap together, so the
- * selection appears to slide from one tab to the next instead of jumping.
+ * Every tab shows its icon over its label; the selected one sits on a
+ * rounded highlight in the tonal container colour, with a filled icon and a
+ * bold label. Switching fades the highlight across, grows it out from the
+ * icon and gives the icon a small spring.
  *
  * Unlike BottomNavigationView it never pads itself for the system bars, so
  * the bar keeps one compact height on gesture and 3-button navigation alike;
@@ -68,6 +66,7 @@ class FloatingTabBar @JvmOverloads constructor(
             h.label.setText(t.label)
             h.icon.setImageResource(t.icon)
             h.cell.contentDescription = context.getString(t.label)
+            Ui.tip(h.cell, context.getString(t.label))
             paint(h, false)
             cell.setOnClickListener {
                 if (selected == t.id) {
@@ -89,40 +88,32 @@ class FloatingTabBar @JvmOverloads constructor(
         val old = holders.firstOrNull { it.tab.id == selected }
         val new = holders.firstOrNull { it.tab.id == id } ?: return
         selected = id
-        if (animate && isLaidOut) {
-            TransitionManager.beginDelayedTransition(this, AutoTransition().apply {
-                duration = 320
-                interpolator = PathInterpolator(0.4f, 0f, 0.2f, 1f)
-            })
-        }
         old?.let { setState(it, false, animate) }
         setState(new, true, animate)
     }
 
     private fun setState(h: Holder, on: Boolean, animate: Boolean) {
-        h.label.visibility = if (on) View.VISIBLE else View.GONE
-        // the selected tab takes more of the bar so its label always fits
-        (h.cell.layoutParams as? LayoutParams)?.let {
-            it.weight = if (on) 1.9f else 1f
-            h.cell.layoutParams = it
-        }
         h.icon.setImageResource(if (on) h.tab.iconSelected else h.tab.icon)
+        h.label.setTypeface(Fonts.get(context), if (on) android.graphics.Typeface.BOLD
+            else android.graphics.Typeface.NORMAL)
         h.cell.isSelected = on
         ViewCompat.setStateDescription(h.cell, if (on) h.label.text else null)
         if (!animate) { paint(h, on); return }
-        // fade the pill colour and the icon tint across
-        val from = if (on) 0f else 1f
-        val to = if (on) 1f else 0f
-        ValueAnimator.ofFloat(from, to).apply {
-            duration = 260
+        // fade the highlight and the icon/label colour across
+        ValueAnimator.ofFloat(if (on) 0f else 1f, if (on) 1f else 0f).apply {
+            duration = 240
             interpolator = PathInterpolator(0.4f, 0f, 0.2f, 1f)
             addUpdateListener { paintFraction(h, it.animatedValue as Float) }
             start()
         }
         if (on) {
-            // a small spring on the icon so the tap feels physical
-            h.icon.scaleX = 0.78f
-            h.icon.scaleY = 0.78f
+            // the highlight grows out from the icon, and the icon springs
+            h.pill.scaleX = 0.82f
+            h.pill.scaleY = 0.82f
+            h.pill.animate().scaleX(1f).scaleY(1f).setDuration(320)
+                .setInterpolator(OvershootInterpolator(1.6f)).start()
+            h.icon.scaleX = 0.8f
+            h.icon.scaleY = 0.8f
             h.icon.animate().scaleX(1f).scaleY(1f).setDuration(380)
                 .setInterpolator(OvershootInterpolator(2.6f)).start()
         }

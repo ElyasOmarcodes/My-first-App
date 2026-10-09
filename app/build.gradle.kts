@@ -15,7 +15,7 @@ android {
     applicationId = "com.hindukush.kb.elyas.test"
     minSdk = 21
     targetSdk = 36
-    versionCode = 37
+    versionCode = 38
     versionName = "1.0"
     // the app ships Pashto (default), Farsi and English; keep exactly those
     // locales so androidx's other translations are trimmed from the APK.

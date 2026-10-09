@@ -23,6 +23,26 @@ class AutoTextStore(private val context: Context) {
                 .getDefaultSharedPreferences(context)
             p.edit().putInt("data_version", p.getInt("data_version", 0) + 1).apply()
         }
+
+        /**
+         * First run (of the app OR the keyboard, whichever comes first):
+         * load the bundled default shortcuts, so the Shortcuts page is never
+         * empty on a fresh install.
+         */
+        fun bootstrapDefaults(context: Context) {
+            val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+            if (p.getBoolean("autotext_init", false)) return
+            p.edit().putBoolean("autotext_init", true).apply()
+            try {
+                val store = AutoTextStore(context)
+                if (store.all().isEmpty()) {
+                    val text = context.assets.open("default_autotext.txt")
+                        .bufferedReader().use { it.readText() }
+                    store.importText(text)
+                }
+            } catch (_: Exception) {
+            }
+        }
     }
 
     /** A shortcut may carry SEVERAL phrases — all offered on the strip. */

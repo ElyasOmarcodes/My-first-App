@@ -85,6 +85,12 @@
 
     <style name="Theme.MultiKeyboard.Splash" />
 
+    <!-- The keyboard window: the system input-method theme with Vazirmatn
+         as the default face of every text in it -->
+    <style name="Theme.Hk.Ime" parent="@android:style/Theme.DeviceDefault.InputMethod">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+    </style>
+
     <!-- Screen-to-screen motion: grow/fade, the same in both directions -->
     <style name="Anim.Hk.Activity" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/act_open_enter</item>

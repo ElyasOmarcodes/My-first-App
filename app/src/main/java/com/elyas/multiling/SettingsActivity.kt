@@ -225,6 +225,17 @@ class SettingsActivity : AppCompatActivity() {
             list.isVerticalScrollBarEnabled = false
             list.overScrollMode = android.view.View.OVER_SCROLL_NEVER
             list.addItemDecoration(PrefGroupCards(c))
+            // long-press any row: a tooltip with its name and what it does
+            list.addOnChildAttachStateChangeListener(object :
+                androidx.recyclerview.widget.RecyclerView.OnChildAttachStateChangeListener {
+                override fun onChildViewAttachedToWindow(v: android.view.View) {
+                    val t = v.findViewById<android.widget.TextView>(android.R.id.title)?.text
+                    val s = v.findViewById<android.widget.TextView>(android.R.id.summary)
+                        ?.takeIf { it.visibility == android.view.View.VISIBLE }?.text
+                    if (v.isClickable || v.isLongClickable) Ui.tip(v, Ui.tipText(t, s))
+                }
+                override fun onChildViewDetachedFromWindow(v: android.view.View) {}
+            })
             // rows arrive one after another the first time the screen shows
             if (savedInstanceState == null) {
                 list.layoutAnimation =

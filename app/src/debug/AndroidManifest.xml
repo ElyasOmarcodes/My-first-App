@@ -9,6 +9,8 @@
             android:exported="true" tools:replace="android:exported" />
         <activity android:name="com.elyas.multiling.SettingsActivity"
             android:exported="true" tools:replace="android:exported" />
+        <activity android:name="com.elyas.multiling.IntroActivity"
+            android:exported="true" tools:replace="android:exported" />
         <activity android:name="com.elyas.multiling.PrivacyActivity"
             android:exported="true" tools:replace="android:exported" />
     </application>
