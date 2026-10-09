@@ -55,9 +55,9 @@ jobs:
       - name: Collect outputs
         run: |
           mkdir -p .build-outputs
-          rm -f .build-outputs/app-debug.apk .build-outputs/MultiKeyboard.apk .build-outputs/HindukushKb.apk .build-outputs/HindukushKb.aab .build-outputs/PashtoKeyboardPlus.apk .build-outputs/PashtoKeyboardPlus.aab
-          cp app/build/outputs/apk/release/app-release.apk .build-outputs/KalimaKeyboard.apk
-          cp app/build/outputs/bundle/release/app-release.aab .build-outputs/KalimaKeyboard.aab
+          rm -f .build-outputs/app-debug.apk .build-outputs/MultiKeyboard.apk .build-outputs/HindukushKb.apk .build-outputs/HindukushKb.aab .build-outputs/PashtoKeyboardPlus.apk .build-outputs/PashtoKeyboardPlus.aab .build-outputs/KalimaKeyboard.apk .build-outputs/KalimaKeyboard.aab
+          cp app/build/outputs/apk/release/app-release.apk .build-outputs/Keyflux.apk
+          cp app/build/outputs/bundle/release/app-release.aab .build-outputs/Keyflux.aab
 
       # ---- screenshots: only when the commit message contains [shots]
       - name: Build debug APK for screenshots
@@ -87,10 +87,10 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kalima-keyboard
+          name: keyflux
           path: |
-            .build-outputs/KalimaKeyboard.apk
-            .build-outputs/KalimaKeyboard.aab
+            .build-outputs/Keyflux.apk
+            .build-outputs/Keyflux.aab
 
       - name: Commit APK back to branch
         if: github.event_name == 'push'

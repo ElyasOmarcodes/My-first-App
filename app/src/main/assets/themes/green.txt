@@ -21,7 +21,7 @@ col_text	i	-1905177
 col_key_grad_on	b	true
 col_key	i	-14208207
 col_special_grad_dir	s	v
-font_scale	i	70
+font_scale	i	64
 bottom_gap	i	42
 col_hint	i	-9267816
 col_key_mode	s	1

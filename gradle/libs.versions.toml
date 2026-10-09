@@ -6,6 +6,7 @@ appcompat = "1.7.0"
 preference = "1.2.1"
 xz = "1.10"
 material = "1.12.0"
+appUpdate = "2.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -13,6 +14,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-preference = { group = "androidx.preference", name = "preference-ktx", version.ref = "preference" }
 xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+play-app-update = { group = "com.google.android.play", name = "app-update", version.ref = "appUpdate" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

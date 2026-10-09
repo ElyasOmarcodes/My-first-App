@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var bar: FloatingTabBar
+    private lateinit var updates: UpdateGate
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        updates = UpdateGate(this)
         bar = findViewById(R.id.tab_bar)
         bar.setTabs(listOf(
             FloatingTabBar.Tab(TAB_HOME, R.drawable.ic_m_home, R.drawable.ic_m_home_filled, R.string.tab_home),
@@ -76,6 +78,11 @@ class MainActivity : AppCompatActivity() {
         show(first)
 
         if (!AppLocale.isChosen(this)) showLanguageSheet()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updates.check()
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -4,7 +4,7 @@
     <string name="about_privacy">د محرمیت پالیسي</string>
     <string name="about_title">د پروګرام په اړه</string>
     <string name="about_version">نسخه %1$s</string>
-    <string name="app_name">کلمه کیبورډ</string>
+    <string name="app_name">کیفلکس کیبورډ</string>
     <string name="autotext_add">زیاتول</string>
     <string name="autotext_delete_q">دا لنډیز ړنګ شي؟</string>
     <string name="autotext_desc">د لیکنې پر وخت لنډیز ولیکئ او بشپړه جمله یې مقابل کې تاسو ته ښودل کیږي — او په کلیک سره به هغه جمله ستاسو د لیکل شویو تورو په بدل کې ځای پر ځای شي.</string>
@@ -201,11 +201,11 @@
     <string name="home_subtitle">ستاسو د ژبې کیبورډ</string>
     <string name="status_label">د کیبورډ حالت</string>
     <string name="status_ready_title">کیبورډ چمتو دی</string>
-    <string name="status_ready_body">کلمه کیبورډ فعال او ټاکل شوی دی — په هر اپ کې ولیکئ.</string>
+    <string name="status_ready_body">کیفلکس کیبورډ فعال او ټاکل شوی دی — په هر اپ کې ولیکئ.</string>
     <string name="status_enable_title">کیبورډ فعال کړئ</string>
-    <string name="status_enable_body">په سیستم تنظیماتو کې کلمه کیبورډ روښانه کړئ.</string>
+    <string name="status_enable_body">په سیستم تنظیماتو کې کیفلکس کیبورډ روښانه کړئ.</string>
     <string name="status_select_title">کیبورډ وټاکئ</string>
-    <string name="status_select_body">کلمه کیبورډ د خپل اوسني کیبورډ په توګه وټاکئ.</string>
+    <string name="status_select_body">کیفلکس کیبورډ د خپل اوسني کیبورډ په توګه وټاکئ.</string>
     <string name="stat_langs">ژبې</string>
     <string name="stat_words">زده کلمې</string>
     <string name="stat_shortcuts">لنډیزونه</string>
@@ -290,7 +290,7 @@
     <string name="intro_setup_title">کیبورډ روښانه کړئ</string>
     <string name="intro_setup_sub">دوه لنډ ګامونه — بیا په هر اپ کې ولیکئ.</string>
     <string name="setup_enable_title">په تنظیماتو کې فعالول</string>
-    <string name="setup_enable_sub">کلمه کیبورډ روښانه کړئ</string>
+    <string name="setup_enable_sub">کیفلکس کیبورډ روښانه کړئ</string>
     <string name="setup_select_title">د اوسني کیبورډ په توګه ټاکل</string>
     <string name="setup_select_sub">له لیست څخه یې وټاکئ</string>
     <string name="setup_open">پرانیستل</string>
@@ -301,6 +301,9 @@
     <string name="try_send">لیږل</string>
     <string name="try_clear">پاکول</string>
     <string name="try_stats">%1$s توري · %2$s کلمې</string>
+    <string name="privacy_online_short">انلاین</string>
+    <string name="preview_hide">کیبورډ پټول</string>
+    <string name="preview_show">کیبورډ ښودل</string>
     <string-array name="home_tips">
         <item>یوه کلمه چې کیبورډ یې نه پېژني، په وړاندیز پټه کې یې پخپله کلمه ټک کړئ — سمدستي زده کیږي.</item>
         <item>که اتومات سمون غلط شو، سمدستي Backspace ووهئ: ستاسو اصلي کلمه بیرته راځي او کیبورډ یې زده کوي.</item>

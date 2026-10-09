@@ -8,14 +8,12 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    // TEMPORARY: a separate id so this build installs ALONGSIDE the one
-    // already on the phone instead of replacing it. Revert to
-    // "com.hindukush.kb.elyas" before any Play upload — Play identifies an
-    // app by this, so a release under the test id would be a different app.
-    applicationId = "com.hindukush.kb.elyas.test"
+    // The app's permanent identity on Google Play. Never change it after the
+    // first upload: Play treats a different id as a different app.
+    applicationId = "com.elyasomar.keyflux"
     minSdk = 21
     targetSdk = 36
-    versionCode = 39
+    versionCode = 40
     versionName = "1.0"
     // the app ships Pashto (default), Farsi and English; keep exactly those
     // locales so androidx's other translations are trimmed from the APK.
@@ -71,6 +69,9 @@ dependencies {
   // Material 3 components: the native switches, sliders, segmented buttons,
   // bottom navigation and app bars that make the app feel like an app
   implementation(libs.material)
+  // Google Play in-app updates: a newer version on Play blocks the app until
+  // it is installed (works through the Play Store app; no INTERNET needed)
+  implementation(libs.play.app.update)
   // pure-Java LZMA2 decoder for the .xz-compressed frequency dictionaries
   implementation(libs.xz)
 }

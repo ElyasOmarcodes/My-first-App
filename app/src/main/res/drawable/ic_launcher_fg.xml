@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Launcher foreground: a white keyboard with a "+" badge (the "Plus"
-     in the name). Drawn for the 108dp adaptive canvas, inside the 66dp
-     safe zone, so every launcher mask keeps it whole. -->
+<!-- Keyflux launcher foreground: one white keycap carrying a bold "K",
+     with a small spark for the "flux". A single centred glyph inside the
+     66dp safe zone of the 108dp adaptive canvas, the way system keyboards
+     (Gboard, SwiftKey) draw theirs, so every launcher mask keeps it whole
+     and it stays legible at small sizes. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M30,42h42a8,8 0 0 1 8,8v22a8,8 0 0 1 -8,8h-42a8,8 0 0 1 -8,-8v-22a8,8 0 0 1 8,-8z" />
-    <path android:fillColor="#6B50F2" android:fillAlpha="0.85" android:pathData="M29.6,48h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM39.2,48h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM48.800000000000004,48h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM58.4,48h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM68.0,48h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM34.4,57h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM44.0,57h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM53.6,57h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM63.2,57h3.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-3.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6zM36.6,66.5h28.8a1.6,1.6 0 0 1 1.6,1.6v3.2a1.6,1.6 0 0 1 -1.6,1.6h-28.8a1.6,1.6 0 0 1 -1.6,-1.6v-3.2a1.6,1.6 0 0 1 1.6,-1.6z" />
-    <path android:fillColor="#FFFFFF"
-        android:pathData="M77,26a13,13 0 1 1 0,26a13,13 0 1 1 0,-26z" />
-    <path android:fillColor="#FFB020"
-        android:pathData="M77,28.6a10.4,10.4 0 1 1 0,20.8a10.4,10.4 0 1 1 0,-20.8z" />
-    <path android:fillColor="#FFFFFF"
-        android:pathData="M75.6,33.2h2.8v4.4h4.4v2.8h-4.4v4.4h-2.8v-4.4h-4.4v-2.8h4.4z" />
+    <path android:fillColor="#3B23B8" android:fillAlpha="0.55" android:pathData="M44,34h20a13,13 0 0 1 13,13v20a13,13 0 0 1 -13,13h-20a13,13 0 0 1 -13,-13v-20a13,13 0 0 1 13,-13z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M44,29h20a13,13 0 0 1 13,13v20a13,13 0 0 1 -13,13h-20a13,13 0 0 1 -13,-13v-20a13,13 0 0 1 13,-13z" />
+    <path android:fillColor="#5B3FE6" android:pathData="M44,39h7v11.2l10.4,-11.2h9.1l-11.6,12.3l12.2,14.7h-9.2l-8.4,-10.4l-2.5,2.6v7.8h-7z" />
+    <path android:fillColor="#FFC83D" android:pathData="M74,24l1.6,4.2l4.2,1.6l-4.2,1.6l-1.6,4.2l-1.6,-4.2l-4.2,-1.6l4.2,-1.6z" />
 </vector>

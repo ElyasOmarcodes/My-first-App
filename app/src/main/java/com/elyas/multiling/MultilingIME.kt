@@ -906,7 +906,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (!resizeMode) keyHeightExact = baseKeyHeightDp.toFloat()
         kv.keyHeightDp = baseKeyHeightDp
         kv.arrowRowScale = p.getInt("arrow_height", 69) / 100f
-        kv.fontScale = p.getInt("font_scale", 70) / 100f
+        kv.fontScale = p.getInt("font_scale", 64) / 100f
         kv.hintScale = p.getInt("hint_scale", 96) / 100f
         kv.cornerRadiusDp = p.getInt("corner_radius", 6)
         kv.keyGapDp = p.getInt("key_gap", 2) / 1.33f

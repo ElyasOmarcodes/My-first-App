@@ -1,7 +1,7 @@
 <div align="center">
 
-# 🛡️ Privacy Policy — Kalima Keyboard
-### د محرمیت پالیسي — کلمه کیبورډ
+# 🛡️ Privacy Policy — Keyflux Keyboard
+### د محرمیت پالیسي — کیفلکس کیبورډ
 
 **Fully offline · Nothing leaves your phone**
 بشپړ آفلاین — هیڅ شی له موبایله نه وځي
@@ -25,7 +25,7 @@
 ---
 
 ## 👁️ About keyboard (IME) apps
-Android warns that an input method may be able to see the text you type. Kalima Keyboard handles that access this way:
+Android warns that an input method may be able to see the text you type. Keyflux Keyboard handles that access this way:
 - It declares **no INTERNET permission** — it is technically impossible for the app to send anything you type off your device.
 - Text you type is processed **only on the device, in real time**, for suggestions, auto-correction and word learning.
 - It **never reads, logs or transmits** passwords: in password fields suggestions, word learning and clipboard capture are switched off automatically.

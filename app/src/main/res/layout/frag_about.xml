@@ -51,12 +51,12 @@
                         android:id="@+id/avatar"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_margin="5dp"
+                        android:layout_margin="4dp"
                         android:scaleType="centerCrop"
                         android:src="@drawable/avatar_elyas"
-                        android:padding="3dp"
+                        android:padding="1.5dp"
                         app:strokeColor="@color/m3_background"
-                        app:strokeWidth="6dp"
+                        app:strokeWidth="3dp"
                         app:shapeAppearanceOverlay="@style/Shape.Hk.Circle"
                         android:contentDescription="@string/dev_name" />
                 </FrameLayout>

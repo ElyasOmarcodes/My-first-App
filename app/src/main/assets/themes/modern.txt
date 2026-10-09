@@ -6,7 +6,7 @@ col_custom	b	false
 hint_scale	i	97
 key_height	i	72
 key_border	b	false
-font_scale	i	70
+font_scale	i	64
 bottom_gap	i	32
 theme	s	dark
 sugg_font	i	17

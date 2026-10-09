@@ -29,7 +29,26 @@
                 android:elevation="0dp"
                 app:layout_collapseMode="pin"
                 app:navigationIcon="@drawable/ic_m_back"
-                app:navigationIconTint="?attr/colorOnSurface" />
+                app:navigationIconTint="?attr/colorOnSurface">
+                <!-- always in reach: the online copy, at the top bar's end -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_online"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:layout_marginEnd="12dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="40dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="16dp"
+                    android:text="@string/privacy_online_short"
+                    android:textSize="13sp"
+                    app:icon="@drawable/ic_m_globe"
+                    app:iconPadding="6dp"
+                    app:iconSize="18dp" />
+            </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -51,17 +70,6 @@
                 android:id="@+id/web"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_online"
-                style="@style/Widget.Hk.Button.Tonal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
-                android:text="@string/privacy_online"
-                app:icon="@drawable/ic_m_open"
-                app:iconGravity="textStart" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

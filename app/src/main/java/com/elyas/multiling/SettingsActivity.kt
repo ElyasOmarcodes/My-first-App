@@ -78,6 +78,7 @@ class SettingsActivity : AppCompatActivity() {
             .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         previewCard = findViewById(R.id.preview_card)
+        findViewById<View>(R.id.btn_preview).setOnClickListener { togglePreview() }
         preview = KeyboardView(this)
         findViewById<FrameLayout>(R.id.preview_holder).addView(preview)
         // the preview panel is the lowest thing on screen: it clears the
@@ -107,6 +108,42 @@ class SettingsActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    private var previewAvailable = false
+
+    private fun previewShown(): Boolean =
+        PreferenceManager.getDefaultSharedPreferences(this).getBoolean("settings_preview_shown", true)
+
+    private fun paintPreviewButton() {
+        val b = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_preview)
+        val shown = previewShown()
+        b.setIconResource(if (shown) R.drawable.ic_m_keyboard_hide else R.drawable.ic_m_keyboard)
+        val label = getString(if (shown) R.string.preview_hide else R.string.preview_show)
+        b.contentDescription = label
+        Ui.tip(b, label)
+    }
+
+    /** Slide the preview away (or back) to give the list the room. */
+    private fun togglePreview() {
+        val shown = !previewShown()
+        PreferenceManager.getDefaultSharedPreferences(this).edit()
+            .putBoolean("settings_preview_shown", shown).apply()
+        paintPreviewButton()
+        if (!previewAvailable) return
+        val card = previewCard
+        if (shown) {
+            card.visibility = View.VISIBLE
+            card.translationY = card.height.toFloat().coerceAtLeast(Ui.dp(this, 200f).toFloat())
+            card.alpha = 0f
+            card.animate().translationY(0f).alpha(1f).setDuration(300)
+                .setInterpolator(android.view.animation.DecelerateInterpolator(1.8f)).start()
+            refreshPreview()
+        } else {
+            card.animate().translationY(card.height.toFloat()).alpha(0f).setDuration(240)
+                .withEndAction { card.visibility = View.GONE; card.translationY = 0f; card.alpha = 1f }
+                .start()
+        }
+    }
+
     /** Go one level deeper inside this activity (colours → key colours). */
     fun openScreen(screen: String, @Suppress("UNUSED_PARAMETER") title: CharSequence) {
         supportFragmentManager.beginTransaction()
@@ -127,7 +164,10 @@ class SettingsActivity : AppCompatActivity() {
         collapsing.title = getString(titleOf(screen))
         val show = screen == "look" || screen == "sizes" || screen == "colors" ||
             screen.startsWith("col_")
-        previewCard.visibility = if (show) View.VISIBLE else View.GONE
+        previewAvailable = show
+        findViewById<View>(R.id.btn_preview).visibility = if (show) View.VISIBLE else View.GONE
+        previewCard.visibility = if (show && previewShown()) View.VISIBLE else View.GONE
+        paintPreviewButton()
         if (show) refreshPreview()
     }
 
@@ -157,7 +197,7 @@ class SettingsActivity : AppCompatActivity() {
             preview.colBg = p.getInt("col_bg", t.background)
         }
         preview.keyHeightDp = p.getInt("key_height", 72)
-        preview.fontScale = p.getInt("font_scale", 70) / 100f
+        preview.fontScale = p.getInt("font_scale", 64) / 100f
         preview.hintScale = p.getInt("hint_scale", 96) / 100f
         preview.cornerRadiusDp = p.getInt("corner_radius", 6)
         preview.keyGapDp = p.getInt("key_gap", 2) / 1.33f
@@ -521,6 +561,40 @@ class SettingsActivity : AppCompatActivity() {
                 importSettings(text)
             } catch (_: Exception) {
             }
+        }
+
+        /**
+         * The stock multi-select dialog only saves on OK, so ticking a
+         * language and closing the dialog any other way threw the change
+         * away. Here every tick is saved the moment it is made.
+         */
+        override fun onDisplayPreferenceDialog(preference: Preference) {
+            if (preference is androidx.preference.MultiSelectListPreference) {
+                showMultiSelect(preference)
+                return
+            }
+            super.onDisplayPreferenceDialog(preference)
+        }
+
+        private fun showMultiSelect(pref: androidx.preference.MultiSelectListPreference) {
+            val values = pref.entryValues
+            val chosen = HashSet(pref.values)
+            val checked = BooleanArray(values.size) { chosen.contains(values[it].toString()) }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(pref.title)
+                .setMultiChoiceItems(pref.entries, checked) { dlg, which, on ->
+                    val v = values[which].toString()
+                    if (on) chosen.add(v) else chosen.remove(v)
+                    if (chosen.isEmpty()) {
+                        // the keyboard needs at least one language
+                        chosen.add(v)
+                        (dlg as? androidx.appcompat.app.AlertDialog)?.listView?.setItemChecked(which, true)
+                        return@setMultiChoiceItems
+                    }
+                    if (pref.callChangeListener(HashSet(chosen))) pref.values = HashSet(chosen)
+                }
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
         }
 
         // ------------------------------------------------------ SAF helpers

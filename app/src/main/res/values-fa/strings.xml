@@ -4,7 +4,7 @@
     <string name="about_privacy">سیاست حریم خصوصی</string>
     <string name="about_title">درباره برنامه</string>
     <string name="about_version">نسخه %1$s</string>
-    <string name="app_name">کیبورد کلمه</string>
+    <string name="app_name">کیبورد کی‌فلاکس</string>
     <string name="autotext_add">افزودن</string>
     <string name="autotext_delete_q">این میان‌بر حذف شود؟</string>
     <string name="autotext_desc">هنگام نوشتن، میان‌بر را بنویسید و جمله کامل آن در برابرتان نشان داده می‌شود — و با یک کلیک، آن جمله جایگزین حروف نوشته‌شده شما می‌شود.</string>
@@ -202,11 +202,11 @@
     <string name="home_subtitle">صفحه‌کلید زبان شما</string>
     <string name="status_label">وضعیت صفحه‌کلید</string>
     <string name="status_ready_title">صفحه‌کلید آماده است</string>
-    <string name="status_ready_body">کیبورد کلمه فعال و انتخاب شده است — در هر برنامه بنویسید.</string>
+    <string name="status_ready_body">کیبورد کی‌فلاکس فعال و انتخاب شده است — در هر برنامه بنویسید.</string>
     <string name="status_enable_title">صفحه‌کلید را فعال کنید</string>
-    <string name="status_enable_body">کیبورد کلمه را در تنظیمات سیستم روشن کنید.</string>
+    <string name="status_enable_body">کیبورد کی‌فلاکس را در تنظیمات سیستم روشن کنید.</string>
     <string name="status_select_title">صفحه‌کلید را انتخاب کنید</string>
-    <string name="status_select_body">کیبورد کلمه را به‌عنوان صفحه‌کلید فعلی انتخاب کنید.</string>
+    <string name="status_select_body">کیبورد کی‌فلاکس را به‌عنوان صفحه‌کلید فعلی انتخاب کنید.</string>
     <string name="stat_langs">زبان</string>
     <string name="stat_words">واژهٔ آموخته</string>
     <string name="stat_shortcuts">کوتاه‌نویس</string>
@@ -291,7 +291,7 @@
     <string name="intro_setup_title">کیبورد را روشن کنید</string>
     <string name="intro_setup_sub">دو گام کوتاه — سپس در هر برنامه بنویسید.</string>
     <string name="setup_enable_title">فعال‌سازی در تنظیمات</string>
-    <string name="setup_enable_sub">کیبورد کلمه را روشن کنید</string>
+    <string name="setup_enable_sub">کیبورد کی‌فلاکس را روشن کنید</string>
     <string name="setup_select_title">انتخاب به‌عنوان کیبورد فعلی</string>
     <string name="setup_select_sub">آن را از فهرست انتخاب کنید</string>
     <string name="setup_open">باز کردن</string>
@@ -302,6 +302,9 @@
     <string name="try_send">ارسال</string>
     <string name="try_clear">پاک کردن</string>
     <string name="try_stats">%1$s حرف · %2$s کلمه</string>
+    <string name="privacy_online_short">آنلاین</string>
+    <string name="preview_hide">پنهان کردن کیبورد</string>
+    <string name="preview_show">نمایش کیبورد</string>
     <string-array name="home_tips">
         <item>کلمه‌ای را که کیبورد نمی‌شناسد، خودِ آن را در نوار پیشنهاد لمس کنید — فوراً یاد گرفته می‌شود.</item>
         <item>اگر تصحیح خودکار اشتباه بود، فوراً Backspace بزنید: کلمهٔ اصلی شما برمی‌گردد و یاد گرفته می‌شود.</item>

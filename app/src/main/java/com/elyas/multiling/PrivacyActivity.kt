@@ -17,8 +17,8 @@ import com.google.android.material.appbar.MaterialToolbar
  * browser instead. The page is restyled with the app's own colours so it
  * reads correctly in both light and dark.
  */
-/** The same page on the web (docs/privacy.html, served by GitHub Pages). */
-private const val ONLINE_URL = "https://elyasomarcodes.github.io/My-first-App/privacy.html"
+/** The published policy (the address given on Google Play). */
+private const val ONLINE_URL = "https://sites.google.com/view/keyflux-privacy-policy"
 
 class PrivacyActivity : AppCompatActivity() {
 
@@ -44,6 +44,16 @@ class PrivacyActivity : AppCompatActivity() {
         } catch (_: Exception) { "" }
         web.loadDataWithBaseURL("file:///android_asset/", themed(html), "text/html", "utf-8", null)
 
+        // a short pulse so the online copy is noticed on arrival
+        findViewById<android.view.View>(R.id.btn_online).let { b ->
+            Ui.tip(b, getString(R.string.privacy_online))
+            b.postDelayed({
+                b.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180).withEndAction {
+                    b.animate().scaleX(1f).scaleY(1f).setDuration(260)
+                        .setInterpolator(android.view.animation.OvershootInterpolator(3f)).start()
+                }.start()
+            }, 700)
+        }
         findViewById<android.view.View>(R.id.btn_online).setOnClickListener {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW,

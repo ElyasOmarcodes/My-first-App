@@ -1,7 +1,7 @@
 theme	s	p_multiling
 key_height	i	72
 key_height_land	i	42
-font_scale	i	70
+font_scale	i	64
 hint_scale	i	96
 corner_radius	i	3
 key_gap	i	1
