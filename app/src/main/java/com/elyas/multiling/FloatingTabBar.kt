@@ -101,6 +101,11 @@ class FloatingTabBar @JvmOverloads constructor(
 
     private fun setState(h: Holder, on: Boolean, animate: Boolean) {
         h.label.visibility = if (on) View.VISIBLE else View.GONE
+        // the selected tab takes more of the bar so its label always fits
+        (h.cell.layoutParams as? LayoutParams)?.let {
+            it.weight = if (on) 1.9f else 1f
+            h.cell.layoutParams = it
+        }
         h.icon.setImageResource(if (on) h.tab.iconSelected else h.tab.icon)
         h.cell.isSelected = on
         ViewCompat.setStateDescription(h.cell, if (on) h.label.text else null)

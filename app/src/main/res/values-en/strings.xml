@@ -230,8 +230,8 @@ Long-press a suggestion to delete it</string>
     <string name="dev_name_latin">م. الیاس عمر</string>
     <string name="dev_title">Android, iOS and Windows app developer</string>
     <string name="dev_bio">Alongside writing software, he teaches what he knows. This keyboard is the result of both: made to be quick to type on, precise with the language and fully offline — and easy for everyone, even someone holding a smartphone for the first time.</string>
-    <string name="dev_builds_for">Builds for</string>
-    <string name="dev_teaches">And teaches</string>
+    <string name="dev_builds_for">Platforms</string>
+    <string name="dev_teaches">Teaching</string>
     <string name="dev_teacher">Teacher</string>
     <string name="dev_teacher_sub">Teaching programming and technology</string>
     <string name="dev_contact">Contact</string>

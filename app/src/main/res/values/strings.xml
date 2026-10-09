@@ -229,8 +229,8 @@
     <string name="dev_name_latin">M. Elyas Omar</string>
     <string name="dev_title">د اندروید، iOS او وینډوز اپلیکېشنونو جوړونکی</string>
     <string name="dev_bio">د پروګرام لیکنې تر څنګ، هغه څه چې زده یې کړي نورو ته یې ښيي. دا کیبورډ د همدې دواړو کارونو پایله ده: داسې جوړ شوی چې په لیکلو کې چټک، په ژبه کې دقیق او له انټرنېټ پرته کار وکړي — او هر چا ته اسانه وي، حتی هغه چا ته چې نوی یې موبایل په لاس کې اخیستی.</string>
-    <string name="dev_builds_for">جوړوي د</string>
-    <string name="dev_teaches">او تدریس کوي</string>
+    <string name="dev_builds_for">پلاتفورمونه</string>
+    <string name="dev_teaches">تدریس</string>
     <string name="dev_teacher">استاد</string>
     <string name="dev_teacher_sub">د پروګرام جوړونې او ټکنالوژۍ ښوونکی</string>
     <string name="dev_contact">اړیکه</string>

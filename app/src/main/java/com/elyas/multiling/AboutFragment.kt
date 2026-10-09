@@ -72,6 +72,9 @@ class AboutFragment : Fragment(R.layout.frag_about) {
             interpolator = android.view.animation.LinearInterpolator()
         }
 
+        // the watermark cap must stay inside the rounded corners
+        view.findViewById<View>(R.id.teacher_card).clipToOutline = true
+
         section(view.findViewById(R.id.sec_builds), R.drawable.ic_m_devices, Ui.Tone.VIOLET, R.string.dev_builds_for)
         section(view.findViewById(R.id.sec_teach), R.drawable.ic_m_school, Ui.Tone.AMBER, R.string.dev_teaches)
         section(view.findViewById(R.id.sec_contact), R.drawable.ic_m_call, Ui.Tone.ROSE, R.string.dev_contact)
