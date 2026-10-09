@@ -11,9 +11,9 @@ android {
     // The app's permanent identity on Google Play. Never change it after the
     // first upload: Play treats a different id as a different app.
     applicationId = "com.elyasomar.keyflux"
-    minSdk = 21
+    minSdk = 24
     targetSdk = 36
-    versionCode = 40
+    versionCode = 41
     versionName = "1.0"
     // the app ships Pashto (default), Farsi and English; keep exactly those
     // locales so androidx's other translations are trimmed from the APK.

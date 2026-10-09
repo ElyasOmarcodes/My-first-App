@@ -27,6 +27,7 @@ object PrefIcons {
         "theme" to (R.drawable.ic_m_palette to Ui.Tone.VIOLET),
         "key_border" to (R.drawable.ic_m_border to Ui.Tone.INDIGO),
         "hints" to (R.drawable.ic_m_label to Ui.Tone.BLUE),
+        "key_font_vazir" to (R.drawable.ic_m_font to Ui.Tone.PINK),
         "preview" to (R.drawable.ic_m_zoom to Ui.Tone.TEAL),
         // sizes
         "key_height" to (R.drawable.ic_m_height to Ui.Tone.VIOLET),

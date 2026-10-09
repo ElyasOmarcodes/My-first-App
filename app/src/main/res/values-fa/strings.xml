@@ -305,6 +305,8 @@
     <string name="privacy_online_short">آنلاین</string>
     <string name="preview_hide">پنهان کردن کیبورد</string>
     <string name="preview_show">نمایش کیبورد</string>
+    <string name="pref_key_font">فونت وزیرمتن روی دکمه‌ها</string>
+    <string name="pref_key_font_sum">دکمه‌های کیبورد هم با فونت وزیرمتن نمایش داده شوند</string>
     <string-array name="home_tips">
         <item>کلمه‌ای را که کیبورد نمی‌شناسد، خودِ آن را در نوار پیشنهاد لمس کنید — فوراً یاد گرفته می‌شود.</item>
         <item>اگر تصحیح خودکار اشتباه بود، فوراً Backspace بزنید: کلمهٔ اصلی شما برمی‌گردد و یاد گرفته می‌شود.</item>

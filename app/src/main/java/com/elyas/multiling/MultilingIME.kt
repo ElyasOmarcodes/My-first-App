@@ -913,6 +913,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.showHints = p.getBoolean("hints", true)
         kv.showPreview = p.getBoolean("preview", true)
         kv.keyBorder = p.getBoolean("key_border", false)
+        kv.labelTypeface = if (p.getBoolean("key_font_vazir", false)) Fonts.get(this)
+            else android.graphics.Typeface.DEFAULT
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.splitMode = p.getBoolean("split_kb", false)
         kv.longPressTimeout = (p.getString("longpress", "200") ?: "200").toLong()

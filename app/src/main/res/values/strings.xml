@@ -304,6 +304,8 @@
     <string name="privacy_online_short">انلاین</string>
     <string name="preview_hide">کیبورډ پټول</string>
     <string name="preview_show">کیبورډ ښودل</string>
+    <string name="pref_key_font">وزیرمتن فونټ په تڼیو کې</string>
+    <string name="pref_key_font_sum">د کیبورډ تڼۍ هم په وزیرمتن فونټ ښکاري</string>
     <string-array name="home_tips">
         <item>یوه کلمه چې کیبورډ یې نه پېژني، په وړاندیز پټه کې یې پخپله کلمه ټک کړئ — سمدستي زده کیږي.</item>
         <item>که اتومات سمون غلط شو، سمدستي Backspace ووهئ: ستاسو اصلي کلمه بیرته راځي او کیبورډ یې زده کوي.</item>

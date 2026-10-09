@@ -203,6 +203,8 @@ class SettingsActivity : AppCompatActivity() {
         preview.keyGapDp = p.getInt("key_gap", 2) / 1.33f
         preview.showHints = p.getBoolean("hints", true)
         preview.keyBorder = p.getBoolean("key_border", false)
+        preview.labelTypeface = if (p.getBoolean("key_font_vazir", false)) Fonts.get(this)
+            else android.graphics.Typeface.DEFAULT
         val rows = ArrayList<List<KeyDef>>(Layouts.PASHTO.rows)
         rows.add(
             listOf(
