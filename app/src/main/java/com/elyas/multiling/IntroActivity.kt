@@ -5,8 +5,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.provider.Settings
-import android.view.GestureDetector
-import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
@@ -16,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.preference.PreferenceManager
 import com.google.android.material.button.MaterialButton
-import kotlin.math.abs
 
 /**
  * First-run introduction: welcome, app language, what the keyboard does,
@@ -68,18 +65,7 @@ class IntroActivity : AppCompatActivity() {
         })
 
         // horizontal swipes turn the page, in the reading direction
-        val rtl = resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
-        val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDown(e: MotionEvent): Boolean = true
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
-                if (abs(vx) < abs(vy) * 1.5f || abs(vx) < 600) return false
-                val forward = if (rtl) vx > 0 else vx < 0
-                if (forward && page < pages.size - 1) go(page + 1)
-                else if (!forward && page > 0) go(page - 1)
-                return true
-            }
-        })
-        findViewById<View>(R.id.page_host).setOnTouchListener { _, ev -> gd.onTouchEvent(ev); true }
+        findViewById<SwipeFrame>(R.id.page_host).onSwipe = { dir -> go(page + dir) }
 
         page = savedInstanceState?.getInt("page") ?: 0
         for ((i, p) in pages.withIndex()) p.visibility = if (i == page) View.VISIBLE else View.GONE
