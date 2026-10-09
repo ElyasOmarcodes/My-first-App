@@ -1,21 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ملټي کیبورډ (Multi Keyboard)
 
-# Run and deploy your AI Studio app
+A modern multilingual Android keyboard (IME) inspired by classic multilingual
+keyboards — built from scratch in Kotlin for current Android versions
+(Android 5.0 – 15, arm/arm64/x86 — pure Kotlin, no native libs).
 
-This contains everything you need to run your app locally.
+## ژبې / Languages
 
-View your app in AI Studio: https://ai.studio/apps/5a81b10e-64ff-48e3-976f-33983a4975e9
+- پښتو (Pashto) — full layout with ټ ډ ړ ږ ښ ګ ڼ څ ځ ې ۍ and diacritics
+- دري / فارسی (Dari/Farsi)
+- العربية (Arabic)
+- اردو (Urdu)
+- English (QWERTY)
 
-## Run Locally
+## Features
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+- Shift layer per language (the small hint character on each key)
+- Long-press popups with slide-to-select alternates and diacritics
+- Swipe the space bar left/right to switch language; long-press for the menu
+- Arrow-keys row (▲ ▼ ◀ ▶) — toggleable
+- Word suggestions that learn as you type (fully on-device)
+- Double-space → period, auto-caps for English
+- 3 themes (Dark / Light / AMOLED), adjustable key height & font size
+- Localized digits (۰۱۲۳ / ٠١٢٣ / 0123) and symbols pages
+- Key preview, vibration, sound — all configurable
+- **No INTERNET permission** — completely offline and private
 
+## Building
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+CI builds the APK on every push (see `.github/workflows/build-apk.yml`) and
+commits it to `.build-outputs/app-debug.apk`. To build locally:
+
+```
+base64 -d debug.keystore.base64 > debug.keystore
+./gradlew :app:assembleDebug
+```
+
+Requires JDK 17 and the Android SDK (compileSdk 35).

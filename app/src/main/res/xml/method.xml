@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.elyas.multiling.SettingsActivity"
+    android:supportsSwitchingToNextInputMethod="true">
+    <subtype
+        android:label="@string/lang_ps"
+        android:imeSubtypeLocale="ps_AF"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="lang=ps" />
+</input-method>

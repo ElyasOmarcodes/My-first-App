@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One tab of the floating bar: icon over label, on a rounded highlight
+     that fills in when the tab is selected. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:clickable="true"
+    android:focusable="true">
+    <LinearLayout
+        android:id="@+id/nav_pill"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="3dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="3dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_nav_pill"
+        android:gravity="center"
+        android:orientation="vertical">
+        <ImageView
+            android:id="@+id/nav_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:importantForAccessibility="no" />
+        <TextView
+            android:id="@+id/nav_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textSize="12.5sp" />
+    </LinearLayout>
+</FrameLayout>
