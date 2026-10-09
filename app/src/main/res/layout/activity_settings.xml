@@ -36,7 +36,7 @@
                 <!-- show / hide the live keyboard preview on pages that have one -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_preview"
-                    style="@style/Widget.Material3.Button.IconButton.FilledTonal"
+                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:layout_gravity="end|center_vertical"
