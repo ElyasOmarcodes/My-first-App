@@ -55,6 +55,28 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
+        <!-- Vazirmatn everywhere: the plain-text default plus every Material
+             type role, so components (buttons, dialogs, app bars, nav
+             labels, text fields) pick it up without per-view styling -->
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Hk.M3.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.Hk.M3.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.Hk.M3.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Hk.M3.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Hk.M3.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Hk.M3.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Hk.M3.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Hk.M3.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.Hk.M3.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Hk.M3.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Hk.M3.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Hk.M3.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Hk.M3.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Hk.M3.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Hk.M3.LabelSmall</item>
+
+        <item name="android:windowAnimationStyle">@style/Anim.Hk.Activity</item>
         <item name="preferenceTheme">@style/Pref.Hk</item>
         <item name="alertDialogTheme">@style/ThemeOverlay.Hk.AlertDialog</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.Hk.MaterialAlertDialog</item>
@@ -63,7 +85,19 @@
 
     <style name="Theme.MultiKeyboard.Splash" />
 
+    <!-- Screen-to-screen motion: grow/fade, the same in both directions -->
+    <style name="Anim.Hk.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/act_open_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/act_open_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/act_close_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/act_close_exit</item>
+    </style>
+
     <!-- ========================================================= shapes -->
+    <style name="Shape.Hk.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
     <style name="Shape.Hk.Small" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">12dp</item>
@@ -128,25 +162,6 @@
         <item name="android:textSize">14sp</item>
     </style>
 
-    <!-- floating bottom navigation -->
-    <style name="Widget.Hk.BottomNav" parent="Widget.Material3.BottomNavigationView">
-        <item name="backgroundTint">@android:color/transparent</item>
-        <item name="android:background">@android:color/transparent</item>
-        <item name="elevation">0dp</item>
-        <item name="itemActiveIndicatorStyle">@style/Widget.Hk.NavIndicator</item>
-        <item name="itemTextAppearanceActive">@style/TextAppearance.Hk.NavLabel.Active</item>
-        <item name="itemTextAppearanceInactive">@style/TextAppearance.Hk.NavLabel</item>
-        <item name="itemIconTint">@color/nav_item</item>
-        <item name="itemTextColor">@color/nav_item</item>
-        <item name="itemPaddingTop">12dp</item>
-        <item name="itemPaddingBottom">12dp</item>
-    </style>
-    <style name="Widget.Hk.NavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/m3_secondary_container</item>
-        <item name="android:width">64dp</item>
-        <item name="android:height">34dp</item>
-    </style>
-
     <style name="Widget.Hk.Button.Filled" parent="Widget.Material3.Button">
         <item name="android:minHeight">52dp</item>
         <item name="android:textSize">15sp</item>
@@ -159,7 +174,67 @@
     </style>
 
     <!-- ======================================================= type -->
-    <style name="TextAppearance.Hk.PageTitle" parent="TextAppearance.Material3.HeadlineMedium">
+    <style name="TextAppearance.Hk.M3.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.PageTitle" parent="TextAppearance.Hk.M3.HeadlineMedium">
         <item name="android:textSize">30sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/m3_on_surface</item>
@@ -167,41 +242,34 @@
     <style name="TextAppearance.Hk.BarTitle" parent="TextAppearance.Hk.PageTitle">
         <item name="android:textSize">26sp</item>
     </style>
-    <style name="TextAppearance.Hk.CardTitle" parent="TextAppearance.Material3.TitleLarge">
+    <style name="TextAppearance.Hk.CardTitle" parent="TextAppearance.Hk.M3.TitleLarge">
         <item name="android:textSize">19sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/m3_on_surface</item>
     </style>
-    <style name="TextAppearance.Hk.RowTitle" parent="TextAppearance.Material3.TitleMedium">
+    <style name="TextAppearance.Hk.RowTitle" parent="TextAppearance.Hk.M3.TitleMedium">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/m3_on_surface</item>
     </style>
-    <style name="TextAppearance.Hk.Body" parent="TextAppearance.Material3.BodyMedium">
+    <style name="TextAppearance.Hk.Body" parent="TextAppearance.Hk.M3.BodyMedium">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/m3_on_surface_variant</item>
         <item name="android:lineSpacingExtra">4dp</item>
     </style>
-    <style name="TextAppearance.Hk.Caption" parent="TextAppearance.Material3.BodySmall">
+    <style name="TextAppearance.Hk.Caption" parent="TextAppearance.Hk.M3.BodySmall">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/m3_on_surface_variant</item>
     </style>
-    <style name="TextAppearance.Hk.Section" parent="TextAppearance.Material3.TitleSmall">
+    <style name="TextAppearance.Hk.Section" parent="TextAppearance.Hk.M3.TitleSmall">
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/m3_primary</item>
-    </style>
-    <style name="TextAppearance.Hk.NavLabel" parent="TextAppearance.Material3.LabelMedium">
-        <item name="android:textSize">12.5sp</item>
-    </style>
-    <style name="TextAppearance.Hk.NavLabel.Active">
-        <item name="android:textStyle">bold</item>
     </style>
 
     <!-- ============================================ preference screens -->
     <style name="Pref.Hk" parent="PreferenceThemeOverlay">
         <item name="preferenceStyle">@style/Pref.Hk.Row</item>
         <item name="switchPreferenceCompatStyle">@style/Pref.Hk.Switch</item>
-        <item name="seekBarPreferenceStyle">@style/Pref.Hk.Seek</item>
         <item name="preferenceCategoryStyle">@style/Pref.Hk.Category</item>
         <item name="dialogPreferenceStyle">@style/Pref.Hk.Row</item>
         <item name="editTextPreferenceStyle">@style/Pref.Hk.Row</item>
@@ -213,10 +281,6 @@
     <style name="Pref.Hk.Switch" parent="Preference.SwitchPreferenceCompat.Material">
         <item name="android:layout">@layout/pref_row</item>
         <item name="android:widgetLayout">@layout/pref_widget_switch</item>
-        <item name="iconSpaceReserved">false</item>
-    </style>
-    <style name="Pref.Hk.Seek" parent="Preference.SeekBarPreference.Material">
-        <item name="android:layout">@layout/pref_seek</item>
         <item name="iconSpaceReserved">false</item>
     </style>
     <style name="Pref.Hk.Category" parent="Preference.Category.Material">

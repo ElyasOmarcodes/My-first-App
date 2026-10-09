@@ -18,7 +18,7 @@ import com.google.android.material.button.MaterialButton
 /**
  * Home tab: a status hero that knows whether the keyboard is set up, three
  * colourful tiles with real numbers, quick ways into the most-used settings,
- * a field to try the keyboard, and the Hindukush Voice introduction.
+ * a field to try the keyboard, and a rotating card of typing tips.
  */
 class HomeFragment : Fragment(R.layout.frag_home) {
 
@@ -55,7 +55,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
             startActivity(SettingsActivity.intent(c, "langs"))
         }
 
-        Ui.tone(view.findViewById(R.id.intro_icon_box), view.findViewById(R.id.intro_icon), Ui.Tone.VIOLET)
+        Ui.tone(view.findViewById(R.id.intro_icon_box), view.findViewById(R.id.intro_icon), Ui.Tone.AMBER)
         startTyping(view.findViewById(R.id.org_intro))
 
         view.findViewById<View>(R.id.hero).clipToOutline = true
@@ -142,12 +142,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
             var words = 0
             try {
                 c.filesDir.listFiles { f -> f.name.startsWith("dict_") && f.name.endsWith(".txt") }
-                    ?.forEach { f ->
-                        f.forEachLine { line ->
-                            val n = line.substringAfter('\t', "1").trim().toIntOrNull() ?: 1
-                            if (line.isNotBlank() && n >= WordStore.LEARN_PROBATION) words++
-                        }
-                    }
+                    ?.forEach { f -> words += WordStore.countVisible(f) }
             } catch (_: Exception) {
             }
             main.post { view?.let { setTile(it, R.id.tile_words, words) } }
@@ -192,22 +187,32 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         card.setOnClickListener { onClick() }
     }
 
-    // ------------------------------------------------------ intro typing
+    // ------------------------------------------------------- typing tips
     /**
-     * Types the introduction a character at a time; once complete it waits a
-     * minute and starts again.
+     * Types one tip a character at a time, rests on it, then moves to the
+     * next — a small live demo of a keyboard at work.
      */
     private fun startTyping(tv: TextView) {
-        val full = getString(R.string.org_intro)
+        val tips = resources.getStringArray(R.array.home_tips)
+        if (tips.isEmpty()) return
+        val counter = view?.findViewById<TextView>(R.id.tip_counter)
+        var tip = 0
         var i = 0
         val step = object : Runnable {
             override fun run() {
+                val full = tips[tip]
+                if (i == 0) counter?.text = Ui.digits(requireContext(), tip + 1) + " / " +
+                    Ui.digits(requireContext(), tips.size)
                 if (i <= full.length) {
                     tv.text = full.substring(0, i)
                     i++
-                    main.postDelayed(this, 22L)
+                    main.postDelayed(this, 24L)
                 } else {
-                    main.postDelayed({ i = 0; main.post(this) }, 60_000L)
+                    main.postDelayed({
+                        i = 0
+                        tip = (tip + 1) % tips.size
+                        main.post(this)
+                    }, 5_000L)
                 }
             }
         }

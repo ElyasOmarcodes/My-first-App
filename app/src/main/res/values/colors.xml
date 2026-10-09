@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Hindukush Keyboard — Material 3 colour scheme, LIGHT.
+  Pashto Keyboard Plus — Material 3 colour scheme, LIGHT.
   values-night/colors.xml mirrors every name with its dark value, so any
   screen written against these names (or against the theme's ?attr colour
   roles they feed) gets both themes for free.
@@ -8,7 +8,7 @@
 <resources>
 
     <!-- launcher icon background (used by the adaptive icon, theme-independent) -->
-    <color name="launcher_bg">#242A38</color>
+    <color name="launcher_bg">#6B50F2</color>
 
     <!-- ===================================================== M3 roles -->
     <color name="m3_primary">#6B50F2</color>
@@ -92,4 +92,8 @@
     <color name="grad_cyan_a">#2FC4DA</color>
     <color name="grad_cyan_b">#0F98B2</color>
 
+    <!-- About: the soft header wash behind the profile, and the avatar glow -->
+    <color name="profile_a">#ECE6FF</color>
+    <color name="profile_b">#FBE9F2</color>
+    <color name="avatar_glow">#596B50F2</color>
 </resources>

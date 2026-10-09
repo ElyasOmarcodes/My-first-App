@@ -3,6 +3,7 @@
      a filled check, exactly like the inspiration's language card. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:stateListAnimator="@animator/press_scale"
     style="@style/Widget.Material3.CardView.Outlined"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"

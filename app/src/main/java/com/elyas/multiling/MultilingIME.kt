@@ -82,6 +82,20 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var revertOriginal: String? = null
     private var revertCorrected: String? = null
     private val rejectedWords = HashSet<String>()
+
+    /**
+     * Words committed but not learned yet. A word is only evidence once the
+     * user has moved on and it is still there (see [WordStore]): backspacing
+     * into it, or an edit that removes it, cancels it before it counts.
+     */
+    private class PendingWord(
+        val word: String, val code: String, val signal: WordStore.Signal,
+        val suspect: Boolean, val prev: String
+    )
+    private val pendingWords = ArrayDeque<PendingWord>()
+    /** Fields whose text must never teach the dictionary (passwords, URLs,
+     *  e-mail, "no suggestions", incognito). */
+    private var noLearnField = false
     private var lastDataVersion = -1
     private var bestCandidate: WordStore.Cand? = null
     private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
@@ -614,6 +628,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
             variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
         )
+        val noSugg = inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0
+        val incognito = (info?.imeOptions ?: 0) and 0x1000000 != 0  // IME_FLAG_NO_PERSONALIZED_LEARNING
+        noLearnField = isPasswordField || noSugg || incognito || (cls == InputType.TYPE_CLASS_TEXT && (
+            variation == InputType.TYPE_TEXT_VARIATION_URI ||
+            variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
+            variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
+            variation == InputType.TYPE_TEXT_VARIATION_FILTER))
+        pendingWords.clear()
         if (mode != Mode.EDIT) {
             mode = when (cls) {
                 InputType.TYPE_CLASS_NUMBER,
@@ -641,7 +663,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         updateSuggestions()
     }
 
+    override fun onFinishInput() {
+        settleAllWords(verify = false)
+        for (s in wordStores.values) s.save()
+        super.onFinishInput()
+    }
+
     override fun onFinishInputView(finishingInput: Boolean) {
+        settleAllWords(verify = true)
         for (s in wordStores.values) s.save()
         autoText?.save()
         keyboardView?.dismissPopups()
@@ -897,6 +926,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.showHints = p.getBoolean("hints", true)
         kv.showPreview = p.getBoolean("preview", true)
         kv.keyBorder = p.getBoolean("key_border", false)
+        kv.labelTypeface = keyTypeface(p.getBoolean("key_font_vazir", false))
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
         kv.splitMode = p.getBoolean("split_kb", false)
         kv.longPressTimeout = (p.getString("longpress", "200") ?: "200").toLong()
@@ -1423,9 +1453,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 revertCorrected = best.word
             }
             if (committed.length >= 2) {
-                if (suggestionsOn && learnWordsOn) store().learn(committed)
-                if (suggestionsOn && bigramsOn && lastWord.isNotEmpty()) {
-                    store().learnBigram(lastWord, committed)
+                if (committed != word) {
+                    queueLearn(committed, WordStore.Signal.USED, false)
+                } else {
+                    // the decoder had a close correction the user did not
+                    // take: maybe a word, maybe a slip — it needs more proof
+                    val suspect = best != null && !best.exact && best.cost <= 1.0f &&
+                        !store().contains(word)
+                    queueLearn(committed, WordStore.Signal.TYPED, suspect)
                 }
             }
             lastWord = committed
@@ -1507,6 +1542,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 if (!hasText && !hasSelection) return
                 feedback()
                 if (tryRevertAutocorrect()) return
+                if (wordBuffer.isEmpty()) cancelPendingAtCursor()
                 if (wordBuffer.isNotEmpty()) wordBuffer.setLength(wordBuffer.length - 1)
                 if (wordTaps.size > wordBuffer.length) {
                     wordTaps.subList(wordBuffer.length, wordTaps.size).clear()
@@ -1667,6 +1703,75 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    private var vazirmatn: android.graphics.Typeface? = null
+
+    /** Vazirmatn for the keys when chosen, else the system font. */
+    private fun keyTypeface(vazir: Boolean): android.graphics.Typeface {
+        if (!vazir) return android.graphics.Typeface.DEFAULT
+        vazirmatn?.let { return it }
+        val t = try {
+            androidx.core.content.res.ResourcesCompat.getFont(this, R.font.vazirmatn)
+        } catch (_: Exception) { null } ?: android.graphics.Typeface.DEFAULT
+        vazirmatn = t
+        return t
+    }
+
+    // ------------------------------------------------------------ learning
+    private fun queueLearn(word: String, signal: WordStore.Signal, suspect: Boolean) {
+        if (!suggestionsOn || noLearnField) return
+        if (!learnWordsOn && !bigramsOn) return
+        pendingWords.addLast(PendingWord(word, lang.code, signal, suspect, lastWord))
+        // two words later the user has moved on: settle the oldest
+        while (pendingWords.size > 2) settleWord(pendingWords.removeFirst(), verify = true)
+    }
+
+    /** Learn a held-back word — if it is still in the text. */
+    private fun settleWord(p: PendingWord, verify: Boolean) {
+        if (verify) {
+            val ic = currentInputConnection
+            val before = try { ic?.getTextBeforeCursor(800, 0)?.toString() } catch (_: Exception) { null }
+            if (before != null && !containsWord(before, p.word)) return
+        }
+        val s = wordStores.getOrPut(p.code) { WordStore(this, p.code) }
+        if (learnWordsOn) s.observe(p.word, p.signal, p.suspect)
+        if (bigramsOn && p.prev.length >= 2) s.learnBigram(p.prev, p.word)
+    }
+
+    private fun settleAllWords(verify: Boolean) {
+        while (pendingWords.isNotEmpty()) settleWord(pendingWords.removeFirst(), verify)
+    }
+
+    /** [word] occurs in [text] as a whole word, not inside a longer one. */
+    private fun containsWord(text: String, word: String): Boolean {
+        var i = text.lastIndexOf(word)
+        while (i >= 0) {
+            val a = i == 0 || !Character.isLetter(text[i - 1])
+            val e = i + word.length
+            val b = e >= text.length || !Character.isLetter(text[e])
+            if (a && b) return true
+            i = if (i == 0) -1 else text.lastIndexOf(word, i - 1)
+        }
+        return false
+    }
+
+    /**
+     * Backspace with no word in progress is about to eat into the word
+     * before the cursor. If that is a word still waiting to be learned, the
+     * user is correcting it: drop it, and count it against the word — the
+     * "unlearn on backspace" rule of Android's own keyboard.
+     */
+    private fun cancelPendingAtCursor() {
+        val last = pendingWords.lastOrNull() ?: return
+        val ic = currentInputConnection ?: return
+        val before = try {
+            ic.getTextBeforeCursor(last.word.length + 3, 0)?.toString()
+        } catch (_: Exception) { null } ?: return
+        val trimmed = before.trimEnd { !Character.isLetter(it) }
+        if (!trimmed.endsWith(last.word)) return
+        pendingWords.removeLast()
+        wordStores[last.code]?.penalize(last.word)
+    }
+
     /**
      * Backspace immediately after an autocorrection restores the word the
      * user actually typed, and stops correcting that word from then on
@@ -1684,7 +1789,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         ic.deleteSurroundingText(expect.length, 0)
         ic.commitText(original, 1)
         rejectedWords.add(original)
-        if (learnWordsOn) store().learn(original)
+        // the correction was wrong: it must not count, and the word the user
+        // fought for is exactly the evidence a keyboard should learn from
+        pendingWords.removeLastOrNull()
+        if (learnWordsOn && !noLearnField) {
+            store().penalize(corrected)
+            store().observe(original, WordStore.Signal.REVERTED)
+        }
         wordBuffer.setLength(0)
         wordTaps.clear()
         wordTapAlts.clear()
@@ -2318,6 +2429,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 tv.maxWidth = (200 * density).toInt()
                 tv.ellipsize = android.text.TextUtils.TruncateAt.END
             }
+            keyboardView?.labelTypeface?.let { tf ->
+                if (tf !== android.graphics.Typeface.DEFAULT) tv.typeface = tf
+            }
             if (style == STYLE_ACCENT) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
             tv.textSize = when {
                 isClip -> 12.5f
@@ -2486,11 +2600,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         // Replacing what you typed with something else is the clearest signal
         // that the typed form was wrong — withdraw the evidence for it, or a
         // habitual mistyping slowly accumulates its way into the dictionary.
-        if (prefix.isNotEmpty() && prefix != word) store().unlearnRecent(prefix)
+        if (prefix.isNotEmpty() && prefix != word) store().penalize(prefix)
         if (prefix.isNotEmpty()) ic.deleteSurroundingText(prefix.length, 0)
         ic.commitText("$word ", 1)
-        if (learnWordsOn) store().learn(word)
-        if (bigramsOn && lastWord.isNotEmpty()) store().learnBigram(lastWord, word)
+        queueLearn(word,
+            if (prefix == word) WordStore.Signal.PICKED_TYPED else WordStore.Signal.USED, false)
         lastWord = word
         wordBuffer.setLength(0)
         wordTaps.clear()

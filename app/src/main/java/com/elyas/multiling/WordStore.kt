@@ -14,10 +14,40 @@ import kotlin.math.ln
  *    highest first) built from the Leipzig news corpora
  *  - words learned from the user's typing ("dict_<lang>.txt")
  *  - imported word lists (merged into the learned file), one word per line
- *    or "word<TAB>count" — the same plain-text format MultiLing-style user
- *    dictionaries export to.
+ *    or "word<TAB>count".
  *
  * Also learns bigrams (word pairs) for next-word prediction.
+ *
+ * ## How new words are learned
+ *
+ * Modelled on the user-history dictionary of Android's own keyboard (AOSP
+ * LatinIME, the base Gboard grew from), not on a repeat counter. A counter at
+ * any threshold eventually swallows a habitual typo; what separates a word
+ * the user means from a slip is what happens AROUND it:
+ *
+ *  1. **It has to survive.** The keyboard does not learn a word when it is
+ *     typed, only once the user has moved on and it is still in the text
+ *     ([MultilingIME] holds the last few words back and checks). Deleting it,
+ *     backspacing into it, or replacing it with a suggestion withdraws it —
+ *     the same "unlearn on backspace / on revert" rule LatinIME applies.
+ *  2. **Levels, not counts.** Each separate occasion raises a word one
+ *     level; repeats within [OCCASION_SECONDS] are one occasion, so typing a
+ *     word five times in one message is still one piece of evidence. A word
+ *     is offered from [VISIBLE] and trusted (no longer corrected, used to
+ *     correct others) from [TRUSTED] — LatinIME's MIN_VISIBLE_LEVEL is 2.
+ *  3. **Deliberate acts count more.** Tapping the typed word on the strip,
+ *     or undoing an autocorrection, is the user saying "this is my word":
+ *     it becomes visible at once. Long-press "add" makes it permanent.
+ *  4. **Suspects need twice the evidence.** A word one slip away from a
+ *     common word, or one the decoder had a confident correction for, takes
+ *     two occasions per level instead of one — it can still be learned (a
+ *     real word is allowed to look like another), it just has to prove it.
+ *  5. **Forgetting.** Unused words lose a level every [DECAY_SECONDS]
+ *     (LatinIME: 15 days); one-off entries that never got anywhere vanish
+ *     after [DISCARD_SECONDS]. So an old typo fades instead of living
+ *     forever, while words in real use stay.
+ *  6. **Removal sticks.** Deleting a word from the strip blocks it, so it is
+ *     never quietly relearned; only an explicit "add" brings it back.
  */
 class WordStore(private val context: Context, private val langCode: String) {
 
@@ -37,22 +67,94 @@ class WordStore(private val context: Context, private val langCode: String) {
         /** Unreachable cell — larger than any budget, safe to add to. */
         private const val INF = 1e6f
 
-        // ---- how much evidence before a typed word counts as a real word
-        /** Seen this often, it may be offered but is never used to correct. */
-        const val LEARN_PROBATION = 3
-        /** Seen this often on separate occasions, it is a dictionary word. */
-        const val LEARN_CONFIRMED = 6
-        /** An explicit "add to dictionary" jumps straight to this. */
-        const val LEARN_EXPLICIT = 50
+        // ---- learning levels (see the class comment)
+        /** From this level a learned word is offered on the strip. */
+        const val VISIBLE = 2
+        /** From this level it is a dictionary word: never autocorrected away,
+         *  and allowed to be the target of a correction. */
+        const val TRUSTED = 3
+        private const val MAX_LEVEL = 15
+        /** Hand-added words sit above every typed level and never decay. */
+        const val EXPLICIT = 100
+        /** Removed by the user: never relearned from typing. */
+        private const val BLOCKED = -1
+
+        /** Repeats closer together than this are one occasion. */
+        private const val OCCASION_SECONDS = 10 * 60
+        /** An unused word drops one level per this much time. */
+        private const val DECAY_SECONDS = 15 * 24 * 60 * 60
+        /** A level-0/1 entry that saw no use for this long is dropped. */
+        private const val DISCARD_SECONDS = 14 * 24 * 60 * 60
+        /** Bound on the learned store. */
+        private const val MAX_ENTRIES = 20000
+
+        private const val FLAG_SUSPECT = 1
 
         /** Only words at least this common count as typo neighbours. */
         private const val TYPO_NEIGHBOUR_FREQ = 200
+
+        private const val HEADER = "#hk-words v2"
+
+        fun now(): Int = (System.currentTimeMillis() / 1000L).toInt()
+
+        /**
+         * Number of words a user would see as "learned" in a dict file,
+         * without loading the language. Understands both file formats.
+         */
+        fun countVisible(f: File): Int {
+            var n = 0
+            var v2 = false
+            try {
+                f.forEachLine { line ->
+                    if (line.startsWith("#")) { if (line == HEADER) v2 = true; return@forEachLine }
+                    val p = line.split('\t')
+                    if (p.isEmpty() || p[0].isBlank()) return@forEachLine
+                    val lvl = if (v2) p.getOrNull(1)?.toIntOrNull() ?: 0
+                    else legacyLevel(p.getOrNull(1)?.trim()?.toIntOrNull() ?: 1)
+                    if (lvl >= VISIBLE) n++
+                }
+            } catch (_: Exception) {
+            }
+            return n
+        }
+
+        /** Map an old repeat count onto the level scale. */
+        private fun legacyLevel(count: Int): Int = when {
+            count >= 50 -> EXPLICIT
+            count >= 6 -> 4
+            count >= 3 -> VISIBLE
+            else -> 1
+        }
+    }
+
+    /** What the user did that is evidence for a word. */
+    enum class Signal {
+        /** Typed and kept: committed with a space or punctuation and still
+         *  in the text after the user moved on. */
+        TYPED,
+        /** Tapped the typed word itself on the suggestion strip. */
+        PICKED_TYPED,
+        /** Undid an autocorrection to get this word back. */
+        REVERTED,
+        /** A word already learned was used again (picked or typed). */
+        USED
+    }
+
+    /** A learned word's history. [ts] is the last time it was seen, in
+     *  seconds; [hits] counts occasions toward the next level for suspects. */
+    private class Entry(var level: Int, var hits: Int, var ts: Int, var flags: Int) {
+        val suspect get() = (flags and FLAG_SUSPECT) != 0
+        val blocked get() = level == BLOCKED
     }
 
     /** A scored suggestion candidate. */
-    data class Cand(val word: String, val score: Int, val exact: Boolean, val sameLen: Boolean)
+    data class Cand(
+        val word: String, val score: Int, val exact: Boolean, val sameLen: Boolean,
+        /** Edit cost of the match; about 1.0 is one clear slip. */
+        val cost: Float = 0f
+    )
 
-    private val learned = HashMap<String, Int>()
+    private val learned = HashMap<String, Entry>()
     private var seeds: List<String> = emptyList()   // frequency order, high → low
     private var seedFreq: IntArray = IntArray(0)    // parallel corpus frequencies
     private var seedSet: HashSet<String> = HashSet()
@@ -73,13 +175,6 @@ class WordStore(private val context: Context, private val langCode: String) {
     private fun ensureLoaded() {
         if (loaded) return
         loaded = true
-        try {
-            val f = wordFile()
-            if (f.exists()) {
-                f.forEachLine { line -> parseWordLine(line) }
-            }
-        } catch (_: Exception) {
-        }
         try {
             val stream = try {
                 XZInputStream(context.assets.open("dict/$langCode.txt.xz"))
@@ -112,6 +207,14 @@ class WordStore(private val context: Context, private val langCode: String) {
             seedFreq = IntArray(0)
             seedSet = HashSet()
         }
+        // the learned file is read after the dictionary: migrating an old
+        // file needs the typo test, which needs the dictionary
+        try {
+            val f = wordFile()
+            if (f.exists()) readWordFile(f)
+        } catch (_: Exception) {
+        }
+        if (forgetOld()) dirty = true
         try {
             val f = bigramFile()
             if (f.exists()) {
@@ -127,76 +230,161 @@ class WordStore(private val context: Context, private val langCode: String) {
         }
     }
 
-    private fun parseWordLine(line: String) {
-        val idx = line.indexOf('\t')
-        if (idx > 0) {
-            val w = line.substring(0, idx).trim()
-            val c = line.substring(idx + 1).trim().toIntOrNull() ?: 1
-            if (w.isNotEmpty()) learned[w] = maxOf(learned[w] ?: 0, c)
-        } else {
-            val w = line.trim()
-            if (w.isNotEmpty()) learned[w] = maxOf(learned[w] ?: 0, 1)
+    private fun readWordFile(f: File) {
+        var v2 = false
+        val t = now()
+        f.forEachLine { line ->
+            if (line.startsWith("#")) {
+                if (line == HEADER) v2 = true
+                return@forEachLine
+            }
+            val p = line.split('\t')
+            val w = p[0].trim()
+            if (w.isEmpty()) return@forEachLine
+            if (v2) {
+                val lvl = p.getOrNull(1)?.toIntOrNull() ?: 1
+                val hits = p.getOrNull(2)?.toIntOrNull() ?: 0
+                val ts = p.getOrNull(3)?.toIntOrNull() ?: t
+                val fl = p.getOrNull(4)?.toIntOrNull() ?: 0
+                learned[w] = Entry(lvl, hits, ts, fl)
+            } else {
+                // old "word<TAB>count" file: keep what was trusted, and give
+                // everything a fresh timestamp so nothing vanishes at once
+                val lvl = legacyLevel(p.getOrNull(1)?.trim()?.toIntOrNull() ?: 1)
+                val fl = if (lvl < EXPLICIT && looksLikeTypoRaw(w)) FLAG_SUSPECT else 0
+                // a suspect from the old count-only days starts over at the
+                // bottom: it has to earn its place under the new rules
+                learned[w] = Entry(if (fl != 0) minOf(lvl, 1) else lvl, 0, t, fl)
+                dirty = true
+            }
         }
     }
 
     /**
-     * Record that the user typed this word.
-     *
-     * Counting repetitions is NOT enough on its own. Over a month of real
-     * use, a habitual mistyping gets repeated far more than twice, so a
-     * simple threshold — at any value — eventually swallows it, and once a
-     * misspelling is in the dictionary it stops being correctable and starts
-     * being suggested. Raising the bar only delays that.
-     *
-     * So a word also has to look like a word the user MEANT:
-     *
-     *  * it must not be a near-miss of a real dictionary word. If one slip
-     *    away from a common word explains it, it is a typo, not vocabulary —
-     *    this is the rule that keeps "بیولوړي" out while letting a genuinely
-     *    new name in.
-     *  * it must survive. [unlearnRecent] is called when the user deletes
-     *    what they just typed, which withdraws the evidence.
-     *  * it is only trusted for correcting others once it reaches
-     *    [LEARN_CONFIRMED]; below that it can be offered but never used to
-     *    overrule what was typed.
-     *
-     * An explicit "add to dictionary" bypasses all of it — see [learnExplicit].
+     * The forgetting curve: lower unused words one level per [DECAY_SECONDS]
+     * and drop entries that never got off the ground. Returns true if
+     * anything changed.
      */
-    fun learn(word: String) {
-        if (word.length < 2 || word.length > 32) return
-        ensureLoaded()
-        val cur = learned[word] ?: 0
-        // already trusted, or the user added it by hand: just keep counting
-        if (cur >= LEARN_CONFIRMED) {
-            learned[word] = cur + 1
-            dirty = true
-            return
+    private fun forgetOld(): Boolean {
+        val t = now()
+        var changed = false
+        val it = learned.entries.iterator()
+        while (it.hasNext()) {
+            val (_, e) = it.next()
+            if (e.level >= EXPLICIT || e.blocked) continue
+            val idle = t - e.ts
+            if (idle <= 0) continue
+            if (e.level <= 1 && idle > DISCARD_SECONDS) {
+                it.remove(); changed = true; continue
+            }
+            val steps = idle / DECAY_SECONDS
+            if (steps > 0) {
+                e.level -= steps
+                e.ts += steps * DECAY_SECONDS
+                e.hits = 0
+                changed = true
+                if (e.level <= 0) it.remove()
+            }
         }
-        if (seedSet.contains(word)) return          // already a real word
-        if (looksLikeTypo(word)) return
-        learned[word] = cur + 1
+        return changed
+    }
+
+    private fun isVisible(e: Entry?): Boolean = e != null && e.level >= VISIBLE
+    private fun isTrusted(e: Entry?): Boolean = e != null && e.level >= TRUSTED
+
+    /**
+     * Words not worth learning from typing at all: digits mixed in, letters
+     * from two scripts, or one letter held down ("هههههه", "nooooo").
+     */
+    private fun learnable(w: String): Boolean {
+        if (w.length < 2 || w.length > 32) return false
+        if (w.any { it.isDigit() }) return false
+        if (!w.all { it.isLetter() || it == '‌' || it == '\'' || it == '-' }) return false
+        var latin = false
+        var other = false
+        for (ch in w) if (ch.isLetter()) { if (ch < 'ɐ') latin = true else other = true }
+        if (latin && other) return false
+        var run = 1
+        for (i in 1 until w.length) {
+            run = if (w[i] == w[i - 1]) run + 1 else 1
+            if (run >= 3) return false
+        }
+        return true
+    }
+
+    /**
+     * Record evidence for a word the user kept — see the class comment.
+     *
+     * @param suspect the decoder had a confident correction for it when it
+     *   was committed, i.e. the keyboard thought it was a typo.
+     */
+    fun observe(word: String, signal: Signal, suspect: Boolean = false) {
+        if (!learnable(word)) return
+        ensureLoaded()
+        val t = now()
+        val e = learned[word]
+        if (e != null && e.blocked) return            // the user removed it
+        if (e != null && e.level >= EXPLICIT) { e.ts = t; dirty = true; return }
+        // a dictionary word needs no learning; the strip already knows it
+        if (e == null && seedSet.contains(word)) return
+
+        val entry = e ?: Entry(0, 0, t - OCCASION_SECONDS - 1,
+            if (suspect || looksLikeTypo(word)) FLAG_SUSPECT else 0).also { learned[word] = it }
+        when (signal) {
+            Signal.PICKED_TYPED, Signal.REVERTED -> {
+                // the user said in so many words that this is what they mean
+                entry.flags = entry.flags and FLAG_SUSPECT.inv()
+                entry.level = maxOf(entry.level + 1, VISIBLE).coerceAtMost(MAX_LEVEL)
+                entry.hits = 0
+            }
+            Signal.TYPED, Signal.USED -> {
+                if (t - entry.ts >= OCCASION_SECONDS) {
+                    if (entry.suspect) {
+                        entry.hits++
+                        if (entry.hits >= 2) { entry.level++; entry.hits = 0 }
+                    } else {
+                        entry.level++
+                    }
+                    entry.level = entry.level.coerceAtMost(MAX_LEVEL)
+                }
+            }
+        }
+        entry.ts = t
         dirty = true
     }
 
-    /** The user asked for this word by name; trust it immediately. */
+    /** The user hand-added this word; trust it immediately and for good. */
     fun learnExplicit(word: String) {
         if (word.isEmpty() || word.length > 32) return
         ensureLoaded()
-        learned[word] = maxOf(learned[word] ?: 0, LEARN_EXPLICIT)
+        learned[word] = Entry(EXPLICIT, 0, now(), 0)
         dirty = true
         save()
     }
 
     /**
-     * Withdraw evidence for a word the user typed and then removed. Deleting
-     * what you just wrote is the clearest signal available that it was wrong.
+     * Withdraw evidence: the user deleted the word they just typed, or
+     * swapped it for a suggestion. One step down, and it becomes a suspect,
+     * so a word that keeps getting fixed can never climb back easily.
      */
-    fun unlearnRecent(word: String) {
+    fun penalize(word: String) {
         ensureLoaded()
-        val c = learned[word] ?: return
-        if (c >= LEARN_EXPLICIT) return             // hand-added, leave alone
-        if (c <= 1) learned.remove(word) else learned[word] = c - 2
+        val e = learned[word] ?: return
+        if (e.level >= EXPLICIT || e.blocked) return
+        e.level -= 1
+        e.hits = 0
+        e.flags = e.flags or FLAG_SUSPECT
+        if (e.level <= 0) learned.remove(word)
         dirty = true
+    }
+
+    /** Kept for callers of the old API. */
+    fun unlearnRecent(word: String) = penalize(word)
+
+    /** True when the decoder would show this learned word. */
+    fun isLearnedVisible(word: String): Boolean {
+        ensureLoaded()
+        return isVisible(learned[word])
     }
 
     /**
@@ -206,8 +394,13 @@ class WordStore(private val context: Context, private val langCode: String) {
      */
     fun looksLikeTypo(word: String): Boolean {
         ensureLoaded()
+        return looksLikeTypoRaw(word)
+    }
+
+    private fun looksLikeTypoRaw(word: String): Boolean {
         if (word.length < 3) return false
         val lw = word.lowercase()
+        if (seedSet.contains(lw)) return false
         // only lengths within one can be within one edit, so the index keeps
         // this to a few hundred comparisons instead of the whole dictionary
         val byLen = commonByLength()
@@ -238,21 +431,25 @@ class WordStore(private val context: Context, private val langCode: String) {
 
     // ------------------------------------------------- dictionary cleanup
     /**
-     * Learned words that are one slip away from a common dictionary word.
-     * These are almost certainly typos that the old count-only rule let in,
-     * and the settings screen offers to remove them in bulk.
+     * Learned words that are one slip away from a common dictionary word and
+     * were never confirmed by hand. The settings screen offers to remove
+     * them in bulk.
      */
     fun suspiciousLearned(): List<String> {
         ensureLoaded()
-        return learned.keys
-            .filter { (learned[it] ?: 0) < LEARN_EXPLICIT && looksLikeTypo(it) }
+        return learned.entries
+            .filter { (w, e) -> !e.blocked && e.level < EXPLICIT && (e.suspect || looksLikeTypo(w)) }
+            .map { it.key }
             .sorted()
     }
 
-    /** All learned words with their counts, most used first. */
+    /** Learned words the user can see, with their level, strongest first. */
     fun learnedWords(): List<Pair<String, Int>> {
         ensureLoaded()
-        return learned.entries.sortedByDescending { it.value }.map { it.key to it.value }
+        return learned.entries
+            .filter { isVisible(it.value) }
+            .sortedByDescending { it.value.level }
+            .map { it.key to it.value.level }
     }
 
     fun forgetAll(words: Collection<String>) {
@@ -306,9 +503,14 @@ class WordStore(private val context: Context, private val langCode: String) {
         dirty = true
     }
 
+    /**
+     * The user removed this word from the strip. It is blocked rather than
+     * just deleted, so typing it again does not quietly bring it back.
+     */
     fun forget(word: String) {
         ensureLoaded()
-        if (learned.remove(word) != null) dirty = true
+        learned[word] = Entry(BLOCKED, 0, now(), 0)
+        dirty = true
     }
 
     fun clearLearned() {
@@ -319,12 +521,14 @@ class WordStore(private val context: Context, private val langCode: String) {
         save()
     }
 
+    /** Ranking weight of a learned word, on the corpus-frequency scale. */
+    private fun learnedFreq(e: Entry): Int =
+        if (e.level >= EXPLICIT) 30000 else 200 * e.level * e.level
+
     /**
-     * Prefix completions: learned words first (by frequency), then seeds —
+     * Prefix completions: learned words first (by level), then seeds —
      * which are already ordered by corpus frequency, so the most common
      * words of the language come first.
-     * A word typed only once is NOT suggested yet — this keeps one-off
-     * typos out of the suggestion strip; a word must repeat to qualify.
      */
     fun suggest(prefix: String, max: Int, useSeeds: Boolean): List<String> {
         if (prefix.isEmpty()) return emptyList()
@@ -332,14 +536,15 @@ class WordStore(private val context: Context, private val langCode: String) {
         val out = ArrayList<String>()
         learned.entries
             .asSequence()
-            .filter { it.value >= LEARN_PROBATION && it.key.startsWith(prefix) && it.key != prefix }
-            .sortedByDescending { it.value }
+            .filter { isVisible(it.value) && it.key.startsWith(prefix) && it.key != prefix }
+            .sortedByDescending { it.value.level }
             .take(max)
             .forEach { out.add(it.key) }
         if (useSeeds && out.size < max) {
             for (w in seeds) {
                 if (out.size >= max) break
-                if (w.startsWith(prefix) && w != prefix && !out.contains(w)) out.add(w)
+                if (w.startsWith(prefix) && w != prefix && !out.contains(w) &&
+                    learned[w]?.blocked != true) out.add(w)
             }
         }
         return out
@@ -348,9 +553,9 @@ class WordStore(private val context: Context, private val langCode: String) {
     /** True when the word is an established dictionary word (any case). */
     fun contains(word: String): Boolean {
         ensureLoaded()
-        if ((learned[word] ?: 0) >= LEARN_CONFIRMED || seedSet.contains(word)) return true
+        if (isTrusted(learned[word]) || seedSet.contains(word)) return true
         val lc = word.lowercase()
-        return lc != word && ((learned[lc] ?: 0) >= LEARN_CONFIRMED || seedSet.contains(lc))
+        return lc != word && (isTrusted(learned[lc]) || seedSet.contains(lc))
     }
 
     /**
@@ -422,10 +627,10 @@ class WordStore(private val context: Context, private val langCode: String) {
         if (n >= 2) firstOk.addAll(subCost[1].keys)
 
         val out = ArrayList<Cand>()
-        for ((w, c) in learned) {
-            if (c < LEARN_CONFIRMED) continue
+        for ((w, e) in learned) {
+            if (!isVisible(e)) continue
             if (!plausible(w, n, budget, firstOk)) continue
-            score(lower, w, freqScore(c * 100), subCost, budget, slack, rows)
+            score(lower, w, freqScore(learnedFreq(e)), subCost, budget, slack, rows)
                 ?.let { out.add(it) }
         }
         if (useSeeds) {
@@ -435,6 +640,7 @@ class WordStore(private val context: Context, private val langCode: String) {
                 for (idx in bucket) {
                     val w = seeds[idx]
                     if (!plausible(w, n, budget, firstOk)) continue
+                    if (learned[w]?.blocked == true) continue
                     score(lower, w, freqScore(seedFreq[idx]), subCost, budget, slack, rows)
                         ?.let { out.add(it) }
                 }
@@ -592,7 +798,7 @@ class WordStore(private val context: Context, private val langCode: String) {
         // prefer finishing the word soon over a long completion
         s -= (m - bestJ) * 40
         s -= (m - n).coerceAtLeast(0) * 8
-        return Cand(w, s, exact, m == n)
+        return Cand(w, s, exact, m == n, bestCost)
     }
 
     /**
@@ -620,38 +826,35 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /**
-     * Merge an imported plain-text word list. Imported words get a count of
-     * at least 2 so they are suggested immediately (unlike one-off typos).
-     * Returns how many words were added.
+     * Merge an imported plain-text word list ("word" or "word<TAB>count" per
+     * line). Imported words are trusted at once — the user chose to bring
+     * them in. Returns how many words were added.
      */
     fun importText(text: String): Int {
         ensureLoaded()
         val before = learned.size
-        val imported = ArrayList<String>()
+        val t = now()
         for (line in text.lineSequence()) {
-            val t = line.trim()
-            if (t.isEmpty() || t.length > 48) continue
-            val idx = t.indexOf('\t')
-            val w = (if (idx > 0) t.substring(0, idx) else t).trim()
-            if (w.isEmpty()) continue
-            parseWordLine(t)
-            imported.add(w)
-        }
-        for (w in imported) {
-            val c = learned[w]
-            if (c != null && c < 2) learned[w] = 2
+            val l = line.trim()
+            if (l.isEmpty() || l.startsWith("#") || l.length > 48) continue
+            val w = l.substringBefore('\t').trim()
+            if (w.isEmpty() || w.length > 32) continue
+            val n = l.substringAfter('\t', "").trim().toIntOrNull() ?: 0
+            val lvl = if (n >= EXPLICIT || n >= 50) EXPLICIT else TRUSTED
+            val e = learned[w]
+            if (e == null || e.blocked || e.level < lvl) learned[w] = Entry(lvl, 0, t, 0)
         }
         dirty = true
         save()
         return learned.size - before
     }
 
+    /** The learned words a user would recognise, as "word<TAB>level" lines
+     *  that [importText] reads back. */
     fun exportText(): String {
         ensureLoaded()
         val sb = StringBuilder()
-        for ((w, c) in learned.entries.sortedByDescending { it.value }) {
-            sb.append(w).append('\t').append(c).append('\n')
-        }
+        for ((w, lvl) in learnedWords()) sb.append(w).append('\t').append(lvl).append('\n')
         return sb.toString()
     }
 
@@ -661,10 +864,16 @@ class WordStore(private val context: Context, private val langCode: String) {
         // snapshot on the caller's thread, write on the background thread so
         // saving never stalls the keyboard
         val words = try {
-            val sb = StringBuilder()
-            // keep the store bounded: drop least-used words beyond 20000
-            val entries = learned.entries.sortedByDescending { it.value }.take(20000)
-            for ((w, c) in entries) sb.append(w).append('\t').append(c).append('\n')
+            val sb = StringBuilder(HEADER).append('\n')
+            // keep the store bounded: strongest and most recent words first
+            val entries = learned.entries
+                .sortedWith(compareByDescending<Map.Entry<String, Entry>> { it.value.level }
+                    .thenByDescending { it.value.ts })
+                .take(MAX_ENTRIES)
+            for ((w, e) in entries) {
+                sb.append(w).append('\t').append(e.level).append('\t').append(e.hits)
+                    .append('\t').append(e.ts).append('\t').append(e.flags).append('\n')
+            }
             sb.toString()
         } catch (_: Exception) { null }
         val pairs = try {

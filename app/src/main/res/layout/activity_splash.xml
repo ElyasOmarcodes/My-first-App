@@ -15,7 +15,7 @@
             android:id="@+id/splash_icon"
             android:layout_width="112dp"
             android:layout_height="112dp"
-            android:src="@mipmap/ic_launcher"
+            android:src="@drawable/logo_app"
             android:importantForAccessibility="no" />
         <TextView
             android:id="@+id/splash_name"

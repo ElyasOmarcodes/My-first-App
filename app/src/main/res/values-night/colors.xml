@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Hindukush Keyboard — Material 3 colour scheme, DARK. Same names as
+<!-- Pashto Keyboard Plus — Material 3 colour scheme, DARK. Same names as
      values/colors.xml; only the values change. -->
 <resources>
 
-    <color name="launcher_bg">#242A38</color>
+    <color name="launcher_bg">#6B50F2</color>
 
     <color name="m3_primary">#C2B5FF</color>
     <color name="m3_on_primary">#2B1980</color>
@@ -81,4 +81,8 @@
     <color name="grad_cyan_a">#1C9DB2</color>
     <color name="grad_cyan_b">#0B768B</color>
 
+    <!-- About: the soft header wash behind the profile, and the avatar glow -->
+    <color name="profile_a">#241E3C</color>
+    <color name="profile_b">#2B1C2C</color>
+    <color name="avatar_glow">#668B70FF</color>
 </resources>

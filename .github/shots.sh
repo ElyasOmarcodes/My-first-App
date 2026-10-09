@@ -62,12 +62,17 @@ for mode in light dark; do
   open SplashActivity;                                shot "${mode}_01_splash" 0.6
   sleep 2
   open MainActivity --es tab home;                    shot "${mode}_02_home"
+  adb shell input swipe 540 1700 540 500 400;         shot "${mode}_02b_home_scrolled" 1.5
   open MainActivity --es tab shortcuts;               shot "${mode}_03_shortcuts"
   open MainActivity --es tab settings;                shot "${mode}_04_settings"
   open MainActivity --es tab about;                   shot "${mode}_05_about"
+  adb shell input swipe 540 1800 540 450 400;         shot "${mode}_05b_about_contact" 1.5
+  adb shell input swipe 540 1800 540 450 400;         shot "${mode}_05c_about_app" 1.5
   open SettingsActivity --es open_screen look;        shot "${mode}_06_look"
   open SettingsActivity --es open_screen typing;      shot "${mode}_07_typing"
   open SettingsActivity --es open_screen colors;      shot "${mode}_08_colors"
+  open SettingsActivity --es open_screen sizes;       shot "${mode}_10_sizes"
+  open SettingsActivity --es open_screen feedback;    shot "${mode}_11_feedback"
   open PrivacyActivity;                               shot "${mode}_09_privacy"
 done
 adb shell cmd uimode night no

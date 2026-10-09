@@ -255,6 +255,20 @@ class KeyboardView(context: Context) : View(context) {
         textAlign = Paint.Align.RIGHT
     }
 
+    /**
+     * Typeface for key labels, hints and the language flash — the system
+     * font by default, Vazirmatn when the user picks it in Look settings.
+     */
+    var labelTypeface: Typeface = Typeface.DEFAULT
+        set(value) {
+            if (field === value) return
+            field = value
+            textPaint.typeface = value
+            hintPaint.typeface = value
+            flashTextPaint.typeface = value
+            invalidate()
+        }
+
     // --------------------------------------------------- multi-touch state
     private class PointerState(
         val id: Int,

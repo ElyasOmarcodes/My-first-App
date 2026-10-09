@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="about_desc">هندوکش کیبورډ — د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره
-        بشپړ آفلاین، چټک او مسلکي کیبورډ دی.\n چې د هندوکش غږ محصول دی.</string>
+    <string name="about_desc">د پښتو، دري/فارسي، عربي، اردو او انګلیسي لپاره بشپړ آفلاین، چټک او هوښیار کیبورډ.</string>
     <string name="about_privacy">د محرمیت پالیسي</string>
-    <string name="about_publisher">هندوکش غږ \nVoice Of Hindukush</string>
-    <string name="about_sites">زموږ ویب پاڼې</string>
     <string name="about_title">د پروګرام په اړه</string>
     <string name="about_version">نسخه %1$s</string>
-    <string name="app_name">هندوکش کیبورډ</string>
+    <string name="app_name">پښتو کیبورډ پلس</string>
     <string name="autotext_add">زیاتول</string>
     <string name="autotext_delete_q">دا لنډیز ړنګ شي؟</string>
     <string name="autotext_desc">د لیکنې پر وخت لنډیز ولیکئ او بشپړه جمله یې مقابل کې تاسو ته ښودل کیږي — او په کلیک سره به هغه جمله ستاسو د لیکل شویو تورو په بدل کې ځای پر ځای شي.</string>
@@ -26,11 +23,6 @@
     <string name="cat_settings_backup">تنظیمات</string>
     <string name="clear_learned_q">ډاډه یاست؟ دا کار بېرته نه راګرځي.</string>
     <string name="clip_prefix">کاپي شوی:</string>
-    <string name="contact_manager">د هندوکش‌غږ مسئول مدير</string>
-    <string name="contact_manager_name">میرویس سروش</string>
-    <string name="contact_whatsapp_btn">په واټساپ کې اړیکه</string>
-    <string name="contact_whatsapp_num">‎+93765893297‎</string>
-    <string name="credit">هندوکش غږ\n2026</string>
     <string name="done">ترسره شو ✔</string>
     <string name="imported_n_words">%1$d نوي توکي ورزیات شول ✔</string>
     <string name="lang_ar">العربية</string>
@@ -38,7 +30,6 @@
     <string name="lang_fa">دري / فارسی</string>
     <string name="lang_ps">پښتو</string>
     <string name="lang_ur">اردو</string>
-    <string name="org_intro">هندوکش‌غږ یوه خپلواکه خبري او تحلیلي رسنۍ ده چې د کره، باوري او مستندو معلوماتو د خپرولو، د مهمو پېښو د هر اړخیز تحلیل او د ټولنې د عامه پوهاوي د پیاوړتیا لپاره فعالیت کوي. هندوکش‌غږ د ژورنالېزم له اصولو او مسلکي اخلاقو سره سم، د بې پرېتوب، دقت او مسؤلیت پر بنسټ محتوا برابروي او هڅه کوي چې لوستونکو او لیدونکو ته روښانه، متوازن او د باور وړ معلومات وړاندې کړي.</string>
     <string name="pref_arrow_height">د څلور طرفه بټنو د قطار لوړوالی (٪)</string>
     <string name="pref_arrows">د څلور طرفه بټنو فعالول</string>
     <string name="pref_arrows_sum">د کیبورډ لاندې د کرسر د خوځولو بټنې</string>
@@ -111,7 +102,7 @@
     <string name="pref_languages">فعالې ژبې</string>
     <string name="pref_languages_sum">کومې ژبې باید په کیبورډ کې فعالې وي</string>
     <string name="pref_learn_words">نوې کلمې زده کول</string>
-    <string name="pref_learn_words_sum">ستاسو لیکل شوې کلمې لغتنامې ته ورزیاتوي</string>
+    <string name="pref_learn_words_sum">هغه کلمې زده کوي چې تاسو یې ساتئ؛ ړنګې شوې یا سمې شوې کلمې نه زده کیږي</string>
     <string name="pref_longpress">د  بټنې د اوږد فشار لپاره وخت</string>
     <string name="pref_nav_gap_auto">اتومات لاندینی واټن</string>
     <string name="pref_nav_gap_auto_sum">کیبورډ د موبایل د لاندینیو تڼیو له مخې پخپله مناسب واټن اخلي (که غیرفعال شي، لاندینی سکبار بیا باید وکاریږي)</string>
@@ -140,15 +131,6 @@
     <string name="pref_vibrate">لړزه</string>
     <string name="pref_vibrate_ms">د لړزې موده په میلي ثانیې</string>
     <string name="privacy_online">آنلاین بڼه په براوزر کې پرانیستل ↗</string>
-    <string name="privacy_text">هندوکش کیبورډ یو بشپړ آفلاین کیبورډ دی.\n\n
-• دا اپلیکیشن د انټرنیټ اجازه (INTERNET permission) نه لري، نو ستاسو لیکل شوي معلومات
-له وسیلې بهر نه شي لېږل کېدای.\n
-• هر څه چې لیکئ، زده شوې کلمې، لنډیزونه او د کلیپ بورډ تاریخچه یوازې ستاسو
-د موبایل په حافظه کې خوندي کیږي او یوازې تاسو ورته لاسرسی لرئ.\n
-• دا اپلیکیشن هیڅ شخصي معلومات نه راټولوي، نه یې شریکوي او نه یې چا ته پلوري.\n
-• د اعلاناتو یا تحلیل (Analytics) هیڅ کوډ پکې نشته.\n
-• په پاسورډ فیلډونو کې وړاندیز، زده کړه او د کلیپ بورډ ثبت پخپله بندیږي.\n\n
-اړیکه: هندوکش غږ — hindukushen.com</string>
     <string name="resize_kb">د کیبورډ اندازه</string>
     <string name="screen_about_sum">نسخه، جوړونکې اداره، ویب پاڼې او پالیسي</string>
     <string name="screen_autotext_sum">لنډیزونه — لنډ ولیکئ، بشپړ به ولیکل شي</string>
@@ -164,10 +146,6 @@
     <string name="settings_title">د کیبورډ تنظیمات</string>
     <string name="setup_desc">د کارولو لپاره دا درې ګامونه بشپړ کړئ:</string>
     <string name="setup_features">✔ پښتو، دري/فارسي، عربي، اردو او انګلیسي\n✔ اوږد فشار = اضافي توري او اعراب\n✔ په سپیس بار ګوته چلول = ژبه بدلول\n✔ د ۱۲۳ اوږد فشار = مینو (کنټرول پینل، شمېرې، ایموجي…)\n✔ د کلمو وړاندیز، وړاندوینه او زده کول\n✔ AutoText — لنډیز ولیکئ، بشپړه جمله به ولیکل شي\n✔ چټک ټایپ (Multi-touch)\n✔ بشپړ آفلاین — د انټرنیټ اجازه نه لري</string>
-    <string name="setup_step1">۱. کیبورډ د سیسټم په تنظیماتو کې فعال کړئ</string>
-    <string name="setup_step2">۲. هندوکش کیبورډ د اوسني کیبورډ په توګه وټاکئ</string>
-    <string name="setup_step3">۳. دلته یې وازمایئ</string>
-    <string name="setup_title">هندوکش کیبورډ ته ښه راغلاست </string>
     <string name="test_hint">دلته کیبورډ وازمایئ…</string>
     <string name="word_boost">د کلمې ارزښت لوړول</string>
     <string name="word_boosted">د کلمې ارزښت لوړ شو ✔</string>
@@ -204,11 +182,8 @@
     <string name="clip_title">کلیپ بورډ</string>
     <string name="clip_clear">پاکول</string>
     <string name="clip_empty">کلیپ بورډ تش دی — یو متن کاپي کړئ</string>
-    <string name="about_copyright">© 2026 هندوکش غږ — Voice Of Hindukush</string>
-    <string name="site_ps">پښتو</string>
-    <string name="site_fa">دري</string>
-    <string name="site_en">English</string>
-    <string name="splash_sub">هندوکش غږ</string>
+    <string name="about_copyright">© 2026 م. الیاس عمر</string>
+    <string name="splash_sub">د م. الیاس عمر لخوا</string>
     <string name="pref_clean_typos">د غلطو کلمو پاکول</string>
     <string name="pref_clean_typos_sum">هغه زده شوې کلمې چې د اصلي کلمې غلط ټایپ ښکاري، ولټوه او لرې یې کړه</string>
     <string name="clean_typos_none">هیڅ داسې کلمه ونه موندل شوه</string>
@@ -226,11 +201,11 @@
     <string name="home_subtitle">ستاسو د ژبې کیبورډ</string>
     <string name="status_label">د کیبورډ حالت</string>
     <string name="status_ready_title">کیبورډ چمتو دی</string>
-    <string name="status_ready_body">هندوکش کیبورډ فعال او ټاکل شوی دی — په هر اپ کې ولیکئ.</string>
+    <string name="status_ready_body">پښتو کیبورډ پلس فعال او ټاکل شوی دی — په هر اپ کې ولیکئ.</string>
     <string name="status_enable_title">کیبورډ فعال کړئ</string>
-    <string name="status_enable_body">په سیستم تنظیماتو کې هندوکش کیبورډ روښانه کړئ.</string>
+    <string name="status_enable_body">په سیستم تنظیماتو کې پښتو کیبورډ پلس روښانه کړئ.</string>
     <string name="status_select_title">کیبورډ وټاکئ</string>
-    <string name="status_select_body">هندوکش کیبورډ د خپل اوسني کیبورډ په توګه وټاکئ.</string>
+    <string name="status_select_body">پښتو کیبورډ پلس د خپل اوسني کیبورډ په توګه وټاکئ.</string>
     <string name="stat_langs">ژبې</string>
     <string name="stat_words">زده کلمې</string>
     <string name="stat_shortcuts">لنډیزونه</string>
@@ -250,4 +225,52 @@
     <string name="lang_sub_ps">Pashto</string>
     <string name="lang_sub_fa">Dari · Farsi</string>
     <string name="lang_sub_en">انګلیسي</string>
+    <string name="dev_name">م. الیاس عمر</string>
+    <string name="dev_name_latin">M. Elyas Omar</string>
+    <string name="dev_title">د اندروید، iOS او وینډوز اپلیکېشنونو جوړونکی</string>
+    <string name="dev_bio">د پروګرام لیکنې تر څنګ، هغه څه چې زده یې کړي نورو ته یې ښيي. دا کیبورډ د همدې دواړو کارونو پایله ده: داسې جوړ شوی چې په لیکلو کې چټک، په ژبه کې دقیق او له انټرنېټ پرته کار وکړي — او هر چا ته اسانه وي، حتی هغه چا ته چې نوی یې موبایل په لاس کې اخیستی.</string>
+    <string name="dev_builds_for">جوړوي د</string>
+    <string name="dev_teaches">او تدریس کوي</string>
+    <string name="dev_teacher">استاد</string>
+    <string name="dev_teacher_sub">د پروګرام جوړونې او ټکنالوژۍ ښوونکی</string>
+    <string name="dev_contact">اړیکه</string>
+    <string name="dev_contact_hint">د پرانیستلو لپاره ټک وکړئ، د کاپي لپاره یې اوږد ونیسئ</string>
+    <string name="contact_whatsapp">واټساپ</string>
+    <string name="contact_telegram">ټیلیګرام</string>
+    <string name="contact_email">برېښنالیک</string>
+    <string name="copied">کاپي شو</string>
+    <string name="about_app">د اپ په اړه</string>
+    <string name="about_footer">د Kotlin سره جوړ شوی · v%1$s</string>
+    <string name="tips_title">ګټوره لارښوونه</string>
+    <string name="cat_theme">تم</string>
+    <string name="cat_keys">تڼۍ</string>
+    <string name="cat_kb_size">د کیبورډ اندازه</string>
+    <string name="cat_text_size">د لیکنې اندازه</string>
+    <string name="cat_bottom_space">لاندینۍ فاصله</string>
+    <string name="cat_suggest">وړاندیزونه</string>
+    <string name="cat_learning">د کلمو زده کړه</string>
+    <string name="cat_writing">لیکنه</string>
+    <string name="cat_vibration">لړزش</string>
+    <string name="cat_sound">غږ</string>
+    <string name="cat_languages">ژبې</string>
+    <string name="cat_control">د کنټرول تڼۍ</string>
+    <string name="cat_shortcuts">لنډیزونه</string>
+    <string name="cat_files">فایلونه</string>
+    <string name="cat_fill">رنګ</string>
+    <string name="cat_gradient">ګرېډینټ</string>
+    <string name="cat_text_colors">د متن رنګونه</string>
+    <string name="pref_key_font">وزیرمتن فونټ</string>
+    <string name="pref_key_font_sum">د کیبورډ تڼیو او وړاندیزونو لپاره ښکلی وزیرمتن فونټ</string>
+    <string name="pref_learned_words">زده شوې کلمې</string>
+    <string name="pref_learned_words_sum">هغه کلمې وګورئ چې کیبورډ له تاسو زده کړې — او ناسمې یې ړنګې کړئ</string>
+    <string name="learned_none">تر اوسه هیڅ کلمه نه ده زده شوې.</string>
+    <string name="learned_delete">ړنګول</string>
+    <string name="learned_deleted">%1$s کلمې ړنګې شوې</string>
+    <string-array name="home_tips">
+        <item>یوه کلمه چې کیبورډ یې نه پېژني، په وړاندیز پټه کې یې پخپله کلمه ټک کړئ — سمدستي زده کیږي.</item>
+        <item>که اتومات سمون غلط شو، سمدستي Backspace ووهئ: ستاسو اصلي کلمه بیرته راځي او کیبورډ یې زده کوي.</item>
+        <item>هره وړاندیز شوې کلمه اوږده ونیسئ ترڅو یې لوړه کړئ یا له قاموسه یې ړنګه کړئ.</item>
+        <item>په لنډیزونو کې یو لنډ نښان ولیکئ؛ بشپړه جمله یې په وړاندیز پټه کې ښکاري.</item>
+        <item>په سپیس بټن ښي یا چپ ګوته کش کړئ ترڅو ژبه بدله شي.</item>
+    </string-array>
 </resources>

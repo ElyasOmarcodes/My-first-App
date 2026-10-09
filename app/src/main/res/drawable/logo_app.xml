@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app logo for in-app use (splash, about) and for launchers older
+     than Android 8: the launcher layers on a rounded tile. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/logo_tile_bg" />
+    <item android:drawable="@drawable/ic_launcher_fg" />
+</layer-list>

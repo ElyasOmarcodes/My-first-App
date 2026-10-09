@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/tab_home" android:icon="@drawable/ic_m_home" android:title="@string/tab_home" />
-    <item android:id="@+id/tab_shortcuts" android:icon="@drawable/ic_m_snippet" android:title="@string/tab_shortcuts" />
-    <item android:id="@+id/tab_settings" android:icon="@drawable/ic_m_tune" android:title="@string/tab_settings" />
-    <item android:id="@+id/tab_about" android:icon="@drawable/ic_m_info" android:title="@string/tab_about" />
-</menu>

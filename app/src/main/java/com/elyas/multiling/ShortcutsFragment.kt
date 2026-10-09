@@ -30,7 +30,7 @@ class ShortcutsFragment : Fragment(R.layout.frag_shortcuts) {
         Ui.padForBars(scroll, top = true, bottom = true)
 
         val fab = view.findViewById<ExtendedFloatingActionButton>(R.id.fab)
-        Ui.marginForNavBar(fab, Ui.dp(c, 112f))
+        Ui.marginForNavBar(fab, Ui.dp(c, 98f))
         fab.setOnClickListener { edit(null, null) }
         // the FAB folds to its icon while the list moves, like native lists
         scroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, y, _, oldY ->

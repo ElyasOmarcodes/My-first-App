@@ -1,17 +1,17 @@
-# Privacy Policy for Hindukush Keyboard (هندوکش کیبورډ)
+# Privacy Policy for Pashto Keyboard Plus (پښتو کیبورډ پلس)
 
 **Effective date:** July 14, 2026
-**Developer / Publisher:** Voice Of Hindukush (هندوکش غږ اداره)
-**Application:** Hindukush Keyboard — package `com.hindukush.kb.elyas`
-**Contact:** via our website — https://hindukushen.com/
+**Developer / Publisher:** M. Elyas Omar (م. الیاس عمر)
+**Application:** Pashto Keyboard Plus
+**Contact:** ElyasOmar100@gmail.com
 
-This Privacy Policy explains how the Hindukush Keyboard application
+This Privacy Policy explains how the Pashto Keyboard Plus application
 ("the App") handles user information. It applies to the App as distributed
 on Google Play.
 
 ## 1. Summary
 
-Hindukush Keyboard is a fully **offline** input method (keyboard) for
+Pashto Keyboard Plus is a fully **offline** input method (keyboard) for
 Pashto, Dari/Farsi, Arabic, Urdu and English.
 **The App does not collect, store remotely, transmit, share or sell any
 user data of any kind.**
@@ -19,7 +19,7 @@ user data of any kind.**
 ## 2. About keyboard (IME) apps
 
 Android warns that an input method may be able to see the text you type.
-For Hindukush Keyboard this access is handled as follows:
+For Pashto Keyboard Plus this access is handled as follows:
 
 - The App declares **no INTERNET permission**. It is technically impossible
   for the App to transmit anything you type off your device.
@@ -83,14 +83,13 @@ address, and material changes will be noted in the App's "About" page.
 ## 9. Contact
 
 For any question about this policy or the App:
-**Voice Of Hindukush (هندوکش غږ اداره)** — https://hindukushen.com/
-(Pashto: https://hindukushpa.com — Dari: https://hindokosh.com/)
+**M. Elyas Omar (م. الیاس عمر)** — ElyasOmar100@gmail.com
 
 ---
 
-# د محرمیت پالیسي — هندوکش کیبورډ (پښتو لنډیز)
+# د محرمیت پالیسي — پښتو کیبورډ پلس (پښتو لنډیز)
 
-هندوکش کیبورډ یو بشپړ **آفلاین** کیبورډ دی چې د **هندوکش غږ ادارې** لخوا
+پښتو کیبورډ پلس یو بشپړ **آفلاین** کیبورډ دی چې د **م. الیاس عمر** لخوا
 خپور شوی.
 
 - اپلیکیشن د **انټرنیټ اجازه نه لري** — ستاسو لیکل شوي معلومات له وسیلې
@@ -103,4 +102,4 @@ For any question about this policy or the App:
 - د اپ د حافظې په پاکولو یا له منځه وړلو سره ټول معلومات د تل لپاره
   ړنګیږي.
 
-اړیکه: هندوکش غږ — hindukushen.com
+اړیکه: م. الیاس عمر — ElyasOmar100@gmail.com

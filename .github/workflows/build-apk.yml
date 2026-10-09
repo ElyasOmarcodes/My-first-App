@@ -55,9 +55,9 @@ jobs:
       - name: Collect outputs
         run: |
           mkdir -p .build-outputs
-          rm -f .build-outputs/app-debug.apk .build-outputs/MultiKeyboard.apk
-          cp app/build/outputs/apk/release/app-release.apk .build-outputs/HindukushKb.apk
-          cp app/build/outputs/bundle/release/app-release.aab .build-outputs/HindukushKb.aab
+          rm -f .build-outputs/app-debug.apk .build-outputs/MultiKeyboard.apk .build-outputs/HindukushKb.apk .build-outputs/HindukushKb.aab
+          cp app/build/outputs/apk/release/app-release.apk .build-outputs/PashtoKeyboardPlus.apk
+          cp app/build/outputs/bundle/release/app-release.aab .build-outputs/PashtoKeyboardPlus.aab
 
       # ---- screenshots: only when the commit message contains [shots]
       - name: Build debug APK for screenshots
@@ -87,10 +87,10 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: hindukush-kb
+          name: pashto-keyboard-plus
           path: |
-            .build-outputs/HindukushKb.apk
-            .build-outputs/HindukushKb.aab
+            .build-outputs/PashtoKeyboardPlus.apk
+            .build-outputs/PashtoKeyboardPlus.aab
 
       - name: Commit APK back to branch
         if: github.event_name == 'push'

@@ -205,6 +205,8 @@ class SettingsActivity : AppCompatActivity() {
             if (screen == "colors") wireColors()
             if (screen == "col_keys") wireColorGroup("col_key", "col_key_grad_on")
             if (screen == "col_special") wireColorGroup("col_special", "col_special_grad_on")
+            if (screen == "typing") wireTyping()
+            PrefIcons.apply(preferenceScreen)
         }
 
         /**
@@ -223,6 +225,11 @@ class SettingsActivity : AppCompatActivity() {
             list.isVerticalScrollBarEnabled = false
             list.overScrollMode = android.view.View.OVER_SCROLL_NEVER
             list.addItemDecoration(PrefGroupCards(c))
+            // rows arrive one after another the first time the screen shows
+            if (savedInstanceState == null) {
+                list.layoutAnimation =
+                    android.view.animation.AnimationUtils.loadLayoutAnimation(c, R.anim.list_rise)
+            }
             setDivider(null)
             setDividerHeight(0)
         }
@@ -300,6 +307,53 @@ class SettingsActivity : AppCompatActivity() {
                 createDocument(REQ_AUTOTEXT_EXPORT, "autotext.txt")
                 true
             }
+        }
+
+        /**
+         * "Learned words": everything the keyboard picked up from typing, per
+         * language, with a checkbox each. Removing blocks the word, so the
+         * keyboard does not quietly learn it again.
+         */
+        private fun wireTyping() {
+            findPreference<Preference>("learned_words")?.setOnPreferenceClickListener {
+                showLearnedWords()
+                true
+            }
+        }
+
+        private fun showLearnedWords() {
+            val ctx = requireContext()
+            val items = ArrayList<Pair<String, String>>()   // code, word
+            for (l in Layouts.ALL) {
+                for ((w, _) in WordStore(ctx, l.code).learnedWords()) items.add(l.code to w)
+            }
+            if (items.isEmpty()) {
+                toast(getString(R.string.learned_none))
+                return
+            }
+            val labels = items.map { (code, w) -> "$w   ·  ${code.uppercase()}" }.toTypedArray()
+            val checked = BooleanArray(items.size)
+            MaterialAlertDialogBuilder(ctx)
+                .setTitle(R.string.pref_learned_words)
+                .setMultiChoiceItems(labels, checked) { _, which, on -> checked[which] = on }
+                .setPositiveButton(R.string.learned_delete) { _, _ ->
+                    val byLang = HashMap<String, MutableList<String>>()
+                    for (i in items.indices) if (checked[i]) {
+                        byLang.getOrPut(items[i].first) { ArrayList() }.add(items[i].second)
+                    }
+                    var n = 0
+                    for ((code, words) in byLang) {
+                        val ws = WordStore(ctx, code)
+                        for (w in words) { ws.forget(w); n++ }
+                        ws.save()
+                    }
+                    if (n > 0) {
+                        AutoTextStore.bumpDataVersion(ctx)
+                        toast(getString(R.string.learned_deleted, Ui.digits(ctx, n)))
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
 
         private fun wireBackup() {

@@ -7,7 +7,6 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.core.widget.NestedScrollView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
 /**
@@ -36,22 +35,28 @@ class MainActivity : AppCompatActivity() {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
-    private lateinit var nav: BottomNavigationView
+    private lateinit var bar: FloatingTabBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Ui.edgeToEdge(this)
         setContentView(R.layout.activity_main)
 
-        Ui.marginForNavBar(findViewById(R.id.nav_card), Ui.dp(this, 12f))
-        nav = findViewById(R.id.bottom_nav)
-        nav.setOnItemSelectedListener { show(it.itemId); true }
-        nav.setOnItemReselectedListener { scrollToTop(it.itemId) }
+        Ui.marginForNavBar(findViewById(R.id.nav_card), Ui.dp(this, 14f))
+        bar = findViewById(R.id.tab_bar)
+        bar.setTabs(listOf(
+            FloatingTabBar.Tab(TAB_HOME, R.drawable.ic_m_home, R.drawable.ic_m_home_filled, R.string.tab_home),
+            FloatingTabBar.Tab(TAB_SHORTCUTS, R.drawable.ic_m_snippet, R.drawable.ic_m_snippet, R.string.tab_shortcuts),
+            FloatingTabBar.Tab(TAB_SETTINGS, R.drawable.ic_m_tune, R.drawable.ic_m_tune, R.string.tab_settings),
+            FloatingTabBar.Tab(TAB_ABOUT, R.drawable.ic_m_person, R.drawable.ic_m_person, R.string.tab_about)
+        ))
+        bar.onSelect = { show(it) }
+        bar.onReselect = { scrollToTop(it) }
 
-        val first = tabId(intent?.getStringExtra(EXTRA_TAB))
-            ?: savedInstanceState?.getInt("tab")?.takeIf { it != 0 }
-            ?: R.id.tab_home
-        nav.selectedItemId = first
+        val first = valid(intent?.getStringExtra(EXTRA_TAB))
+            ?: valid(savedInstanceState?.getString("tab"))
+            ?: TAB_HOME
+        bar.select(first, animate = false)
         show(first)
 
         if (!AppLocale.isChosen(this)) showLanguageSheet()
@@ -59,33 +64,28 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        tabId(intent.getStringExtra(EXTRA_TAB))?.let {
-            nav.selectedItemId = it
+        valid(intent.getStringExtra(EXTRA_TAB))?.let {
+            bar.select(it, animate = true)
             show(it)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt("tab", nav.selectedItemId)
+        outState.putString("tab", bar.selected)
     }
 
-    private fun tabId(name: String?): Int? = when (name) {
-        TAB_HOME -> R.id.tab_home
-        TAB_SHORTCUTS -> R.id.tab_shortcuts
-        TAB_SETTINGS -> R.id.tab_settings
-        TAB_ABOUT -> R.id.tab_about
-        else -> null
-    }
+    private fun valid(name: String?): String? =
+        name?.takeIf { it == TAB_HOME || it == TAB_SHORTCUTS || it == TAB_SETTINGS || it == TAB_ABOUT }
 
-    private fun create(id: Int): Fragment = when (id) {
-        R.id.tab_shortcuts -> ShortcutsFragment()
-        R.id.tab_settings -> SettingsTabFragment()
-        R.id.tab_about -> AboutFragment()
+    private fun create(id: String): Fragment = when (id) {
+        TAB_SHORTCUTS -> ShortcutsFragment()
+        TAB_SETTINGS -> SettingsTabFragment()
+        TAB_ABOUT -> AboutFragment()
         else -> HomeFragment()
     }
 
-    private fun show(id: Int) {
+    private fun show(id: String) {
         val fm = supportFragmentManager
         val tag = "tab_$id"
         val existing = fm.findFragmentByTag(tag)
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
         tx.commit()
     }
 
-    private fun scrollToTop(id: Int) {
+    private fun scrollToTop(id: String) {
         val f = supportFragmentManager.findFragmentByTag("tab_$id") ?: return
         f.view?.findViewById<NestedScrollView>(R.id.scroll)?.smoothScrollTo(0, 0)
     }
