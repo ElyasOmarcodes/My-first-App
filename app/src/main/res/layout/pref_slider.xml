@@ -19,13 +19,13 @@
 
         <FrameLayout
             android:id="@+id/icon_frame"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="16dp">
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="14dp">
             <ImageView
                 android:id="@android:id/icon"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:importantForAccessibility="no" />
         </FrameLayout>
 

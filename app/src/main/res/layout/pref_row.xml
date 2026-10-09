@@ -6,25 +6,25 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="72dp"
+    android:minHeight="62dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:background="?attr/selectableItemBackground"
     android:paddingStart="20dp"
     android:paddingEnd="16dp"
-    android:paddingTop="14dp"
-    android:paddingBottom="14dp">
+    android:paddingTop="11dp"
+    android:paddingBottom="11dp">
 
     <!-- the icon arrives as a ready tonal tile (PrefIcons) -->
     <FrameLayout
         android:id="@+id/icon_frame"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="16dp">
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginEnd="14dp">
         <ImageView
             android:id="@android:id/icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:importantForAccessibility="no" />
     </FrameLayout>
 

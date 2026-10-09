@@ -17,6 +17,9 @@ import com.google.android.material.appbar.MaterialToolbar
  * browser instead. The page is restyled with the app's own colours so it
  * reads correctly in both light and dark.
  */
+/** The same page on the web (docs/privacy.html, served by GitHub Pages). */
+private const val ONLINE_URL = "https://elyasomarcodes.github.io/My-first-App/privacy.html"
+
 class PrivacyActivity : AppCompatActivity() {
 
     override fun attachBaseContext(newBase: android.content.Context) {
@@ -44,36 +47,36 @@ class PrivacyActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.btn_online).setOnClickListener {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://github.com/ElyasOmarcodes/My-first-App/blob/main/PRIVACY.md")))
+                    Uri.parse(ONLINE_URL)))
             } catch (_: Exception) {
             }
         }
     }
 
-    /** Append a stylesheet in the current theme's colours; it wins by order. */
+    /**
+     * The page carries a light and a dark palette (dark under a
+     * prefers-color-scheme query, for the web copy). In the app the choice
+     * must follow the app's own look, so the right block is picked here, the
+     * page background is made transparent, and Vazirmatn is wired to the
+     * bundled font files.
+     */
     private fun themed(html: String): String {
-        fun hex(c: Int) = String.format("#%06X", 0xFFFFFF and c)
-        val text = hex(Ui.attr(this, com.google.android.material.R.attr.colorOnSurface))
-        val muted = hex(Ui.attr(this, com.google.android.material.R.attr.colorOnSurfaceVariant))
-        val link = hex(Ui.attr(this, androidx.appcompat.R.attr.colorPrimary))
-        val line = hex(Ui.color(this, R.color.card_stroke))
+        val darkOpen = "@media (prefers-color-scheme:dark){:root{"
+        var out = if (Ui.isNight(this)) {
+            // promote the dark palette to the default (it already follows
+            // the light one, so it wins by order)
+            html.replace(darkOpen, "@media all{:root{")
+        } else {
+            html.replace(darkOpen, "@media not all{:root{")
+        }
         val css = """<style>
             @font-face{font-family:'Vazirmatn';font-weight:400;
               src:url('file:///android_res/font/vazirmatn_regular.ttf')}
             @font-face{font-family:'Vazirmatn';font-weight:700;
               src:url('file:///android_res/font/vazirmatn_bold.ttf')}
-            *{font-family:'Vazirmatn',sans-serif!important}
-            code{font-family:monospace!important}
-            html,body{background:transparent!important;color:$text!important;
-              font-family:sans-serif;line-height:1.7;margin:0;padding:8px 10px;}
-            h1,h2,h3{color:$text!important;line-height:1.35}
-            p,li,td{color:$text!important}
-            small,.muted,blockquote{color:$muted!important}
-            a{color:$link!important}
-            hr,table,td,th{border-color:$line!important}
+            body{background:transparent!important;padding:4px 12px 8px!important}
             </style>"""
-        return if (html.contains("</head>", ignoreCase = true))
-            html.replaceFirst("</head>", "$css</head>", ignoreCase = true)
-        else css + html
+        out = out.replaceFirst("</head>", "$css</head>")
+        return out
     }
 }

@@ -69,7 +69,7 @@
                 android:layout_marginTop="-14dp"
                 android:text="@string/dev_name"
                 android:textAppearance="@style/TextAppearance.Hk.PageTitle"
-                android:textSize="27sp" />
+                android:textSize="24sp" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -249,20 +249,6 @@
                                 android:text="@string/app_name"
                                 android:textAlignment="viewStart"
                                 android:textAppearance="@style/TextAppearance.Hk.CardTitle" />
-                            <TextView
-                                android:id="@+id/version"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:background="@drawable/bg_tone"
-                                android:backgroundTint="?attr/colorSecondaryContainer"
-                                android:paddingStart="12dp"
-                                android:paddingTop="4dp"
-                                android:paddingEnd="12dp"
-                                android:paddingBottom="4dp"
-                                android:textColor="?attr/colorOnSecondaryContainer"
-                                android:textSize="12.5sp"
-                                android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
                     <TextView

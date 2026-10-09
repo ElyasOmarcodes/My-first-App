@@ -117,7 +117,6 @@ class AboutFragment : Fragment(R.layout.frag_about) {
         val version = try {
             c.packageManager.getPackageInfo(c.packageName, 0).versionName ?: ""
         } catch (_: Exception) { "" }
-        view.findViewById<TextView>(R.id.version).text = getString(R.string.about_version, version)
         view.findViewById<TextView>(R.id.footer).text = getString(R.string.about_footer, version)
 
         Rows.bindNav(view.findViewById(R.id.row_privacy), R.drawable.ic_m_shield, Ui.Tone.INDIGO,

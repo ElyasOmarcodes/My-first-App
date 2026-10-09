@@ -4,7 +4,7 @@
     <string name="about_privacy">Privacy Policy</string>
     <string name="about_title">About the app</string>
     <string name="about_version">Version %1$s</string>
-    <string name="app_name">Pashto Keyboard Plus</string>
+    <string name="app_name">Kalima Keyboard</string>
     <string name="autotext_add">Add</string>
     <string name="autotext_delete_q">Delete this shortcut?</string>
     <string name="autotext_desc">While typing, write the shortcut and its full phrase is shown to you — one tap replaces the letters you typed with that phrase.</string>
@@ -202,11 +202,11 @@ Long-press a suggestion to delete it</string>
     <string name="home_subtitle">Your language keyboard</string>
     <string name="status_label">Keyboard status</string>
     <string name="status_ready_title">Keyboard is ready</string>
-    <string name="status_ready_body">Pashto Keyboard Plus is on and selected — type in any app.</string>
+    <string name="status_ready_body">Kalima Keyboard is on and selected — type in any app.</string>
     <string name="status_enable_title">Turn the keyboard on</string>
-    <string name="status_enable_body">Switch on Pashto Keyboard Plus in system settings.</string>
+    <string name="status_enable_body">Switch on Kalima Keyboard in system settings.</string>
     <string name="status_select_title">Choose the keyboard</string>
-    <string name="status_select_body">Pick Pashto Keyboard Plus as your current keyboard.</string>
+    <string name="status_select_body">Pick Kalima Keyboard as your current keyboard.</string>
     <string name="stat_langs">Languages</string>
     <string name="stat_words">Learned words</string>
     <string name="stat_shortcuts">Shortcuts</string>
@@ -291,12 +291,17 @@ Long-press a suggestion to delete it</string>
     <string name="intro_setup_title">Turn the keyboard on</string>
     <string name="intro_setup_sub">Two quick steps — then type in any app.</string>
     <string name="setup_enable_title">Enable in settings</string>
-    <string name="setup_enable_sub">Switch on Pashto Keyboard Plus</string>
+    <string name="setup_enable_sub">Switch on Kalima Keyboard</string>
     <string name="setup_select_title">Select as current keyboard</string>
     <string name="setup_select_sub">Pick it from the list</string>
     <string name="setup_open">Open</string>
     <string name="setup_pick">Pick</string>
     <string name="setup_done">Done</string>
+    <string name="try_sub">Type and send — try your keyboard</string>
+    <string name="try_empty">Your messages will appear here…</string>
+    <string name="try_send">Send</string>
+    <string name="try_clear">Clear</string>
+    <string name="try_stats">%1$s letters · %2$s words</string>
     <string-array name="home_tips">
         <item>Tap the word you typed on the suggestion strip and the keyboard learns it right away.</item>
         <item>If autocorrect gets it wrong, press Backspace at once: your word comes back and is learned.</item>

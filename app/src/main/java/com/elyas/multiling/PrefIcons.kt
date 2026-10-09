@@ -118,14 +118,14 @@ object PrefIcons {
     fun tile(c: Context, icon: Int, tone: Ui.Tone): Drawable? {
         val glyph = AppCompatResources.getDrawable(c, icon)?.mutate() ?: return null
         DrawableCompat.setTint(glyph, Ui.color(c, tone.fg))
-        val size = Ui.dp(c, 40f)
+        val size = Ui.dp(c, 36f)
         val bg = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = Ui.dp(c, 13f).toFloat()
             setColor(Ui.color(c, tone.bg))
             setSize(size, size)
         }
-        val pad = Ui.dp(c, 8f)
+        val pad = Ui.dp(c, 7.5f)
         val inset = InsetDrawable(glyph, pad)
         return LayerDrawable(arrayOf(bg, inset)).apply {
             setBounds(0, 0, size, size)

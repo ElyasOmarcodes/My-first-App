@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Under the tab bar: the page colour fading up to clear, so the bar
+     always stands apart from the content scrolling beneath it. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:type="linear" android:angle="90"
+        android:startColor="@color/m3_background"
+        android:centerColor="@color/scrim_mid"
+        android:endColor="@color/scrim_clear" />
+</shape>

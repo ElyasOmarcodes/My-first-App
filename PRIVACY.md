@@ -1,105 +1,62 @@
-# Privacy Policy for Pashto Keyboard Plus (پښتو کیبورډ پلس)
+<div align="center">
 
-**Effective date:** July 14, 2026
-**Developer / Publisher:** M. Elyas Omar (م. الیاس عمر)
-**Application:** Pashto Keyboard Plus
-**Contact:** ElyasOmar100@gmail.com
+# 🛡️ Privacy Policy — Kalima Keyboard
+### د محرمیت پالیسي — کلمه کیبورډ
 
-This Privacy Policy explains how the Pashto Keyboard Plus application
-("the App") handles user information. It applies to the App as distributed
-on Google Play.
+**Fully offline · Nothing leaves your phone**
+بشپړ آفلاین — هیڅ شی له موبایله نه وځي
 
-## 1. Summary
+`Effective: July 14, 2026` · `Developer: M. Elyas Omar` · [ElyasOmar100@gmail.com](mailto:ElyasOmar100@gmail.com)
 
-Pashto Keyboard Plus is a fully **offline** input method (keyboard) for
-Pashto, Dari/Farsi, Arabic, Urdu and English.
-**The App does not collect, store remotely, transmit, share or sell any
-user data of any kind.**
-
-## 2. About keyboard (IME) apps
-
-Android warns that an input method may be able to see the text you type.
-For Pashto Keyboard Plus this access is handled as follows:
-
-- The App declares **no INTERNET permission**. It is technically impossible
-  for the App to transmit anything you type off your device.
-- Text you type is processed **only on the device, in real time**, to
-  provide suggestions, auto-correction and word learning.
-- The App **never reads, logs or transmits** passwords: in password fields
-  suggestions, word learning and clipboard capture are automatically
-  disabled.
-
-## 3. Data stored on your device only
-
-To provide its features, the App keeps the following data **exclusively in
-its private storage on your own device**, never leaving it:
-
-- learned words and next-word predictions;
-- AutoText shortcuts you create;
-- clipboard history (text you copy), kept locally for the clipboard panel;
-- your settings and themes.
-
-This data is accessible to no one but you, and Android's app sandboxing
-prevents other apps from reading it.
-
-## 4. Data collection, sharing and third parties
-
-- We collect **no** personal information, usage statistics, identifiers or
-  diagnostics.
-- We share data with **no** third parties.
-- The App contains **no** advertising, analytics, tracking or
-  crash-reporting SDKs.
-- The App makes **no** network connections.
-
-## 5. Permissions
-
-- `VIBRATE` — used only for optional key-press haptic feedback.
-
-The App requests no other permissions. Voice typing, if you use it, is
-performed by your device's own system voice input service and is governed
-by that service's privacy policy, not by the App.
-
-## 6. Data retention and deletion
-
-All locally stored data can be deleted at any time:
-
-- from the App's settings (clear learned words, clear clipboard, reset
-  settings); or
-- completely, by clearing the App's storage or uninstalling the App.
-
-Because nothing is stored outside your device, uninstalling the App
-removes all data permanently.
-
-## 7. Children
-
-The App does not collect data from any user, including children, and
-contains no content unsuitable for children.
-
-## 8. Changes to this policy
-
-If this policy changes, the updated version will be published at this same
-address, and material changes will be noted in the App's "About" page.
-
-## 9. Contact
-
-For any question about this policy or the App:
-**M. Elyas Omar (م. الیاس عمر)** — ElyasOmar100@gmail.com
+</div>
 
 ---
 
-# د محرمیت پالیسي — پښتو کیبورډ پلس (پښتو لنډیز)
+## ✨ لنډیز
 
-پښتو کیبورډ پلس یو بشپړ **آفلاین** کیبورډ دی چې د **م. الیاس عمر** لخوا
-خپور شوی.
+| | |
+|---|---|
+| 📵 **د انټرنېټ اجازه نه لري** | ستاسو لیکل شوی متن له موبایله بهر تلای نشي. |
+| 📱 **هر څه ستاسو په موبایل کې** | زده شوې کلمې، لنډیزونه، کلیپ بورډ او تنظیمات یوازې په خصوصي حافظه کې. |
+| 🚫 **هیڅ راټولول نشته** | نه شخصي معلومات، نه اعلانات، نه تحلیل. |
+| 🔑 **پاسورډونه خوندي** | په پاسورډ فیلډونو کې وړاندیز، زده کړه او کلیپ بورډ بندیږي. |
+| 🗑️ **ستاسو په واک کې** | د اپ په پاکولو یا لرې کولو ټول معلومات د تل لپاره ړنګیږي. |
 
-- اپلیکیشن د **انټرنیټ اجازه نه لري** — ستاسو لیکل شوي معلومات له وسیلې
-  بهر تلل تخنیکي پلوه ناشوني دي.
-- زده شوې کلمې، لنډیزونه، د کلیپ بورډ تاریخچه او تنظیمات یوازې ستاسو د
-  موبایل په خصوصي حافظه کې ساتل کیږي.
-- هیڅ ډول شخصي معلومات نه راټولیږي، نه شریکیږي او نه پلورل کیږي؛ د
-  اعلاناتو یا تحلیل هیڅ کوډ نشته.
-- په پاسورډ فیلډونو کې وړاندیز، زده کړه او د کلیپ بورډ ثبت پخپله بندیږي.
-- د اپ د حافظې په پاکولو یا له منځه وړلو سره ټول معلومات د تل لپاره
-  ړنګیږي.
+---
 
-اړیکه: م. الیاس عمر — ElyasOmar100@gmail.com
+## 👁️ About keyboard (IME) apps
+Android warns that an input method may be able to see the text you type. Kalima Keyboard handles that access this way:
+- It declares **no INTERNET permission** — it is technically impossible for the app to send anything you type off your device.
+- Text you type is processed **only on the device, in real time**, for suggestions, auto-correction and word learning.
+- It **never reads, logs or transmits** passwords: in password fields suggestions, word learning and clipboard capture are switched off automatically.
+
+## 💾 Data kept on your device only
+- learned words and next-word predictions
+- shortcuts you create
+- clipboard history, for the clipboard panel
+- your settings and themes
+
+Android's app sandbox keeps other apps from reading it.
+
+## 🤝 Collection, sharing and third parties
+- **No** personal information, usage statistics, identifiers or diagnostics are collected.
+- **No** data is shared with third parties.
+- **No** ads, analytics, tracking or crash-reporting SDKs.
+- **No** network connections.
+
+## 📳 Permissions
+- `VIBRATE` — only for the optional key-press vibration.
+
+Voice typing, if used, is performed by your phone's own voice input service under that service's privacy policy.
+
+## 🗑️ Keeping and deleting data
+Delete everything at any time from the app's settings (clear learned words, clear clipboard, reset settings), or completely by clearing the app's storage or uninstalling it.
+
+## 🧒 Children
+The app collects data from no one, children included.
+
+## 🔄 Changes to this policy
+A new version is published at this same address and noted on the app's About page.
+
+## ✉️ Contact
+**M. Elyas Omar (م. الیاس عمر)** — [ElyasOmar100@gmail.com](mailto:ElyasOmar100@gmail.com)

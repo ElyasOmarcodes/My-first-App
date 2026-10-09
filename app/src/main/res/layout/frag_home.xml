@@ -51,7 +51,7 @@
                     android:text="@string/app_name"
                     android:textAlignment="viewStart"
                     android:textAppearance="@style/TextAppearance.Hk.PageTitle"
-                    android:textSize="24sp" />
+                    android:textSize="22sp" />
             </LinearLayout>
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btn_theme"
@@ -137,10 +137,10 @@
                     android:id="@+id/hero_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="62dp"
+                    android:layout_marginTop="54dp"
                     android:textAlignment="viewStart"
                     android:textColor="@android:color/white"
-                    android:textSize="26sp"
+                    android:textSize="23sp"
                     android:textStyle="bold" />
                 <TextView
                     android:id="@+id/hero_body"
@@ -216,18 +216,6 @@
                         android:textStyle="bold"
                         app:backgroundTint="@android:color/white"
                         app:cornerRadius="18dp" />
-                    <TextView
-                        android:id="@+id/hero_chip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:background="@drawable/bg_glass_chip"
-                        android:paddingStart="14dp"
-                        android:paddingTop="9dp"
-                        android:paddingEnd="14dp"
-                        android:paddingBottom="9dp"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
         </FrameLayout>
@@ -314,6 +302,8 @@
         </LinearLayout>
 
         <!-- =============================================== try it -->
+        <!-- a little chat: type with the keyboard, send, and your words
+             appear as message bubbles -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.Hk.Card"
             android:layout_width="match_parent"
@@ -323,9 +313,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp"
-                android:clipChildren="false"
-                android:clipToPadding="false">
+                android:padding="16dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -333,44 +321,107 @@
                     android:orientation="horizontal">
                     <FrameLayout
                         android:id="@+id/try_icon_box"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_tone">
                         <ImageView
                             android:id="@+id/try_icon"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_m_keyboard"
+                            android:src="@drawable/ic_m_chat"
                             android:importantForAccessibility="no" />
                     </FrameLayout>
-                    <TextView
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
+                        android:layout_marginStart="12dp"
                         android:layout_weight="1"
-                        android:text="@string/try_title"
-                        android:textAlignment="viewStart"
-                        android:textAppearance="@style/TextAppearance.Hk.CardTitle"
-                        android:textSize="17sp" />
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/try_title"
+                            android:textAlignment="viewStart"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="15.5sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/try_stats"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/try_sub"
+                            android:textAlignment="viewStart"
+                            android:textAppearance="@style/TextAppearance.Hk.Caption"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/try_clear"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:contentDescription="@string/try_clear"
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_m_sweep"
+                        app:iconTint="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+
+                <!-- the conversation -->
+                <LinearLayout
+                    android:id="@+id/try_chat"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:boxCornerRadiusBottomEnd="18dp"
-                    app:boxCornerRadiusBottomStart="18dp"
-                    app:boxCornerRadiusTopEnd="18dp"
-                    app:boxCornerRadiusTopStart="18dp"
-                    app:boxStrokeColor="?attr/colorPrimary">
-                    <com.google.android.material.textfield.TextInputEditText
+                    android:background="@drawable/bg_try_chat"
+                    android:minHeight="84dp"
+                    android:orientation="vertical"
+                    android:padding="10dp"
+                    android:animateLayoutChanges="true">
+                    <TextView
+                        android:id="@+id/try_empty"
                         android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:gravity="center"
+                        android:text="@string/try_empty"
+                        android:textAppearance="@style/TextAppearance.Hk.Caption" />
+                </LinearLayout>
+
+                <!-- the composer -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <EditText
+                        android:id="@+id/try_input"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:gravity="top|start"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_try_input"
                         android:hint="@string/test_hint"
-                        android:minLines="3" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:imeOptions="actionSend"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:maxLines="4"
+                        android:minHeight="48dp"
+                        android:paddingStart="18dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="18dp"
+                        android:paddingBottom="10dp"
+                        android:textAlignment="viewStart"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant"
+                        android:textSize="15sp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/try_send"
+                        style="@style/Widget.Material3.Button.IconButton.Filled"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:contentDescription="@string/try_send"
+                        android:enabled="false"
+                        app:icon="@drawable/ic_m_send" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

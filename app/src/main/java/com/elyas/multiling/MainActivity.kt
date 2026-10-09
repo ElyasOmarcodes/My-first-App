@@ -3,7 +3,10 @@ package com.elyas.multiling
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.LinearLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.core.widget.NestedScrollView
@@ -43,6 +46,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         Ui.marginForNavBar(findViewById(R.id.nav_card), Ui.dp(this, 14f))
+        // the fade layers follow the system bars: status bar plus a soft
+        // tail on top; under the tab bar down to the screen edge below
+        val top = findViewById<View>(R.id.scrim_top)
+        val bottom = findViewById<View>(R.id.scrim_bottom)
+        ViewCompat.setOnApplyWindowInsetsListener(top) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.layoutParams = v.layoutParams.apply { height = bars.top + Ui.dp(this@MainActivity, 28f) }
+            bottom.layoutParams = bottom.layoutParams.apply {
+                height = bars.bottom + Ui.dp(this@MainActivity, 14f + 70f + 34f)
+            }
+            insets
+        }
+
         bar = findViewById(R.id.tab_bar)
         bar.setTabs(listOf(
             FloatingTabBar.Tab(TAB_HOME, R.drawable.ic_m_home, R.drawable.ic_m_home_filled, R.string.tab_home),
@@ -95,7 +111,9 @@ class MainActivity : AppCompatActivity() {
             .setCustomAnimations(R.anim.tab_in, R.anim.tab_out)
         for (f in fm.fragments) if (f.tag?.startsWith("tab_") == true && f !== existing) tx.hide(f)
         if (existing == null) tx.add(R.id.tab_host, create(id), tag) else tx.show(existing)
-        tx.commit()
+        // now, not on the next frame: a queued commit is the lag felt when
+        // tapping tabs quickly one after another
+        tx.commitNow()
     }
 
     private fun scrollToTop(id: String) {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pashto Keyboard Plus — Material 3 colour scheme, DARK. Same names as
+<!-- Kalima Keyboard — Material 3 colour scheme, DARK. Same names as
      values/colors.xml; only the values change. -->
 <resources>
 
@@ -85,4 +85,7 @@
     <color name="profile_a">#241E3C</color>
     <color name="profile_b">#2B1C2C</color>
     <color name="avatar_glow">#668B70FF</color>
+    <!-- page colour at 80% and 0%, for the fade layers above and below -->
+    <color name="scrim_mid">#CC121118</color>
+    <color name="scrim_clear">#00121118</color>
 </resources>

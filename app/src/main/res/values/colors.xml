@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Pashto Keyboard Plus — Material 3 colour scheme, LIGHT.
+  Kalima Keyboard — Material 3 colour scheme, LIGHT.
   values-night/colors.xml mirrors every name with its dark value, so any
   screen written against these names (or against the theme's ?attr colour
   roles they feed) gets both themes for free.
@@ -96,4 +96,7 @@
     <color name="profile_a">#ECE6FF</color>
     <color name="profile_b">#FBE9F2</color>
     <color name="avatar_glow">#596B50F2</color>
+    <!-- page colour at 80% and 0%, for the fade layers above and below -->
+    <color name="scrim_mid">#CCF6F5FB</color>
+    <color name="scrim_clear">#00F6F5FB</color>
 </resources>

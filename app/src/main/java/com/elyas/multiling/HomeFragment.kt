@@ -70,6 +70,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
             sec.findViewById<TextView>(R.id.sec_title).setText(R.string.quick_access)
         }
         Ui.tone(view.findViewById(R.id.try_icon_box), view.findViewById(R.id.try_icon), Ui.Tone.BLUE)
+        bindTry(view)
         Ui.tip(view.findViewById(R.id.btn_theme), getString(R.string.look_title))
 
         // the keyboard illustration floats gently
@@ -111,8 +112,6 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         val title = v.findViewById<TextView>(R.id.hero_title)
         val body = v.findViewById<TextView>(R.id.hero_body)
         val btn = v.findViewById<MaterialButton>(R.id.hero_btn)
-        val chip = v.findViewById<TextView>(R.id.hero_chip)
-        chip.text = "v" + versionName(c)
         step(v.findViewById(R.id.step_enable), 1, enabled)
         step(v.findViewById(R.id.step_select), 2, selected)
         when {
@@ -228,8 +227,9 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         // tinted card: hue fill with a matching hairline; the icon sits on a
         // plate of the card colour so it reads as a separate chip
         (card as com.google.android.material.card.MaterialCardView).apply {
-            setCardBackgroundColor(Ui.color(c, tone.bg))
-            strokeColor = Ui.color(c, tone.bg)
+            setCardBackgroundColor(androidx.core.graphics.ColorUtils.blendARGB(
+                Ui.color(c, R.color.card), Ui.color(c, tone.bg), 0.7f))
+            strokeColor = androidx.core.graphics.ColorUtils.setAlphaComponent(Ui.color(c, tone.fg), 0x66)
         }
         androidx.core.view.ViewCompat.setBackgroundTintList(
             box, android.content.res.ColorStateList.valueOf(Ui.color(c, R.color.card)))
@@ -238,6 +238,93 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         card.findViewById<TextView>(R.id.quick_sub).setText(sub)
         card.setOnClickListener { onClick() }
         Ui.tip(card, Ui.tipText(getString(title), getString(sub)))
+    }
+
+    // ------------------------------------------------------------ try it
+    /**
+     * A tiny chat to try the keyboard in: live letter/word count while
+     * typing, and Send turns the text into a message bubble that pops in.
+     */
+    private fun bindTry(v: View) {
+        val c = v.context
+        val input = v.findViewById<android.widget.EditText>(R.id.try_input)
+        val send = v.findViewById<MaterialButton>(R.id.try_send)
+        val clear = v.findViewById<View>(R.id.try_clear)
+        val stats = v.findViewById<TextView>(R.id.try_stats)
+        val chat = v.findViewById<android.widget.LinearLayout>(R.id.try_chat)
+        val empty = v.findViewById<View>(R.id.try_empty)
+        input.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(e: android.text.Editable?) {
+                val t = e?.toString() ?: ""
+                send.isEnabled = t.isNotBlank()
+                if (t.isBlank()) stats.setText(R.string.try_sub)
+                else stats.text = getString(R.string.try_stats,
+                    Ui.digits(c, t.count { !it.isWhitespace() }),
+                    Ui.digits(c, t.trim().split(Regex("\\s+")).size))
+            }
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, n: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, n: Int) {}
+        })
+        fun post() {
+            val t = input.text?.toString()?.trim() ?: return
+            if (t.isEmpty()) return
+            empty.visibility = View.GONE
+            clear.visibility = View.VISIBLE
+            // keep the conversation short: the oldest bubble leaves
+            if (chat.childCount > 4) chat.removeViewAt(1)
+            chat.addView(bubble(c, t))
+            input.setText("")
+            send.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+        }
+        send.setOnClickListener { post() }
+        input.setOnEditorActionListener { _, id, _ ->
+            if (id == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) { post(); true } else false
+        }
+        clear.setOnClickListener {
+            while (chat.childCount > 1) chat.removeViewAt(1)
+            empty.visibility = View.VISIBLE
+            clear.visibility = View.GONE
+        }
+        Ui.tip(send, getString(R.string.try_send))
+        Ui.tip(clear, getString(R.string.try_clear))
+    }
+
+    /** A sent-message bubble on the reading-end side, tail corner tight. */
+    private fun bubble(c: Context, text: String): View {
+        val tv = TextView(c)
+        tv.text = text
+        tv.setTextColor(android.graphics.Color.WHITE)
+        tv.textSize = 15f
+        tv.typeface = Fonts.get(c)
+        val ph = Ui.dp(c, 14f)
+        val pv = Ui.dp(c, 8f)
+        tv.setPadding(ph, pv, ph, pv)
+        val r = Ui.dp(c, 18f).toFloat()
+        val tail = Ui.dp(c, 6f).toFloat()
+        val rtl = c.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
+        // sent messages sit at the end side; the tail is the bottom corner there
+        val radii = if (rtl) floatArrayOf(r, r, r, r, r, r, tail, tail)
+            else floatArrayOf(r, r, r, r, tail, tail, r, r)
+        tv.background = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+            intArrayOf(Ui.color(c, R.color.grad_violet_a), Ui.color(c, R.color.grad_violet_b))
+        ).apply { cornerRadii = radii }
+        val lp = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT)
+        lp.gravity = android.view.Gravity.END
+        lp.topMargin = Ui.dp(c, 6f)
+        lp.marginStart = Ui.dp(c, 40f)
+        tv.layoutParams = lp
+        tv.scaleX = 0.6f; tv.scaleY = 0.6f; tv.alpha = 0f
+        tv.pivotY = 0f
+        tv.post {
+            tv.pivotX = if (rtl) 0f else tv.width.toFloat()
+            tv.pivotY = tv.height.toFloat()
+            tv.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(320)
+                .setInterpolator(android.view.animation.OvershootInterpolator(1.4f)).start()
+        }
+        return tv
     }
 
     // ------------------------------------------------------- typing tips
