@@ -928,9 +928,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val dm = android.content.res.Resources.getSystem().displayMetrics
             val screenHdp = dm.heightPixels / dm.density
             if (screenHdp > 0) {
-                // toolbar (~44dp) + up to six rows (arrows on) in half the screen
+                // toolbar (~44dp) + up to six rows in about 60% of the screen, like Samsung
                 val rows = if (p.getBoolean("arrows", false)) 6f else 5f
-                val cap = ((screenHdp * 0.5f - 44f) / rows).toInt().coerceAtLeast(22)
+                val cap = ((screenHdp * 0.6f - 44f) / rows).toInt().coerceAtLeast(22)
                 if (baseKeyHeightDp > cap) baseKeyHeightDp = cap
             }
         }

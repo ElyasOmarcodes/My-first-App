@@ -13,8 +13,8 @@ android {
     applicationId = "com.elyasomar.keyflux"
     minSdk = 24
     targetSdk = 36
-    versionCode = 52
-    versionName = "1.0.3"
+    versionCode = 53
+    versionName = "1.0.4"
     // the app ships Pashto (default), Farsi and English; keep exactly those
     // locales so androidx's other translations are trimmed from the APK.
     // NOTE: every locale we ship MUST be listed here or its values-* folder
