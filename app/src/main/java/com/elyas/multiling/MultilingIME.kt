@@ -902,6 +902,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         baseKeyHeightDp =
             if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
+        if (landscape) {
+            // landscape (full-screen games, video): never let the keyboard
+            // take more than about half the screen height — five key rows
+            // plus the suggestion strip must fit in it
+            val screenHdp = resources.configuration.screenHeightDp
+            if (screenHdp > 0) {
+                val cap = ((screenHdp * 0.5f - 40f) / 5f).toInt().coerceAtLeast(24)
+                if (baseKeyHeightDp > cap) baseKeyHeightDp = cap
+            }
+        }
         // keep the exact height in sync unless a live resize drag is running
         if (!resizeMode) keyHeightExact = baseKeyHeightDp.toFloat()
         kv.keyHeightDp = baseKeyHeightDp
@@ -916,7 +926,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.labelTypeface = if (p.getBoolean("key_font_vazir", false)) Fonts.get(this)
             else android.graphics.Typeface.DEFAULT
         kv.spaceSwipeEnabled = p.getBoolean("space_swipe", true)
-        kv.splitMode = p.getBoolean("split_kb", false)
+        // landscape splits automatically: thumbs reach both halves and the
+        // middle of the screen stays visible
+        kv.splitMode = p.getBoolean("split_kb", false) ||
+            (landscape && p.getBoolean("split_landscape", true))
         kv.longPressTimeout = (p.getString("longpress", "200") ?: "200").toLong()
         val density = resources.displayMetrics.density
         navGapAuto = p.getBoolean("nav_gap_auto", true)

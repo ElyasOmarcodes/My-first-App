@@ -6,6 +6,10 @@
             android:defaultValue="72" android:max="100" app:min="36" />
         <com.elyas.multiling.SliderPreference android:key="key_height_land" android:title="@string/pref_key_height_land"
             android:defaultValue="42" android:max="80" app:min="30" />
+        <SwitchPreferenceCompat android:key="split_landscape"
+            android:title="@string/pref_split_land"
+            android:summary="@string/pref_split_land_sum"
+            android:defaultValue="true" />
         <com.elyas.multiling.SliderPreference android:key="key_gap" android:title="@string/pref_key_gap"
             android:defaultValue="2" android:max="8" app:min="0" />
         <com.elyas.multiling.SliderPreference android:key="corner_radius" android:title="@string/pref_corner_radius"

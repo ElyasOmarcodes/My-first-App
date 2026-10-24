@@ -306,6 +306,8 @@
     <string name="preview_show">کیبورډ ښودل</string>
     <string name="pref_key_font">وزیرمتن فونټ په تڼیو کې</string>
     <string name="pref_key_font_sum">د کیبورډ تڼۍ هم په وزیرمتن فونټ ښکاري</string>
+    <string name="pref_split_land">په افقي حالت کې ویشل شوی کیبورډ</string>
+    <string name="pref_split_land_sum">کله چې موبایل افقي وي، کیبورډ دوه برخې کیږي او منځ کې سکرین ښکاري</string>
     <string-array name="home_tips">
         <item>یوه کلمه چې کیبورډ یې نه پېژني، په وړاندیز پټه کې یې پخپله کلمه ټک کړئ — سمدستي زده کیږي.</item>
         <item>که اتومات سمون غلط شو، سمدستي Backspace ووهئ: ستاسو اصلي کلمه بیرته راځي او کیبورډ یې زده کوي.</item>

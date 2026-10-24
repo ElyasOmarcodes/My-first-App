@@ -307,6 +307,8 @@ Long-press a suggestion to delete it</string>
     <string name="preview_show">Show keyboard preview</string>
     <string name="pref_key_font">Vazirmatn on keys</string>
     <string name="pref_key_font_sum">Show the keyboard keys in the Vazirmatn font</string>
+    <string name="pref_split_land">Split keyboard in landscape</string>
+    <string name="pref_split_land_sum">In landscape the keyboard splits so the middle of the screen stays visible</string>
     <string-array name="home_tips">
         <item>Tap the word you typed on the suggestion strip and the keyboard learns it right away.</item>
         <item>If autocorrect gets it wrong, press Backspace at once: your word comes back and is learned.</item>
