@@ -238,6 +238,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // rotation: re-derive height and split for the new orientation
+        keyboardView?.post {
+            applySettings()
+            rebuildKeyboard()
+        }
+    }
+
     override fun onCreateInputView(): View {
         val kv = KeyboardView(this)
         kv.listener = this
@@ -425,7 +434,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun saveKeyHeight() {
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         val landscape =
-            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            isLandscapeNow()
         p.edit()
             .putInt(if (landscape) "key_height_land" else "key_height", baseKeyHeightDp)
             .apply()
@@ -892,6 +901,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     // ------------------------------------------------------------- settings
+    /**
+     * Landscape right now. Read from the live display, not from this
+     * service's resources: those come from the language-wrapped context
+     * captured at start-up and keep reporting the orientation of that moment.
+     */
+    private fun isLandscapeNow(): Boolean {
+        val dm = android.content.res.Resources.getSystem().displayMetrics
+        return dm.widthPixels > dm.heightPixels
+    }
+
     private fun applySettings() {
         syncAppLocale()
         val p = PreferenceManager.getDefaultSharedPreferences(this)
@@ -899,16 +918,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         kv.theme = KeyboardView.themeByName(p.getString("theme", "dark") ?: "dark")
         applyCustomColors(kv, p)
         val landscape =
-            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            isLandscapeNow()
         baseKeyHeightDp =
             if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
         if (landscape) {
             // landscape (full-screen games, video): never let the keyboard
             // take more than about half the screen height — five key rows
             // plus the suggestion strip must fit in it
-            val screenHdp = resources.configuration.screenHeightDp
+            val dm = android.content.res.Resources.getSystem().displayMetrics
+            val screenHdp = dm.heightPixels / dm.density
             if (screenHdp > 0) {
-                val cap = ((screenHdp * 0.5f - 40f) / 5f).toInt().coerceAtLeast(24)
+                // toolbar (~44dp) + up to six rows (arrows on) in half the screen
+                val rows = if (p.getBoolean("arrows", false)) 6f else 5f
+                val cap = ((screenHdp * 0.5f - 44f) / rows).toInt().coerceAtLeast(22)
                 if (baseKeyHeightDp > cap) baseKeyHeightDp = cap
             }
         }
