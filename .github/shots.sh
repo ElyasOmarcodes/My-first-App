@@ -98,15 +98,19 @@ for rot in 0 1; do
   adb shell settings put system user_rotation $rot
   sleep 2
   name=$([ $rot = 1 ] && echo landscape || echo portrait)
-  adb shell ime set "$IME"
-  adb shell settings get secure default_input_method
+  # stop the app FIRST: stopping it after selecting the keyboard (same
+  # package) makes Android fall back to the previous keyboard
   adb shell am force-stop "$PKG"
-  open KeyboardTestActivity;                          shot "kb_${name}_keyflux" 4
+  adb shell ime set "$IME"
+  sleep 1
+  open KeyboardTestActivity;                          shot "kb_${name}_keyflux" 5
+  echo "keyboard in use: $(adb shell settings get secure default_input_method)"
   OTHER=$(adb shell ime list -s | tr -d '\r' | grep -v "$PKG" | head -1)
   if [ -n "$OTHER" ]; then
-    adb shell ime set "$OTHER" >/dev/null 2>&1
     adb shell am force-stop "$PKG"
-    open KeyboardTestActivity;                        shot "kb_${name}_android" 4
+    adb shell ime set "$OTHER" >/dev/null 2>&1
+    sleep 1
+    open KeyboardTestActivity;                        shot "kb_${name}_android" 5
   fi
 done
 adb shell settings put system user_rotation 0
