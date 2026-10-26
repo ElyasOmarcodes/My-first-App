@@ -89,13 +89,17 @@ adb shell cmd uimode night no
 
 # ---- the keyboard itself, portrait and landscape, next to Android's own
 IME="$PKG/com.elyas.multiling.MultilingIME"
-adb shell ime enable "$IME" >/dev/null 2>&1
+echo "== IMEs available:"; adb shell ime list -a -s
+adb shell ime enable "$IME"
+adb shell ime enable --user 0 "$IME" 2>/dev/null
+echo "== IMEs enabled:"; adb shell ime list -s
 adb shell settings put system accelerometer_rotation 0
 for rot in 0 1; do
   adb shell settings put system user_rotation $rot
   sleep 2
   name=$([ $rot = 1 ] && echo landscape || echo portrait)
-  adb shell ime set "$IME" >/dev/null 2>&1
+  adb shell ime set "$IME"
+  adb shell settings get secure default_input_method
   adb shell am force-stop "$PKG"
   open KeyboardTestActivity;                          shot "kb_${name}_keyflux" 4
   OTHER=$(adb shell ime list -s | tr -d '\r' | grep -v "$PKG" | head -1)
