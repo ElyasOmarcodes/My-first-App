@@ -13,5 +13,9 @@
             android:exported="true" tools:replace="android:exported" />
         <activity android:name="com.elyas.multiling.PrivacyActivity"
             android:exported="true" tools:replace="android:exported" />
+        <activity android:name="com.elyas.multiling.KeyboardTestActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
+            android:windowSoftInputMode="stateAlwaysVisible|adjustNothing" />
     </application>
 </manifest>

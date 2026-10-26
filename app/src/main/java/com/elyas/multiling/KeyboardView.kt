@@ -261,6 +261,9 @@ class KeyboardView(context: Context) : View(context) {
      * Typeface for key labels, hints and the language flash — the system
      * font by default, Vazirmatn when the user picks it in Look settings.
      */
+    /** Landscape: size labels as if rows were at least this tall (dp). */
+    var minLabelRowDp: Float = 0f
+
     var labelTypeface: Typeface = Typeface.DEFAULT
         set(value) {
             if (field === value) return
@@ -475,7 +478,12 @@ class KeyboardView(context: Context) : View(context) {
             } else {
                 // main label — shrink to fit wide labels (menu keys etc.)
                 val isSpecial = key.code != 0
-                var base = pk.rect.height() * (if (isSpecial) 0.36f else 0.46f)
+                val ratio = if (isSpecial) 0.36f else 0.46f
+                var base = pk.rect.height() * ratio
+                if (minLabelRowDp > 0f) {
+                    // size the letter as for a taller row, but keep it inside the key
+                    base = min(pk.rect.height() * 0.68f, max(base, minLabelRowDp * density * ratio))
+                }
                 textPaint.textSize = base * fontScale
                 val maxW = pk.rect.width() * 0.9f
                 val measured = textPaint.measureText(pk.displayLabel)

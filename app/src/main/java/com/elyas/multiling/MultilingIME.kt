@@ -27,6 +27,9 @@ import androidx.preference.PreferenceManager
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     companion object {
+        /** key_height_land value meaning "the standard landscape height". */
+        private const val LAND_STANDARD = 42
+
         /** long-press token on the enter key: commit a real newline */
         private const val SHIFT_ENTER = "⇧↵"
 
@@ -433,12 +436,36 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private fun saveKeyHeight() {
         val p = PreferenceManager.getDefaultSharedPreferences(this)
-        val landscape =
-            isLandscapeNow()
-        p.edit()
-            .putInt(if (landscape) "key_height_land" else "key_height", baseKeyHeightDp)
-            .apply()
+        if (isLandscapeNow()) {
+            // landscape stores a scale of the automatic height, not dp
+            val v = (baseKeyHeightDp / landscapeAutoKeyDp() * LAND_STANDARD).toInt().coerceIn(30, 80)
+            p.edit().putInt("key_height_land", v).apply()
+        } else {
+            p.edit().putInt("key_height", baseKeyHeightDp).apply()
+        }
     }
+
+    /** Height of the current window (the whole screen for a full-screen game). */
+    private fun screenHeightDp(): Float {
+        val density = resources.displayMetrics.density
+        val px = try {
+            // the keyboard window's own manager: a visual context, unlike
+            // this service's language-wrapped one
+            val wm = window?.window?.windowManager
+                ?: getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
+            if (android.os.Build.VERSION.SDK_INT >= 30) wm.maximumWindowMetrics.bounds.height()
+            else android.util.DisplayMetrics().also {
+                @Suppress("DEPRECATION") wm.defaultDisplay.getRealMetrics(it)
+            }.heightPixels
+        } catch (_: Exception) {
+            android.content.res.Resources.getSystem().displayMetrics.heightPixels
+        }
+        return px / density
+    }
+
+    /** Standard landscape row height: 46% of the screen for the key rows. */
+    private fun landscapeAutoKeyDp(): Float =
+        screenHeightDp() * 0.46f / currentHeightUnits()
 
     /** Toggle the live keyboard-resize mode. */
     private fun toggleResizeMode() {
@@ -558,7 +585,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private fun realScreenHeight(): Int {
         return try {
-            val wm = getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
+            // the keyboard window's own manager: a visual context, unlike
+            // this service's language-wrapped one
+            val wm = window?.window?.windowManager
+                ?: getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 wm.currentWindowMetrics.bounds.height()
             } else {
@@ -919,24 +949,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         applyCustomColors(kv, p)
         val landscape =
             isLandscapeNow()
-        baseKeyHeightDp =
-            if (landscape) p.getInt("key_height_land", 42) else p.getInt("key_height", 72)
-        if (landscape) {
-            // landscape (full-screen games, video): never let the keyboard
-            // take more than about half the screen height — five key rows
-            // plus the suggestion strip must fit in it
-            val dm = android.content.res.Resources.getSystem().displayMetrics
-            val screenHdp = dm.heightPixels / dm.density
-            if (screenHdp > 0) {
-                // toolbar (~44dp) + up to six rows in about 60% of the screen, like Samsung
-                val rows = if (p.getBoolean("arrows", false)) 6f else 5f
-                val cap = ((screenHdp * 0.6f - 44f) / rows).toInt().coerceAtLeast(22)
-                if (baseKeyHeightDp > cap) baseKeyHeightDp = cap
-            }
-        }
+        baseKeyHeightDp = if (landscape) {
+            // AOSP's rule (the keyboard Gboard grew from): in landscape the
+            // key area takes 45-46% of the screen height. The landscape
+            // height setting scales that (42 = standard), so the keyboard
+            // fits every phone instead of using one fixed dp value.
+            val scale = p.getInt("key_height_land", LAND_STANDARD) / LAND_STANDARD.toFloat()
+            (landscapeAutoKeyDp() * scale).toInt().coerceIn(26, 64)
+        } else p.getInt("key_height", 72)
         // keep the exact height in sync unless a live resize drag is running
         if (!resizeMode) keyHeightExact = baseKeyHeightDp.toFloat()
         kv.keyHeightDp = baseKeyHeightDp
+        // short landscape rows would shrink the letters; keep them readable
+        kv.minLabelRowDp = if (landscape) 50f else 0f
         kv.arrowRowScale = p.getInt("arrow_height", 69) / 100f
         kv.fontScale = p.getInt("font_scale", 64) / 100f
         kv.hintScale = p.getInt("hint_scale", 96) / 100f
