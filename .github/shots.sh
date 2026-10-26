@@ -94,9 +94,15 @@ adb shell ime enable "$IME"
 adb shell ime enable --user 0 "$IME" 2>/dev/null
 echo "== IMEs enabled:"; adb shell ime list -s
 adb shell settings put system accelerometer_rotation 0
+dismiss() {  # close any "app isn't responding" dialog in the way
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1
+  adb shell input keyevent KEYCODE_HOME >/dev/null 2>&1
+  sleep 1
+}
 for rot in 0 1; do
-  adb shell settings put system user_rotation $rot
-  sleep 2
+  dismiss
+  adb shell cmd window user-rotation lock $rot 2>/dev/null || adb shell settings put system user_rotation $rot
+  sleep 3
   name=$([ $rot = 1 ] && echo landscape || echo portrait)
   # stop the app FIRST: stopping it after selecting the keyboard (same
   # package) makes Android fall back to the previous keyboard
@@ -107,11 +113,12 @@ for rot in 0 1; do
   echo "keyboard in use: $(adb shell settings get secure default_input_method)"
   OTHER=$(adb shell ime list -s | tr -d '\r' | grep -v "$PKG" | head -1)
   if [ -n "$OTHER" ]; then
+    dismiss
     adb shell am force-stop "$PKG"
     adb shell ime set "$OTHER" >/dev/null 2>&1
     sleep 1
     open KeyboardTestActivity;                        shot "kb_${name}_android" 5
   fi
 done
-adb shell settings put system user_rotation 0
+adb shell cmd window user-rotation lock 0 2>/dev/null || adb shell settings put system user_rotation 0
 ls -la "$OUT"
