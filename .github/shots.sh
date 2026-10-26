@@ -109,7 +109,7 @@ for rot in 0 1; do
   adb shell am force-stop "$PKG"
   adb shell ime set "$IME"
   sleep 1
-  open KeyboardTestActivity;                          shot "kb_${name}_keyflux" 5
+  open KeyboardTestActivity --ez land $([ $rot = 1 ] && echo true || echo false); shot "kb_${name}_keyflux" 6
   echo "keyboard in use: $(adb shell settings get secure default_input_method)"
   OTHER=$(adb shell ime list -s | tr -d '\r' | grep -v "$PKG" | head -1)
   if [ -n "$OTHER" ]; then
@@ -117,7 +117,7 @@ for rot in 0 1; do
     adb shell am force-stop "$PKG"
     adb shell ime set "$OTHER" >/dev/null 2>&1
     sleep 1
-    open KeyboardTestActivity;                        shot "kb_${name}_android" 5
+    open KeyboardTestActivity --ez land $([ $rot = 1 ] && echo true || echo false); shot "kb_${name}_android" 6
   fi
 done
 adb shell cmd window user-rotation lock 0 2>/dev/null || adb shell settings put system user_rotation 0

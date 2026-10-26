@@ -12,6 +12,9 @@ import android.widget.FrameLayout
 class KeyboardTestActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.getBooleanExtra("land", false)) {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE or
             WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         val root = FrameLayout(this)
