@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- About header wash: lavender into blush, fading into the page. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:type="linear" android:angle="270"
+        android:startColor="@color/profile_a"
+        android:centerColor="@color/profile_b"
+        android:endColor="@color/m3_background" />
+</shape>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="lang_names">
+        <item>پشتو</item>
+        <item>دری / فارسی</item>
+        <item>عربی</item>
+        <item>اردو</item>
+        <item>English</item>
+    </string-array>
+
+    <string-array name="theme_names">
+        <item>مولتی‌لینگ (MultiLing) ✦</item>
+        <item>مدرن (Modern) ✦</item>
+        <item>سبز پرو (Green) ✦</item>
+        <item>آبی پرو (Blue) ✦</item>
+        <item>روشن پرو (Light) ✦</item>
+        <item>تیره (Dark)</item>
+        <item>روشن (Light)</item>
+        <item>کاملاً تیره (AMOLED)</item>
+    </string-array>
+
+    <string-array name="sound_type_names">
+        <item>نرم (Pop)</item>
+        <item>کلیک (Click)</item>
+        <item>قطره (Drop)</item>
+        <item>چوبی (Wood)</item>
+        <item>حباب (Bubble)</item>
+        <item>خیلی نرم (Soft)</item>
+        <item>صدای سیستم</item>
+    </string-array>
+
+    <string-array name="col_mode_names">
+        <item>یک‌رنگ</item>
+        <item>دو‌رنگ (گرادیانت)</item>
+    </string-array>
+
+    <string-array name="grad_style_names">
+        <item>خطی (Linear)</item>
+        <item>شعاعی (Radial)</item>
+        <item>چرخشی (Sweep)</item>
+    </string-array>
+
+    <string-array name="grad_dir_names">
+        <item>عمودی ↓ (از بالا به پایین)</item>
+        <item>افقی ← (از کنار به کنار)</item>
+        <item>مورب ↘ (گوشه به گوشه)</item>
+        <item>مورب ↗ (گوشه به گوشه)</item>
+    </string-array>
+
+    <string-array name="longpress_names">
+        <item>خیلی سریع (200ms)</item>
+        <item>سریع (250ms)</item>
+        <item>متوسط (350ms)</item>
+        <item>کند (500ms)</item>
+        <item>خیلی کند (700ms)</item>
+    </string-array>
+</resources>

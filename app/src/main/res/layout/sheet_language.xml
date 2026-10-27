@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="28dp"
+    android:paddingBottom="24dp">
+    <FrameLayout
+        android:id="@+id/welcome_icon_box"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_tone">
+        <ImageView
+            android:id="@+id/welcome_icon"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_m_translate"
+            android:importantForAccessibility="no" />
+    </FrameLayout>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="@string/app_lang_title"
+        android:textAppearance="@style/TextAppearance.Hk.PageTitle"
+        android:textSize="26sp" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/welcome_sub"
+        android:textAppearance="@style/TextAppearance.Hk.Body" />
+    <LinearLayout
+        android:id="@+id/sheet_options"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/sheet_continue"
+        style="@style/Widget.Hk.Button.Filled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:text="@string/btn_continue" />
+</LinearLayout>

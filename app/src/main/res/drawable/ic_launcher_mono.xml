@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon (Android 13+) silhouette: the keycap with the K cut out. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#000000" android:fillType="evenOdd" android:pathData="M44,29h20a13,13 0 0 1 13,13v20a13,13 0 0 1 -13,13h-20a13,13 0 0 1 -13,-13v-20a13,13 0 0 1 13,-13zM44,39h7v11.2l10.4,-11.2h9.1l-11.6,12.3l12.2,14.7h-9.2l-8.4,-10.4l-2.5,2.6v7.8h-7z" />
+</vector>
