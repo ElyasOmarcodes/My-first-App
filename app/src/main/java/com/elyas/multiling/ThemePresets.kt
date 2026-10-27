@@ -22,7 +22,7 @@ object ThemePresets {
         "col_special", "col_special_grad_on", "col_special_grad",
         "col_special_mode", "col_special_grad_style", "col_special_grad_dir",
         "col_text", "col_hint", "key_border", "hints", "preview",
-        "key_height", "key_height_land", "font_scale", "hint_scale",
+        "key_height", "land_height_pct", "font_scale", "hint_scale",
         "corner_radius", "key_gap", "bottom_gap", "sugg_font", "arrow_height"
     )
 

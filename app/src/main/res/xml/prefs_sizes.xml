@@ -4,8 +4,8 @@
     <PreferenceCategory android:title="@string/cat_kb_size">
         <com.elyas.multiling.SliderPreference android:key="key_height" android:title="@string/pref_key_height"
             android:defaultValue="72" android:max="100" app:min="36" />
-        <com.elyas.multiling.SliderPreference android:key="key_height_land" android:title="@string/pref_key_height_land"
-            android:defaultValue="42" android:max="80" app:min="30" />
+        <com.elyas.multiling.SliderPreference android:key="land_height_pct" android:title="@string/pref_key_height_land"
+            android:defaultValue="100" android:max="130" app:min="70" />
         <SwitchPreferenceCompat android:key="split_landscape"
             android:title="@string/pref_split_land"
             android:summary="@string/pref_split_land_sum"

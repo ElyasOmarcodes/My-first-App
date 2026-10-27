@@ -27,8 +27,13 @@ import androidx.preference.PreferenceManager
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     companion object {
-        /** key_height_land value meaning "the standard landscape height". */
-        private const val LAND_STANDARD = 42
+        /**
+         * Landscape height as a percentage of the standard size. A new key:
+         * the old key_height_land held dp values from earlier builds, which
+         * kept shrinking the keyboard after the sizing rule changed.
+         */
+        private const val LAND_KEY = "land_height_pct"
+        private const val LAND_STANDARD = 100
 
         /** long-press token on the enter key: commit a real newline */
         private const val SHIFT_ENTER = "⇧↵"
@@ -438,34 +443,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val p = PreferenceManager.getDefaultSharedPreferences(this)
         if (isLandscapeNow()) {
             // landscape stores a scale of the automatic height, not dp
-            val v = (baseKeyHeightDp / landscapeAutoKeyDp() * LAND_STANDARD).toInt().coerceIn(30, 80)
-            p.edit().putInt("key_height_land", v).apply()
+            val v = (baseKeyHeightDp / landscapeAutoKeyDp() * LAND_STANDARD).toInt().coerceIn(70, 130)
+            p.edit().putInt(LAND_KEY, v).apply()
         } else {
             p.edit().putInt("key_height", baseKeyHeightDp).apply()
         }
     }
 
-    /** Height of the current window (the whole screen for a full-screen game). */
+    /**
+     * The screen's short side in landscape, from the live system metrics:
+     * the service's own resources and window manager can still hold the
+     * portrait size captured at start-up, which made the rows max out.
+     */
     private fun screenHeightDp(): Float {
-        val density = resources.displayMetrics.density
-        val px = try {
-            // the keyboard window's own manager: a visual context, unlike
-            // this service's language-wrapped one
-            val wm = window?.window?.windowManager
-                ?: getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
-            if (android.os.Build.VERSION.SDK_INT >= 30) wm.maximumWindowMetrics.bounds.height()
-            else android.util.DisplayMetrics().also {
-                @Suppress("DEPRECATION") wm.defaultDisplay.getRealMetrics(it)
-            }.heightPixels
-        } catch (_: Exception) {
-            android.content.res.Resources.getSystem().displayMetrics.heightPixels
-        }
-        return px / density
+        val dm = android.content.res.Resources.getSystem().displayMetrics
+        return minOf(dm.widthPixels, dm.heightPixels) / dm.density
     }
 
-    /** Standard landscape row height: 46% of the screen for the key rows. */
+    /**
+     * Standard landscape row height. AOSP gives the key rows 45-46% of the
+     * screen height; Samsung's keyboard sits a little taller, so the rows
+     * take 48% and, with the suggestion bar, the keyboard covers ~57%.
+     */
     private fun landscapeAutoKeyDp(): Float =
-        screenHeightDp() * 0.46f / currentHeightUnits()
+        screenHeightDp() * 0.48f / currentHeightUnits()
 
     /** Toggle the live keyboard-resize mode. */
     private fun toggleResizeMode() {
@@ -952,9 +953,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         baseKeyHeightDp = if (landscape) {
             // AOSP's rule (the keyboard Gboard grew from): in landscape the
             // key area takes 45-46% of the screen height. The landscape
-            // height setting scales that (42 = standard), so the keyboard
+            // height setting scales that (100% = standard), so the keyboard
             // fits every phone instead of using one fixed dp value.
-            val scale = p.getInt("key_height_land", LAND_STANDARD) / LAND_STANDARD.toFloat()
+            val scale = p.getInt(LAND_KEY, LAND_STANDARD) / LAND_STANDARD.toFloat()
             (landscapeAutoKeyDp() * scale).toInt().coerceIn(26, 64)
         } else p.getInt("key_height", 72)
         // keep the exact height in sync unless a live resize drag is running

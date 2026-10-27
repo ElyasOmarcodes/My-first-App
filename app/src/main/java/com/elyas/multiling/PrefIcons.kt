@@ -31,7 +31,7 @@ object PrefIcons {
         "preview" to (R.drawable.ic_m_zoom to Ui.Tone.TEAL),
         // sizes
         "key_height" to (R.drawable.ic_m_height to Ui.Tone.VIOLET),
-        "key_height_land" to (R.drawable.ic_m_landscape to Ui.Tone.INDIGO),
+        "land_height_pct" to (R.drawable.ic_m_landscape to Ui.Tone.INDIGO),
         "split_landscape" to (R.drawable.ic_m_landscape to Ui.Tone.TEAL),
         "key_gap" to (R.drawable.ic_m_grid to Ui.Tone.BLUE),
         "corner_radius" to (R.drawable.ic_m_corner to Ui.Tone.CYAN),
