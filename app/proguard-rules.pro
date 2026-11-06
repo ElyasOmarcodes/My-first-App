@@ -19,3 +19,5 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# keep our IME entry points and preference fragments
+-keep class com.elyas.multiling.** { *; }
