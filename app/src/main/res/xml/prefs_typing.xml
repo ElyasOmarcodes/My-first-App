@@ -31,9 +31,9 @@
         <ListPreference android:key="longpress" android:title="@string/pref_longpress"
             android:entries="@array/longpress_names" android:entryValues="@array/longpress_values"
             android:defaultValue="200" app:useSimpleSummaryProvider="true" />
-        <SwitchPreferenceCompat android:key="clip_chip_repeat"
+        <ListPreference android:key="clip_suggest"
             android:title="@string/pref_clip_repeat"
-            android:summary="@string/pref_clip_repeat_sum"
-            android:defaultValue="false" />
+            android:entries="@array/clip_suggest_names" android:entryValues="@array/clip_suggest_values"
+            android:defaultValue="once" app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 </PreferenceScreen>

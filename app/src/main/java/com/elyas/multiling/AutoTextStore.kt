@@ -4,15 +4,30 @@ import android.content.Context
 import java.io.File
 
 /**
- * AutoText / shorthand store: typing a shortcut followed by a separator
- * expands it to the full phrase (e.g. "برب" → "بیرته به راشم").
+ * AutoText / shorthand store for one keyboard language: typing a shortcut
+ * offers the full phrase on the suggestion strip (e.g. "سلام" → "السلام
+ * علیکم ورحمة الله وبرکاته!"). Each language keeps its own list, so the
+ * Dari keyboard offers Dari phrases and the English one English phrases.
  *
  * Plain-text file, one "shortcut<TAB>expansion" per line — compatible with
  * exported MultiLing-style autotext lists, so users can import them.
  */
-class AutoTextStore(private val context: Context) {
+class AutoTextStore(private val context: Context, val lang: String) {
 
     companion object {
+        /** Languages with their own list, in the order the app shows them. */
+        val LANGS = listOf("ps", "fa", "ar", "ur", "en")
+
+        /** The language last picked on the Shortcuts page (import/export use it). */
+        fun selectedLang(context: Context): String =
+            androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("autotext_lang", null)?.takeIf { it in LANGS } ?: "ps"
+
+        fun selected(context: Context): AutoTextStore = AutoTextStore(context, selectedLang(context))
+
+        /** Shortcuts across every language. */
+        fun totalCount(context: Context): Int = LANGS.sumOf { AutoTextStore(context, it).all().size }
+
         /**
          * The keyboard service caches dictionaries and autotext in memory.
          * Editors (autotext screen, imports) bump this counter so the
@@ -26,31 +41,48 @@ class AutoTextStore(private val context: Context) {
 
         /**
          * First run (of the app OR the keyboard, whichever comes first):
-         * load the bundled default shortcuts, so the Shortcuts page is never
-         * empty on a fresh install.
+         * give every language its bundled default shortcuts, so the
+         * Shortcuts page is never empty on a fresh install. Lists made before
+         * shortcuts were per language were Pashto lists: they become the
+         * Pashto one, and the other languages get their defaults once.
          */
         fun bootstrapDefaults(context: Context) {
             val p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-            if (p.getBoolean("autotext_init", false)) return
-            p.edit().putBoolean("autotext_init", true).apply()
             try {
-                val store = AutoTextStore(context)
-                if (store.all().isEmpty()) {
-                    val text = context.assets.open("default_autotext.txt")
-                        .bufferedReader().use { it.readText() }
-                    store.importText(text)
-                }
+                val legacy = File(context.filesDir, "autotext.txt")
+                val ps = File(context.filesDir, "autotext_ps.txt")
+                if (legacy.exists() && !ps.exists()) legacy.renameTo(ps)
             } catch (_: Exception) {
             }
+            val e = p.edit()
+            for (lang in LANGS) {
+                val key = "autotext_init_$lang"
+                // the old single flag meant the Pashto defaults were already given
+                val done = p.getBoolean(key, false) ||
+                    (lang == "ps" && p.getBoolean("autotext_init", false))
+                if (done) continue
+                e.putBoolean(key, true)
+                try {
+                    val store = AutoTextStore(context, lang)
+                    if (store.all().isEmpty()) store.restoreDefaults()
+                } catch (_: Exception) {
+                }
+            }
+            e.apply()
         }
     }
+
+    /** Add this language's bundled shortcuts (existing ones are kept). */
+    fun restoreDefaults(): Int = try {
+        importText(context.assets.open("default_autotext_$lang.txt").bufferedReader().use { it.readText() })
+    } catch (_: Exception) { 0 }
 
     /** A shortcut may carry SEVERAL phrases — all offered on the strip. */
     private val map = LinkedHashMap<String, ArrayList<String>>()
     private var loaded = false
     private var dirty = false
 
-    private fun file(): File = File(context.filesDir, "autotext.txt")
+    private fun file(): File = File(context.filesDir, "autotext_$lang.txt")
 
     private fun ensureLoaded() {
         if (loaded) return
@@ -111,9 +143,12 @@ class AutoTextStore(private val context: Context) {
         ensureLoaded()
         val out = ArrayList<String>()
         map[prefix]?.let { out.addAll(it) }
+        // "Salam" finds "salam": capitals come from sentence starts
+        val lower = prefix.lowercase()
+        if (lower != prefix) map[lower]?.let { for (e in it) if (e !in out) out.add(e) }
         for ((s, list) in map) {
             if (out.size >= max) break
-            if (s != prefix && s.startsWith(prefix)) {
+            if (s != prefix && s != lower && (s.startsWith(prefix) || s.startsWith(lower))) {
                 for (e in list) {
                     out.add(e)
                     if (out.size >= max) break

@@ -39,7 +39,7 @@
     <string name="pref_autocorrect_sum">با زدن فاصله، واژه نادرست به بهترین پیشنهاد تبدیل می‌شود</string>
     <string name="pref_autotext_export">ذخیره میان‌برها (Export)</string>
     <string name="pref_autotext_import">بازآوری میان‌برها (Import)</string>
-    <string name="pref_autotext_import_sum">همه پیشنهادها را یکجا از یک فایل متنی ذخیره‌شده بیفزایید</string>
+    <string name="pref_autotext_import_sum">همه میان‌برها را یکجا از یک فایل متنی بیفزایید؛ به زبانی افزوده می‌شوند که در صفحه میان‌برها انتخاب شده است</string>
     <string name="pref_autotext_manage">مدیریت میان‌برها</string>
     <string name="pref_autotext_manage_sum">افزودن، دیدن و حذف میان‌برهای جدید</string>
     <string name="pref_autotext_on">فعال‌سازی میان‌برها</string>
@@ -47,7 +47,7 @@
     <string name="pref_bigrams">پیش‌بینی واژه بعدی</string>
     <string name="pref_bigrams_sum">بر پایه واژه پیشین، واژه بعدی را پیشنهاد می‌کند</string>
     <string name="pref_bottom_gap">فاصله پایینی (Bottom gap)</string>
-    <string name="pref_bottom_gap_sum">فاصله میان کیبورد و دکمه‌های سیستم (dp)</string>
+    <string name="pref_bottom_gap_sum">فضای اضافی بالای دکمه‌های سیستم، وقتی فاصله خودکار خاموش است (dp)</string>
     <string name="pref_cat_autotext">میان‌برها</string>
     <string name="pref_cat_colors">رنگ‌ها و ظاهر دلخواه</string>
     <string name="pref_cat_control">دکمه‌های چهارجهته</string>
@@ -59,9 +59,7 @@
     <string name="pref_cat_typing">نوشتن و پیشنهاد</string>
     <string name="pref_clear_learned">پاک کردن واژه‌های آموخته‌شده</string>
     <string name="pref_clear_learned_sum">همه واژه‌ها و پیش‌بینی‌های آموخته‌شده را حذف می‌کند</string>
-    <string name="pref_clip_repeat">پیشنهاد تکراری متن کپی‌شده</string>
-    <string name="pref_clip_repeat_sum">اگر فعال باشد: کادر متن کپی‌شده در هر خط خالی نمایان می‌شود
-• اگر غیرفعال باشد: پس از یک بار استفاده، آن کادر دیگر پنهان می‌شود</string>
+    <string name="pref_clip_repeat">پیشنهاد متن کپی‌شده</string>
     <string name="pref_col_bg">رنگ پس‌زمینه (پشت و میان دکمه‌ها)</string>
     <string name="pref_col_cat_general">عمومی</string>
     <string name="pref_col_cat_key_group">دکمه‌های حروف</string>
@@ -105,7 +103,7 @@
     <string name="pref_learn_words_sum">کلماتی را که نگه می‌دارید یاد می‌گیرد؛ کلمات پاک‌شده یا اصلاح‌شده یاد گرفته نمی‌شوند</string>
     <string name="pref_longpress">زمان فشار طولانی دکمه</string>
     <string name="pref_nav_gap_auto">فاصله پایینی خودکار</string>
-    <string name="pref_nav_gap_auto_sum">کیبورد بر پایه دکمه‌های پایینی موبایل، فاصله مناسب را خودکار می‌گیرد (اگر غیرفعال شود، باید نوار پایینی به‌صورت دستی تنظیم شود)</string>
+    <string name="pref_nav_gap_auto_sum">دکمه‌ها در هر موبایل درست بالای دکمه‌های پایینی سیستم قرار می‌گیرند. با خاموش کردن، می‌توانید با نوار زیر فضای اضافی بدهید</string>
     <string name="pref_preview">پاپ‌آپ فشار طولانی دکمه</string>
     <string name="pref_seed_dict">استفاده از واژه‌نامه آماده</string>
     <string name="pref_seed_dict_sum">واژه‌های رایج درون برنامه را نیز پیشنهاد می‌کند</string>
@@ -316,4 +314,9 @@
         <item>یک میان‌بر کوتاه بنویسید؛ جملهٔ کاملش در نوار پیشنهاد ظاهر می‌شود.</item>
         <item>روی دکمهٔ فاصله به چپ یا راست بکشید تا زبان عوض شود.</item>
     </string-array>
+    <string name="shortcuts_lang_title">میان‌برهای هر زبان</string>
+    <string name="shortcuts_lang_sub">هر زبان فهرست خودش را دارد؛ کیبورد میان‌برهای همان زبانی را پیشنهاد می‌کند که با آن می‌نویسید</string>
+    <string name="shortcuts_restore">افزودن میان‌برهای پیش‌فرض</string>
+    <string name="shortcuts_restored">%1$s میان‌بر افزوده شد</string>
+    <string name="shortcuts_lang_count">%1$s میان‌بر</string>
 </resources>

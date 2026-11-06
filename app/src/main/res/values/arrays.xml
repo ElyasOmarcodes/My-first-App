@@ -109,4 +109,14 @@
         <item>500</item>
         <item>700</item>
     </string-array>
+    <string-array name="clip_suggest_names">
+        <item>وړاندیز نه شي</item>
+        <item>یو ځل وړاندیز شي</item>
+        <item>تل وړاندیز شي</item>
+    </string-array>
+    <string-array name="clip_suggest_values" translatable="false">
+        <item>never</item>
+        <item>once</item>
+        <item>always</item>
+    </string-array>
 </resources>

@@ -54,4 +54,9 @@
         <item>کند (500ms)</item>
         <item>خیلی کند (700ms)</item>
     </string-array>
+    <string-array name="clip_suggest_names">
+        <item>پیشنهاد نشود</item>
+        <item>یک بار پیشنهاد شود</item>
+        <item>همیشه پیشنهاد شود</item>
+    </string-array>
 </resources>

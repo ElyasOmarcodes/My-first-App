@@ -111,14 +111,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var clipStore: ClipboardStore? = null
     // clip chip: with clip_chip_repeat OFF the chip disappears after one use
     // — permanently, across every field and app (persisted as a fingerprint)
-    private var clipChipRepeat = false
+    /** Clipboard chip: "never", "once" (spent when used) or "always". */
+    private var clipMode = "once"
     private var consumedClipKey: String? = null
 
     private fun clipKey(t: String) = "${t.hashCode()}:${t.length}"
 
     private val wordStores = HashMap<String, WordStore>()
     private val preloadedLangs = HashSet<String>()
-    private var autoText: AutoTextStore? = null
+    /** One shortcut list per keyboard language. */
+    private val autoTexts = HashMap<String, AutoTextStore>()
     private val wordBuffer = StringBuilder()
     private var lastWord = ""
 
@@ -128,7 +130,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         wordStores.getOrPut(lang.code) { WordStore(this, lang.code) }
 
     private fun autoTextStore(): AutoTextStore =
-        autoText ?: AutoTextStore(this).also { autoText = it }
+        autoTexts.getOrPut(lang.code) { AutoTextStore(this, lang.code) }
 
     private fun confusion(): Map<Char, Set<Char>> =
         confusionMaps.getOrPut(lang.code) { Layouts.confusionMap(lang) }
@@ -321,10 +323,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             )
         )
         rootView = root
-        // re-apply the auto gap whenever the system insets change (rotation,
-        // switching between gesture and 3-button navigation, etc.)
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
-            if (navGapAuto) applyBottomGap()
+        // The gap under the keys comes only from the insets delivered to this
+        // view: they are what is left after every parent has taken its share.
+        // Reading the window's raw insets instead added the navigation bar a
+        // second time on phones whose IME decor already pads for it (the empty
+        // band some users saw above the system buttons).
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val nav = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())
+            // gesture mode with the keyboard up: the hide / switch buttons form
+            // a tappable strip that can be taller than the pill
+            val tap = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())
+            val cut = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+            navInsetBottom = maxOf(nav.bottom, tap.bottom)
+            // landscape with 3-button navigation: the bar sits at a side
+            v.setPadding(maxOf(nav.left, cut.left), 0, maxOf(nav.right, cut.right), 0)
+            applyBottomGap()
             insets
         }
         applySettings()
@@ -541,73 +554,60 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         return d
     }
 
+    /** Bottom inset the root view was last given (navigation bar / IME buttons). */
+    private var navInsetBottom = 0
+
     /**
-     * How far the keyboard must lift so no key sits under the system's
-     * bottom controls. In 3-button navigation the framework already reserves
-     * that space (tappable area > 0) so no extra gap is needed; in gesture
-     * navigation the home bar overlaps the keyboard, so we add the nav-bar
-     * inset as the gap.
-     */
-    /**
-     * Exact pixels the keyboard window overlaps the system navigation area
-     * (3-button bar OR gesture pill — any size, any device). The keyboard
-     * window is laid out edge-to-edge on modern Android, so whenever its
-     * bottom reaches the bottom of the screen the navigation inset must be
-     * padded away; when the system already keeps the window above the bar
-     * (older devices) no extra gap is added.
+     * Pixels the keyboard window overlaps the system navigation area, from
+     * the insets dispatched to the keyboard's own view. Before Android 11 an
+     * IME window can be told about a bar it does not overlap, so there the
+     * window's position is checked against the real screen as well.
      */
     private fun autoGapPx(): Int {
+        val nav = navInsetBottom
+        if (nav <= 0) return 0
+        val cap = (72 * resources.displayMetrics.density).toInt()
+        if (android.os.Build.VERSION.SDK_INT >= 30) return nav.coerceAtMost(cap)
         return try {
             val decor = window?.window?.decorView ?: return 0
-            val insets = androidx.core.view.ViewCompat.getRootWindowInsets(decor)
-                ?: return 0
-            // gesture mode: while the keyboard is open the system draws its
-            // own hide/switch buttons at the very bottom — that TAPPABLE
-            // strip can be taller than the plain gesture pill, so take the
-            // larger of the two insets
-            val navOnly = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.navigationBars()
-            ).bottom
-            val tappable = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.tappableElement()
-            ).bottom
-            val nav = maxOf(navOnly, tappable)
-            if (nav <= 0) return 0
             val loc = IntArray(2)
             decor.getLocationOnScreen(loc)
-            val windowBottom = loc[1] + decor.height
-            val screenBottom = realScreenHeight()
-            // pad only when the window really extends under the nav area
-            if (screenBottom <= 0 || windowBottom >= screenBottom - 4) {
-                nav.coerceAtMost((64 * resources.displayMetrics.density).toInt())
-            } else 0
+            val p = android.graphics.Point()
+            @Suppress("DEPRECATION")
+            (getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager)
+                .defaultDisplay.getRealSize(p)
+            if (loc[1] + decor.height >= p.y - 4) nav.coerceAtMost(cap) else 0
         } catch (_: Exception) { 0 }
     }
 
-    private fun realScreenHeight(): Int {
-        return try {
-            // the keyboard window's own manager: a visual context, unlike
-            // this service's language-wrapped one
-            val wm = window?.window?.windowManager
-                ?: getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-                wm.currentWindowMetrics.bounds.height()
-            } else {
-                val p = android.graphics.Point()
-                @Suppress("DEPRECATION")
-                wm.defaultDisplay.getRealSize(p)
-                p.y
-            }
-        } catch (_: Exception) { 0 }
+    /**
+     * Draw the keyboard under the navigation bar on every Android version,
+     * the way Gboard does: the bar turns transparent over the keyboard's own
+     * colour and the keys are lifted by exactly the inset. Without this the
+     * layout depended on the device (Android 15 forces edge-to-edge, older
+     * versions and some skins do not), which is where the gaps came from.
+     */
+    private fun applyEdgeToEdge() {
+        val w = window?.window ?: return
+        try {
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(w, false)
+            @Suppress("DEPRECATION")
+            w.navigationBarColor = android.graphics.Color.TRANSPARENT
+            if (android.os.Build.VERSION.SDK_INT >= 29) w.isNavigationBarContrastEnforced = false
+            val bg = keyboardView?.resolvedBackground ?: return
+            androidx.core.view.WindowCompat.getInsetsController(w, w.decorView)
+                .isAppearanceLightNavigationBars = androidx.core.graphics.ColorUtils.calculateLuminance(bg) > 0.5
+        } catch (_: Exception) {
+        }
     }
 
-    /** Bottom padding under the keys: auto = nav-bar overlap, else manual.
-     *  Applied to the emoji/clipboard holder too so those panels keep the
-     *  same gap above the system bar. */
+    /** Bottom padding under the keys: the nav-bar overlap, plus the manual
+     *  extra space when automatic mode is off. Applied to the emoji/clipboard
+     *  holder too so those panels keep the same gap above the system bar. */
     private fun applyBottomGap() {
         val kv = keyboardView ?: return
         val density = resources.displayMetrics.density
-        val pad = if (navGapAuto) autoGapPx() else (manualBottomGapDp * density).toInt()
+        val pad = autoGapPx() + if (navGapAuto) 0 else (manualBottomGapDp * density).toInt()
         kv.setPadding(0, 0, 0, pad)
         kv.requestLayout()
         // the gap belongs to whichever view is bottom-most: in emoji SEARCH
@@ -618,8 +618,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onWindowShown() {
         super.onWindowShown()
-        // insets/positions are only final once the window is up — re-measure
-        if (navGapAuto) keyboardView?.post { applyBottomGap() }
+        // the decor is rebuilt with the window: re-assert edge-to-edge and ask
+        // for fresh insets, which re-run the gap
+        applyEdgeToEdge()
+        rootView?.let { androidx.core.view.ViewCompat.requestApplyInsets(it) }
         // the decor is recreated with the window, so re-assert both each time
         applyWindowDirection()
         registerBackCallback()
@@ -627,6 +629,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onStartInput(info: EditorInfo?, restarting: Boolean) {
         super.onStartInput(info, restarting)
+        ownSels.clear()
+        knownSel = info?.initialSelEnd?.takeIf { it >= 0 && it == info.initialSelStart } ?: -1
         // the back dispatcher is rebuilt with the input connection, so the
         // callback has to be re-seated here, not just once at startup
         registerBackCallback()
@@ -699,7 +703,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     override fun onFinishInputView(finishingInput: Boolean) {
         settleAllWords(verify = true)
         for (s in wordStores.values) s.save()
-        autoText?.save()
+        for (a in autoTexts.values) a.save()
         keyboardView?.dismissPopups()
         wordMenu?.dismiss()
         wordMenu = null
@@ -715,6 +719,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         super.onUpdateSelection(
             oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd
         )
+        if (newSelStart == newSelEnd && ownSels.isNotEmpty() && ownSels.contains(newSelEnd)) {
+            // the cursor landed where one of our own letters put it: the word
+            // buffer is already right, so skip the round trip to the app
+            while (ownSels.removeFirst() != newSelEnd) { /* drop the ones it overtook */ }
+            if (ownSels.isEmpty()) knownSel = newSelEnd
+            return
+        }
+        ownSels.clear()
+        knownSel = if (newSelStart == newSelEnd) newSelEnd else -1
         if (newSelStart != newSelEnd) {
             // an active selection has no "current word"
             wordBuffer.setLength(0)
@@ -727,6 +740,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             syncBufferFromCursor()
         }
     }
+
+    /**
+     * Cursor positions our own letter commits will produce, in order. AOSP's
+     * keyboard keeps the same book: a selection update it caused itself
+     * needs no re-reading of the text, and reading it on every keystroke
+     * (a blocking call into the app, slower the busier the app is) was the
+     * other half of the typing lag in long messages.
+     */
+    private val ownSels = ArrayDeque<Int>()
+    /** The cursor per the latest update plus our pending commits; -1 = unknown. */
+    private var knownSel = -1
 
     private fun syncBufferFromCursor() {
         val ic = currentInputConnection ?: return
@@ -1000,7 +1024,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         autoCapsOn = p.getBoolean("autocaps", true)
         suggFontSp = p.getInt("sugg_font", 17).toFloat()
         arrowsOn = p.getBoolean("arrows", false)
-        clipChipRepeat = p.getBoolean("clip_chip_repeat", false)
+        clipMode = p.getString("clip_suggest", null)
+            ?: if (p.getBoolean("clip_chip_repeat", false)) "always" else "once"
         consumedClipKey = p.getString("consumed_clip", null)
 
         val dv = p.getInt("data_version", 0)
@@ -1008,7 +1033,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             lastDataVersion = dv
             wordStores.clear()
             preloadedLangs.clear()
-            autoText = null
+            autoTexts.clear()
         }
 
         val enabled = p.getStringSet("languages", null)
@@ -1031,6 +1056,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         rootView?.setBackgroundColor(kv.resolvedBackground)
+        applyEdgeToEdge()
         suggestionScroll?.visibility = if (suggestionsOn) View.VISIBLE else View.GONE
     }
 
@@ -1447,6 +1473,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (isLetter) {
             ic.commitText(text, 1)
             wordBuffer.append(text)
+            if (knownSel >= 0) {
+                knownSel += text.length
+                ownSels.addLast(knownSel)
+            }
             // keep the tap list aligned with the buffer; a character that did
             // not come from a tap (popup, autotext) contributes no evidence
             val tap = pendingTap
@@ -1479,6 +1509,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun handleSeparator(sep: String, commitSep: Boolean = true) {
         val ic = currentInputConnection
         val word = wordBuffer.toString()
+        val needBest = word.length >= 2 && ic != null && !isPasswordField
+        val best = if (needBest) bestCandidateFor(word, ArrayList(tapAlternatives())) else null
         wordBuffer.setLength(0)
         wordTaps.clear()
         wordTapAlts.clear()
@@ -1489,7 +1521,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             // highlighted best suggestion (e.g. "چط" → "چې"). AutoText
             // shortcuts are legitimate words for the user — never
             // autocorrect them away.
-            val best = bestCandidate
             if (autocorrectOn && suggestionsOn && sep == " " &&
                 word.length >= 2 && best != null && !best.exact &&
                 best.sameLen && !store().contains(word) &&
@@ -1518,6 +1549,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             lastWord = committed
         }
         bestCandidate = null
+        bestFor = null
         if (commitSep && sep.isNotEmpty()) {
             // punctuation hugs the word before it: "کلمه ،" → "کلمه،"
             if (sep in TIGHT_PUNCT && ic != null) {
@@ -2329,70 +2361,123 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** One entry on the suggestion strip. */
+    private class SuggItem(
+        val text: String,
+        val style: Int,
+        val isClip: Boolean = false,
+        val isAutoText: Boolean = false
+    )
+
+    /** What the dictionary said about one typed word (worker thread). */
+    private class DictResult(
+        val typedIsKnown: Boolean,
+        val cands: List<WordStore.Cand>,
+        val next: List<String>
+    )
+
+    /**
+     * Suggestions are worked out on their own thread, the way AOSP's
+     * keyboard does it: a key press commits its letter at once and the
+     * strip follows a moment later. Searching the dictionary on the UI
+     * thread made every keystroke wait for it, so fast typing lagged and
+     * dropped letters once the dictionaries grew.
+     */
+    private val suggThread = android.os.HandlerThread("keyflux-suggest").also { it.start() }
+    private val suggWorker = android.os.Handler(suggThread.looper)
+    /** Bumped for every request; a result for an older one is dropped. */
+    private var suggGen = 0
+    /** The word [bestCandidate] was computed for. */
+    private var bestFor: String? = null
+
     private fun buildSuggestions() {
-        bestCandidate = null
         val bar = suggestionBar ?: return
-        bar.removeAllViews()
-        if (!suggestionsOn || isPasswordField) return
-        // in emoji search the query lives in the panel's own field, so the
-        // strip stays empty instead of showing word suggestions for it
-        if (mode == Mode.EMOJI_SEARCH) return
-        val kv = keyboardView ?: return
+        val gen = ++suggGen
+        if (!suggestionsOn || isPasswordField || mode == Mode.EMOJI_SEARCH) {
+            // in emoji search the query lives in the panel's own field, so the
+            // strip stays empty instead of showing word suggestions for it
+            bestCandidate = null
+            bestFor = null
+            bar.removeAllViews()
+            return
+        }
         val prefix = wordBuffer.toString()
+        val store = store()
+        val last = lastWord
+        val seeds = seedDictOn
+        val bigrams = bigramsOn
+        val conf = confusion()
+        val taps = ArrayList(tapAlternatives())
+        // main-thread parts: the clipboard and the AutoText list are cheap
+        // and owned by this thread
+        val clip = if (prefix.isEmpty()) clipChipText() else null
+        val autos = if (prefix.isNotEmpty() && autotextOn) autoTextStore().matching(prefix, 3)
+            else emptyList()
+        suggWorker.post {
+            val r = try {
+                if (prefix.isEmpty()) DictResult(false, emptyList(),
+                    if (bigrams && last.isNotEmpty()) store.suggestNext(last, 4, seeds) else emptyList())
+                else DictResult(store.contains(prefix),
+                    store.suggestSmart(prefix, 6, seeds, conf, taps), emptyList())
+            } catch (_: Exception) { return@post }
+            suggHandler.post {
+                if (gen != suggGen) return@post
+                try { showSuggestions(prefix, clip, autos, r) } catch (_: Exception) {}
+            }
+        }
+    }
 
-        class SuggItem(
-            val text: String,
-            val style: Int,
-            val isClip: Boolean = false,
-            val isAutoText: Boolean = false
-        )
+    /**
+     * The clipboard chip for an empty line, or null. The setting decides:
+     * never, once per copied text (spent on use), or every time.
+     */
+    private fun clipChipText(): String? {
+        if (clipMode == "never") return null
+        val item = clipboardStore().newest() ?: return null
+        if (clipMode != "always" && clipKey(item) == consumedClipKey) return null
+        // asking the app for the line costs a round trip: only when a chip
+        // would actually show
+        return if (isCurrentLineEmpty()) item else null
+    }
 
+    /** The best correction for [word], from the strip when it is current,
+     *  else worked out now (a separator typed before the strip caught up). */
+    private fun bestCandidateFor(word: String, taps: List<List<Pair<Char, Float>>>): WordStore.Cand? {
+        if (bestFor == word) return bestCandidate
+        if (!suggestionsOn || word.isEmpty()) return null
+        val s = store()
+        if (s.contains(word)) return null
+        return s.suggestSmart(word, 1, seedDictOn, confusion(), taps).firstOrNull()
+    }
+
+    private fun showSuggestions(prefix: String, clip: String?, autos: List<String>, r: DictResult) {
+        val bar = suggestionBar ?: return
+        val kv = keyboardView ?: return
+        bar.removeAllViews()
+        bestCandidate = null
+        bestFor = prefix
         val items = ArrayList<SuggItem>()
         val STYLE_NORMAL = 0
         val STYLE_ACCENT = 1
         val STYLE_TYPED = 2
 
         if (prefix.isEmpty()) {
-            // newest clipboard item; with repeat OFF the chip is one-shot
-            if (isCurrentLineEmpty()) {
-                clipboardStore().newest()?.let {
-                    if (clipChipRepeat || clipKey(it) != consumedClipKey) {
-                        items.add(SuggItem(it, STYLE_ACCENT, isClip = true))
-                    }
-                }
-            }
-            if (bigramsOn && lastWord.isNotEmpty()) {
-                for (w in store().suggestNext(lastWord, 4, seedDictOn)) {
-                    items.add(SuggItem(w, STYLE_NORMAL))
-                }
-            }
+            clip?.let { items.add(SuggItem(it, STYLE_ACCENT, isClip = true)) }
+            for (w in r.next) items.add(SuggItem(w, STYLE_NORMAL))
+        } else if (r.typedIsKnown) {
+            // the typed word is itself a valid word: highlight IT and never
+            // auto-replace it; similar words are only tappable extras
+            items.add(SuggItem(prefix, STYLE_ACCENT))
+            for (e in autos) items.add(SuggItem(e, STYLE_NORMAL, isAutoText = true))
+            for (c in r.cands) items.add(SuggItem(c.word, STYLE_NORMAL))
         } else {
-            val typedIsKnown = store().contains(prefix)
-            val cands = store().suggestSmart(prefix, 6, seedDictOn, confusion(), tapAlternatives())
-            if (typedIsKnown) {
-                // the typed word is itself a valid word: highlight IT and never
-                // auto-replace it; similar words are only tappable extras
-                bestCandidate = null
-                items.add(SuggItem(prefix, STYLE_ACCENT))
-                if (autotextOn) {
-                    for (e in autoTextStore().matching(prefix, 3)) {
-                        items.add(SuggItem(e, STYLE_NORMAL, isAutoText = true))
-                    }
-                }
-                for (c in cands) items.add(SuggItem(c.word, STYLE_NORMAL))
-            } else {
-                // unknown word: the top match is the correction target (blue),
-                // the typed word stays available (plain, long-press to save)
-                items.add(SuggItem(prefix, STYLE_TYPED))
-                if (autotextOn) {
-                    for (e in autoTextStore().matching(prefix, 3)) {
-                        items.add(SuggItem(e, STYLE_ACCENT, isAutoText = true))
-                    }
-                }
-                bestCandidate = cands.firstOrNull()
-                for ((i, c) in cands.withIndex()) {
-                    items.add(SuggItem(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL))
-                }
+            // unknown word: the top match is the correction target (blue),
+            // the typed word stays available (plain, long-press to save)
+            items.add(SuggItem(prefix, STYLE_TYPED))
+            for (e in autos) items.add(SuggItem(e, STYLE_ACCENT, isAutoText = true))
+            bestCandidate = r.cands.firstOrNull()
+            for ((i, c) in r.cands.withIndex()) {
+                items.add(SuggItem(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL))
             }
         }
 
@@ -2496,7 +2581,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                         currentInputConnection?.commitText(text, 1)
                         feedback()
                         // one-shot mode: spent forever (any field, any app)
-                        if (!clipChipRepeat) {
+                        if (clipMode != "always") {
                             consumedClipKey = clipKey(text)
                             PreferenceManager.getDefaultSharedPreferences(this)
                                 .edit().putString("consumed_clip", consumedClipKey)
@@ -2698,6 +2783,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDestroy() {
+        suggThread.quitSafely()
         touchCal?.save()
         unregisterBackCallback()
         soundPool?.release()

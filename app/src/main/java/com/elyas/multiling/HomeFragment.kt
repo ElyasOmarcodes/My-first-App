@@ -185,7 +185,7 @@ class HomeFragment : Fragment(R.layout.frag_home) {
         val langs = Layouts.ALL.count { enabled.isEmpty() || enabled.contains(it.code) }
             .coerceAtLeast(1)
         setTile(v, R.id.tile_langs, langs)
-        setTile(v, R.id.tile_shortcuts, try { AutoTextStore(c).all().size } catch (_: Exception) { 0 })
+        setTile(v, R.id.tile_shortcuts, try { AutoTextStore.totalCount(c) } catch (_: Exception) { 0 })
 
         // learned words: read the small per-language files off the main thread
         Thread {

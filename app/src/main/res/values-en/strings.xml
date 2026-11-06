@@ -39,7 +39,7 @@ Long-press a suggestion to delete it</string>
     <string name="pref_autocorrect_sum">On space, a wrong word is replaced with the best suggestion</string>
     <string name="pref_autotext_export">Export shortcuts</string>
     <string name="pref_autotext_import">Import shortcuts</string>
-    <string name="pref_autotext_import_sum">Add all suggestions at once from a saved text file</string>
+    <string name="pref_autotext_import_sum">Add shortcuts from a saved text file, into the language selected on the Shortcuts page</string>
     <string name="pref_autotext_manage">Manage shortcuts</string>
     <string name="pref_autotext_manage_sum">Add, view and delete shortcuts</string>
     <string name="pref_autotext_on">Enable shortcuts</string>
@@ -47,7 +47,7 @@ Long-press a suggestion to delete it</string>
     <string name="pref_bigrams">Next-word prediction</string>
     <string name="pref_bigrams_sum">Suggests the next word based on the previous one</string>
     <string name="pref_bottom_gap">Bottom gap</string>
-    <string name="pref_bottom_gap_sum">Space between the keyboard and the system buttons (dp)</string>
+    <string name="pref_bottom_gap_sum">Extra space above the system buttons when the automatic gap is off (dp)</string>
     <string name="pref_cat_autotext">Shortcuts</string>
     <string name="pref_cat_colors">Custom colours and appearance</string>
     <string name="pref_cat_control">Arrow keys</string>
@@ -59,9 +59,7 @@ Long-press a suggestion to delete it</string>
     <string name="pref_cat_typing">Typing and suggestions</string>
     <string name="pref_clear_learned">Clear learned words</string>
     <string name="pref_clear_learned_sum">Deletes all learned words and predictions</string>
-    <string name="pref_clip_repeat">Repeating suggestion of copied text</string>
-    <string name="pref_clip_repeat_sum">If enabled: the copied-text chip appears on every empty line
-• If disabled: after one use the chip is hidden</string>
+    <string name="pref_clip_repeat">Suggest copied text</string>
     <string name="pref_col_bg">Background colour (behind and between the keys)</string>
     <string name="pref_col_cat_general">General</string>
     <string name="pref_col_cat_key_group">Letter keys</string>
@@ -105,7 +103,7 @@ Long-press a suggestion to delete it</string>
     <string name="pref_learn_words_sum">Learns the words you keep; words you delete or correct are not learned</string>
     <string name="pref_longpress">Long-press delay</string>
     <string name="pref_nav_gap_auto">Automatic bottom gap</string>
-    <string name="pref_nav_gap_auto_sum">The keyboard picks a suitable gap automatically from the phone\'s bottom buttons (if disabled, the bottom slider must be used)</string>
+    <string name="pref_nav_gap_auto_sum">Keys sit right above the phone\'s bottom buttons on every device. Turn off to add extra space with the slider below</string>
     <string name="pref_preview">Long-press popup</string>
     <string name="pref_seed_dict">Use the built-in dictionary</string>
     <string name="pref_seed_dict_sum">Also suggests common words bundled with the app</string>
@@ -316,4 +314,9 @@ Long-press a suggestion to delete it</string>
         <item>Type a short shortcut; its full phrase appears on the suggestion strip.</item>
         <item>Swipe left or right on the space bar to switch language.</item>
     </string-array>
+    <string name="shortcuts_lang_title">Shortcuts by language</string>
+    <string name="shortcuts_lang_sub">Each language has its own list; the keyboard offers the shortcuts of the language you are typing in</string>
+    <string name="shortcuts_restore">Add default shortcuts</string>
+    <string name="shortcuts_restored">%1$s shortcuts added</string>
+    <string name="shortcuts_lang_count">%1$s shortcuts</string>
 </resources>

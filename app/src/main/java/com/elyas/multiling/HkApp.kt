@@ -20,6 +20,15 @@ class HkApp : Application() {
         super.onCreate()
         AppLook.apply(this)
         AutoTextStore.bootstrapDefaults(this)
+        migrateClipSetting()
+    }
+
+    /** The old on/off "repeat" switch becomes the three-way clipboard setting. */
+    private fun migrateClipSetting() {
+        val p = PreferenceManager.getDefaultSharedPreferences(this)
+        if (p.contains("clip_suggest") || !p.contains("clip_chip_repeat")) return
+        p.edit().putString("clip_suggest", if (p.getBoolean("clip_chip_repeat", false)) "always" else "once")
+            .remove("clip_chip_repeat").apply()
     }
 }
 

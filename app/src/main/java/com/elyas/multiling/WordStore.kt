@@ -158,15 +158,29 @@ class WordStore(private val context: Context, private val langCode: String) {
     private val learned = HashMap<String, Entry>()
     private var seeds: List<String> = emptyList()   // frequency order, high → low
     private var seedFreq: IntArray = IntArray(0)    // parallel corpus frequencies
-    private var seedSet: SortedWords = SortedWords(emptyArray())
+    private var seedSet: Lexicon = Lexicon(emptyArray(), IntArray(0), IntArray(0))
 
     /**
-     * Membership test for the dictionary: a sorted array searched by binary
-     * search. With a quarter of a million words per language, a HashSet's
-     * per-entry nodes cost tens of megabytes across the enabled languages.
+     * The dictionary in code-unit order with each word's frequency. Doubles
+     * as the membership test (binary search: with a quarter of a million
+     * words per language, a HashSet's per-entry nodes cost tens of megabytes
+     * across the enabled languages) and as the flat trie [suggestSmart]
+     * walks.
      */
-    private class SortedWords(private val words: Array<String>) {
+    private class Lexicon(val words: Array<String>, val freq: IntArray, val rank: IntArray) {
+        val size get() = words.size
         fun contains(w: String): Boolean = java.util.Arrays.binarySearch(words, w) >= 0
+
+        /** First index in [from, to) whose word is >= [key]. */
+        fun lowerBound(key: String, from: Int, to: Int): Int {
+            var a = from
+            var b = to
+            while (a < b) {
+                val mid = (a + b) ushr 1
+                if (words[mid] < key) a = mid + 1 else b = mid
+            }
+            return a
+        }
     }
     private val bigrams = HashMap<String, HashMap<String, Int>>()
     private var loaded = false
@@ -177,6 +191,7 @@ class WordStore(private val context: Context, private val langCode: String) {
 
     /** Parse everything up front (call from a background thread) so the
      *  first keystroke doesn't pay the decompression cost. */
+    @Synchronized
     fun preload() {
         ensureLoaded()
     }
@@ -213,11 +228,13 @@ class WordStore(private val context: Context, private val langCode: String) {
             ws.trimToSize()
             seeds = ws
             seedFreq = fs.copyOf(ws.size)
-            seedSet = SortedWords(ws.toTypedArray().also { it.sort() })
+            val order = ws.indices.sortedWith { a, b -> ws[a].compareTo(ws[b]) }
+            seedSet = Lexicon(Array(order.size) { ws[order[it]] }, IntArray(order.size) { fs[order[it]] },
+                IntArray(order.size) { order[it] })
         } catch (_: Exception) {
             seeds = emptyList()
             seedFreq = IntArray(0)
-            seedSet = SortedWords(emptyArray())
+            seedSet = Lexicon(emptyArray(), IntArray(0), IntArray(0))
         }
         // the learned file is read after the dictionary: migrating an old
         // file needs the typo test, which needs the dictionary
@@ -330,6 +347,7 @@ class WordStore(private val context: Context, private val langCode: String) {
      * @param suspect the decoder had a confident correction for it when it
      *   was committed, i.e. the keyboard thought it was a typo.
      */
+    @Synchronized
     fun observe(word: String, signal: Signal, suspect: Boolean = false) {
         if (!learnable(word)) return
         ensureLoaded()
@@ -366,6 +384,7 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /** The user hand-added this word; trust it immediately and for good. */
+    @Synchronized
     fun learnExplicit(word: String) {
         if (word.isEmpty() || word.length > 32) return
         ensureLoaded()
@@ -379,6 +398,7 @@ class WordStore(private val context: Context, private val langCode: String) {
      * swapped it for a suggestion. One step down, and it becomes a suspect,
      * so a word that keeps getting fixed can never climb back easily.
      */
+    @Synchronized
     fun penalize(word: String) {
         ensureLoaded()
         val e = learned[word] ?: return
@@ -391,9 +411,11 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /** Kept for callers of the old API. */
+    @Synchronized
     fun unlearnRecent(word: String) = penalize(word)
 
     /** True when the decoder would show this learned word. */
+    @Synchronized
     fun isLearnedVisible(word: String): Boolean {
         ensureLoaded()
         return isVisible(learned[word])
@@ -404,6 +426,7 @@ class WordStore(private val context: Context, private val langCode: String) {
      * Deliberately strict — one substitution, insertion, deletion or swap
      * against a word of real corpus frequency.
      */
+    @Synchronized
     fun looksLikeTypo(word: String): Boolean {
         ensureLoaded()
         return looksLikeTypoRaw(word)
@@ -447,6 +470,7 @@ class WordStore(private val context: Context, private val langCode: String) {
      * were never confirmed by hand. The settings screen offers to remove
      * them in bulk.
      */
+    @Synchronized
     fun suspiciousLearned(): List<String> {
         ensureLoaded()
         return learned.entries
@@ -456,6 +480,7 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /** Learned words the user can see, with their level, strongest first. */
+    @Synchronized
     fun learnedWords(): List<Pair<String, Int>> {
         ensureLoaded()
         return learned.entries
@@ -464,6 +489,7 @@ class WordStore(private val context: Context, private val langCode: String) {
             .map { it.key to it.value.level }
     }
 
+    @Synchronized
     fun forgetAll(words: Collection<String>) {
         ensureLoaded()
         var any = false
@@ -507,6 +533,7 @@ class WordStore(private val context: Context, private val langCode: String) {
         return true
     }
 
+    @Synchronized
     fun learnBigram(prev: String, next: String) {
         if (prev.length < 2 || next.length < 2) return
         ensureLoaded()
@@ -519,12 +546,14 @@ class WordStore(private val context: Context, private val langCode: String) {
      * The user removed this word from the strip. It is blocked rather than
      * just deleted, so typing it again does not quietly bring it back.
      */
+    @Synchronized
     fun forget(word: String) {
         ensureLoaded()
         learned[word] = Entry(BLOCKED, 0, now(), 0)
         dirty = true
     }
 
+    @Synchronized
     fun clearLearned() {
         ensureLoaded()
         learned.clear()
@@ -542,6 +571,7 @@ class WordStore(private val context: Context, private val langCode: String) {
      * which are already ordered by corpus frequency, so the most common
      * words of the language come first.
      */
+    @Synchronized
     fun suggest(prefix: String, max: Int, useSeeds: Boolean): List<String> {
         if (prefix.isEmpty()) return emptyList()
         ensureLoaded()
@@ -563,6 +593,7 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /** True when the word is an established dictionary word (any case). */
+    @Synchronized
     fun contains(word: String): Boolean {
         ensureLoaded()
         if (isTrusted(learned[word]) || seedSet.contains(word)) return true
@@ -573,23 +604,28 @@ class WordStore(private val context: Context, private val langCode: String) {
     /**
      * Layout-aware correction and completion.
      *
-     * The old matcher compared typed[i] against word[i] and allowed only
-     * substitutions from a fixed neighbour set. That alignment is why a
-     * single missing or extra letter broke it completely: every character
-     * after the slip lined up against the wrong position, so "بیولوژي" was
-     * only ever found from a same-length near-miss.
+     * A weighted edit distance (substitute / insert / delete / transpose)
+     * scored against a spatial model, then combined with word frequency —
+     * how Gboard and Samsung rank candidates. Costs come from where the
+     * finger ACTUALLY landed when we have it ([taps]), so a letter next to
+     * the intended key is cheap and one across the keyboard is not.
      *
-     * This is the standard arrangement instead — a weighted edit distance
-     * (substitute / insert / delete / transpose) scored against a spatial
-     * model, then combined with word frequency, which is how Gboard and
-     * Samsung rank candidates. Costs come from where the finger ACTUALLY
-     * landed when we have it ([taps]), so a letter next to the intended key
-     * is cheap and one across the keyboard is not.
+     * ## Why it stays fast with a quarter of a million words
+     *
+     * AOSP's keyboard walks a trie: words that share a beginning share the
+     * work for it, and a whole branch is dropped the moment its beginning is
+     * already too far from what was typed. The dictionary here is kept as a
+     * sorted array, which is the same trie laid out flat — neighbours share
+     * prefixes — so the walk keeps one DP column per character of the
+     * current path, recomputes only the columns past the prefix it shares
+     * with the previous word, and jumps over every word under a dead prefix
+     * with a binary search. Most of the dictionary is never touched.
      *
      * @param taps per-typed-character alternatives with costs, from
      *   [SpatialModel.alternativesFor]; may be shorter than [typed] (or
      *   empty), in which case [confusable] supplies a flat fallback.
      */
+    @Synchronized
     fun suggestSmart(
         typed: String,
         max: Int,
@@ -599,106 +635,261 @@ class WordStore(private val context: Context, private val langCode: String) {
     ): List<Cand> {
         if (typed.isEmpty()) return emptyList()
         ensureLoaded()
-        val lower = typed.lowercase()
-        val n = lower.length
-        // per position: character -> cost of having meant it
-        val subCost = ArrayList<Map<Char, Float>>(n)
-        for (i in 0 until n) {
-            val m = HashMap<Char, Float>()
-            m[lower[i]] = 0f
-            val alts = taps.getOrNull(i)
-            if (alts != null) {
-                for ((ch, c) in alts) {
-                    val lc = ch.lowercaseChar()
-                    val prev = m[lc]
-                    if (prev == null || c < prev) m[lc] = c
-                }
-            } else {
-                confusable[lower[i]]?.forEach { ch ->
-                    val lc = ch.lowercaseChar()
-                    if (!m.containsKey(lc)) m[lc] = FALLBACK_SUB
-                }
-            }
-            subCost.add(m)
-        }
+        val q = Query(typed.lowercase(), confusable, taps)
+        val top = TopK(max * 2)
+        val starts = q.startChars()
 
-        val budget = maxErrors(n)
-        val slack = budget + 1
-        // The DP never looks further along a word than the typed text can
-        // reach, so one set of rows sized to that serves every candidate —
-        // allocating three arrays per dictionary word was most of the cost.
-        val width = n + slack + 2
-        val rows = Array(3) { FloatArray(width) }
-
-        // Which first letters are worth trying at all. This is the filter
-        // that was missing: it only rejected on the first letter for words of
-        // two characters or fewer, so in practice every word of a compatible
-        // length went through the full table on every keystroke.
-        val firstOk = HashSet<Char>(subCost[0].keys)
-        // an extra character typed at the front: typed[1] lands on w[0]
-        if (n >= 2) firstOk.addAll(subCost[1].keys)
-
-        val out = ArrayList<Cand>()
         for ((w, e) in learned) {
             if (!isVisible(e)) continue
-            if (!plausible(w, n, budget, firstOk)) continue
-            score(lower, w, freqScore(learnedFreq(e)), subCost, budget, slack, rows)
-                ?.let { out.add(it) }
+            if (!q.plausible(w) || w[0] !in starts) continue
+            q.walkSingle(w)
+            q.finalFor(w)?.let { (cost, bestJ) ->
+                // learned words lead their ties, as they did when listed first
+                top.offer(q.scoreOf(w, freqScore(learnedFreq(e)), cost, bestJ), Int.MAX_VALUE, w, cost, w.length == q.n)
+            }
         }
         if (useSeeds) {
-            val index = seedsByFirst()
-            for (ch in firstOk) {
-                val bucket = index[ch] ?: continue
-                for (idx in bucket) {
-                    val w = seeds[idx]
-                    if (!plausible(w, n, budget, firstOk)) continue
-                    if (learned[w]?.blocked == true) continue
-                    score(lower, w, freqScore(seedFreq[idx]), subCost, budget, slack, rows)
-                        ?.let { out.add(it) }
+            val lex = seedSet
+            for (ch in starts) {
+                val lo = lex.lowerBound(ch.toString(), 0, lex.size)
+                val hi = lex.lowerBound((ch + 1).toString(), lo, lex.size)
+                q.walkRange(lex, lo, hi) { k, cost, bestJ ->
+                    val w = lex.words[k]
+                    if (learned[w]?.blocked != true) {
+                        top.offer(q.scoreOf(w, freqScore(lex.freq[k]), cost, bestJ),
+                            Int.MAX_VALUE - 1 - lex.rank[k], w, cost, w.length == q.n)
+                    }
                 }
             }
         }
-        return out.asSequence()
-            .sortedByDescending { it.score }
+        return top.sorted()
             .distinctBy { it.word }
             .take(max)
             .map { it.copy(word = recase(typed, it.word)) }
-            .toList()
     }
 
-    /** Seed words grouped by first letter, so only plausible starts are read. */
-    private var firstIndex: Map<Char, IntArray>? = null
+    /**
+     * Keeps the best [cap] candidates without allocating for the rest.
+     * Ranked by score, then by [order] (higher first), so equal scores still
+     * come out in dictionary-frequency order whatever order the walk found
+     * them in.
+     */
+    private class TopK(private val cap: Int) {
+        private val keys = LongArray(cap)
+        private val scores = IntArray(cap)
+        private val words = arrayOfNulls<String>(cap)
+        private val costs = FloatArray(cap)
+        private val same = BooleanArray(cap)
+        private var size = 0
+        private var minAt = 0
 
-    @Synchronized
-    private fun seedsByFirst(): Map<Char, IntArray> {
-        firstIndex?.let { return it }
-        val tmp = HashMap<Char, ArrayList<Int>>()
-        for (i in seeds.indices) {
-            val w = seeds[i]
-            if (w.isEmpty()) continue
-            tmp.getOrPut(w[0].lowercaseChar()) { ArrayList() }.add(i)
+        fun offer(score: Int, order: Int, w: String, cost: Float, sameLen: Boolean) {
+            val key = (score.toLong() shl 32) or (order.toLong() and 0xFFFFFFFFL)
+            val at = if (size < cap) size++ else {
+                if (key <= keys[minAt]) return
+                minAt
+            }
+            keys[at] = key; scores[at] = score; words[at] = w; costs[at] = cost; same[at] = sameLen
+            if (size == cap) {
+                var m = 0
+                for (i in 1 until size) if (keys[i] < keys[m]) m = i
+                minAt = m
+            }
         }
-        val built = HashMap<Char, IntArray>(tmp.size)
-        for ((k, v) in tmp) built[k] = v.toIntArray()
-        firstIndex = built
-        return built
+
+        fun sorted(): List<Cand> = (0 until size)
+            .sortedByDescending { keys[it] }
+            .map { Cand(words[it]!!, scores[it], costs[it] < 0.001f, same[it], costs[it]) }
     }
 
-    /** Rejects a candidate without touching the DP table. */
-    private fun plausible(w: String, n: Int, budget: Int, firstOk: Set<Char>): Boolean {
-        if (w.isEmpty()) return false
-        // a correction cannot shorten the word past the error budget, though a
-        // completion may run long
-        if (w.length + budget < n) return false
-        if (w.length > n + 12) return false
-        return firstOk.contains(w[0].lowercaseChar())
-    }
+    /**
+     * One typed word, ready to be matched: per-position substitution costs
+     * as flat arrays (a Map<Char, Float> boxed a Character for every Arabic-
+     * script cell), and the DP columns of the current dictionary path.
+     *
+     * Column j holds, for every i, the cost of aligning the first i typed
+     * characters with the first j characters of the word. Only a diagonal
+     * band |i - j| <= slack is live: every length mismatch costs an insert
+     * or a delete, so cells outside it can never come in under budget.
+     */
+    private class Query(
+        val typed: String,
+        confusable: Map<Char, Set<Char>>,
+        taps: List<List<Pair<Char, Float>>>
+    ) {
+        val n = typed.length
+        val budget = when {
+            n <= 2 -> 0
+            n <= 4 -> 1
+            n <= 7 -> 2
+            else -> 3
+        }
+        private val maxCost = budget.toFloat()
+        private val slack = budget + 1
+        /** The walk never goes deeper than the typed text can reach. */
+        private val depth = n + slack
+        private val subChars = arrayOfNulls<CharArray>(n)
+        private val subVals = arrayOfNulls<FloatArray>(n)
+        private val cols = Array(depth + 1) { FloatArray(n + 1) }
+        private val colMin = FloatArray(depth + 1)
+        private val bestAt = FloatArray(depth + 1)
+        private val bestJAt = IntArray(depth + 1)
+        /** First typed position whose column counts as "the word may end here". */
+        private val lo = if (n - slack > 1) n - slack else 1
 
-    private fun maxErrors(len: Int): Int = when {
-        len <= 2 -> 0
-        len <= 4 -> 1
-        len <= 7 -> 2
-        else -> 3
+        // the path currently held in [cols]
+        private var path: String = ""
+        private var pathDepth = 0
+        /** Depth where the path stopped: nothing deeper can help. */
+        private var frozen = Int.MAX_VALUE
+
+        init {
+            for (i in 0 until n) {
+                val m = LinkedHashMap<Char, Float>()
+                m[typed[i]] = 0f
+                val alts = taps.getOrNull(i)
+                if (alts != null) {
+                    for ((ch, c) in alts) {
+                        val lc = ch.lowercaseChar()
+                        val prev = m[lc]
+                        if (prev == null || c < prev) m[lc] = c
+                    }
+                } else {
+                    confusable[typed[i]]?.forEach { ch ->
+                        val lc = ch.lowercaseChar()
+                        if (!m.containsKey(lc)) m[lc] = FALLBACK_SUB
+                    }
+                }
+                subChars[i] = m.keys.toCharArray()
+                subVals[i] = m.values.toFloatArray()
+            }
+            for (i in 0..n) cols[0][i] = if (i <= slack + 1) i * INS_COST else INF
+            colMin[0] = 0f
+            bestAt[0] = INF
+            bestJAt[0] = 0
+        }
+
+        /** Letters a match may start with: the typed first letter and its
+         *  neighbours, or the second one (an extra letter typed in front),
+         *  in both cases. */
+        fun startChars(): Set<Char> {
+            val s = HashSet<Char>()
+            for (c in subChars[0]!!) { s.add(c); s.add(c.uppercaseChar()) }
+            if (n >= 2) for (c in subChars[1]!!) { s.add(c); s.add(c.uppercaseChar()) }
+            return s
+        }
+
+        fun plausible(w: String): Boolean {
+            val m = w.length
+            if (m == 0 || m + budget < n || m > n + 12) return false
+            return !w.equals(typed, ignoreCase = true)
+        }
+
+        private fun sub(i: Int, c: Char): Float {
+            val cs = subChars[i]!!
+            for (k in cs.indices) if (cs[k] == c) return subVals[i]!![k]
+            return MISMATCH
+        }
+
+        /** Fill column j for character [c] (and [cp] before it) of the path. */
+        private fun column(j: Int, c: Char, cp: Char) {
+            val col = cols[j]
+            val pc = cols[j - 1]
+            val ppc = if (j >= 2) cols[j - 2] else null
+            col[0] = j * DEL_COST
+            var mn = col[0]
+            for (i in 1..n) {
+                if (i - j > slack || j - i > slack) { col[i] = INF; continue }
+                var best = pc[i - 1] + sub(i - 1, c)
+                val ins = col[i - 1] + INS_COST   // typed char not in the word
+                if (ins < best) best = ins
+                val del = pc[i] + DEL_COST        // word char the user missed
+                if (del < best) best = del
+                if (ppc != null && i > 1 && typed[i - 1] == cp && typed[i - 2] == c) {
+                    val tr = ppc[i - 2] + TRANSPOSE_COST
+                    if (tr < best) best = tr
+                }
+                col[i] = best
+                if (best < mn) mn = best
+            }
+            colMin[j] = mn
+            // the typed text may stop anywhere in the word (completion)
+            val end = if (j >= lo) col[n] else INF
+            if (end < bestAt[j - 1]) { bestAt[j] = end; bestJAt[j] = j }
+            else { bestAt[j] = bestAt[j - 1]; bestJAt[j] = bestJAt[j - 1] }
+        }
+
+        /**
+         * Extend the held path to [w], reusing the columns of the prefix it
+         * shares with the previous word. Returns the depth reached.
+         */
+        private fun extend(w: String): Int {
+            var d = 0
+            val lim = minOf(pathDepth, w.length)
+            while (d < lim && w[d] == path[d]) d++
+            if (frozen <= d) return frozen   // shares a prefix that already ended the walk
+            frozen = Int.MAX_VALUE
+            val target = minOf(w.length, depth)
+            var j = d
+            while (j < target) {
+                j++
+                column(j, w[j - 1].lowercaseChar(), if (j >= 2) w[j - 2].lowercaseChar() else ' ')
+                if (colMin[j] > maxCost) { frozen = j; break }
+            }
+            path = w
+            pathDepth = j
+            return j
+        }
+
+        /** Walk one word on its own (learned words: no shared order). */
+        fun walkSingle(w: String) {
+            pathDepth = 0
+            frozen = Int.MAX_VALUE
+            extend(w)
+        }
+
+        /** Cost and alignment end for the word just walked, or null. */
+        fun finalFor(w: String): Pair<Float, Int>? {
+            val j = minOf(pathDepth, minOf(w.length, depth))
+            val c = bestAt[j]
+            return if (c > maxCost) null else c to bestJAt[j]
+        }
+
+        /**
+         * Walk every word in [lo, hi) of the sorted dictionary, calling
+         * [hit] for each one within budget.
+         */
+        fun walkRange(lex: Lexicon, lo: Int, hi: Int, hit: (Int, Float, Int) -> Unit) {
+            pathDepth = 0
+            path = ""
+            frozen = Int.MAX_VALUE
+            var k = lo
+            while (k < hi) {
+                val w = lex.words[k]
+                val j = extend(w)
+                val stopped = frozen == j
+                val end = minOf(j, minOf(w.length, depth))
+                val cost = bestAt[end]
+                if (stopped && cost > maxCost) {
+                    // nothing under this prefix can match: jump past it
+                    k = lex.lowerBound(w.substring(0, j) + '￿', k + 1, hi)
+                    continue
+                }
+                if (cost <= maxCost && plausible(w)) hit(k, cost, bestJAt[end])
+                k++
+            }
+        }
+
+        fun scoreOf(w: String, freq: Int, cost: Float, bestJ: Int): Int {
+            val m = w.length
+            var s = freq
+            // an error-free match must always beat a corrected one
+            s += if (cost < 0.001f) 10000 else 5000 - (cost * 1600f).toInt()
+            // prefer finishing the word soon over a long completion
+            s -= (m - bestJ) * 40
+            s -= (m - n).coerceAtLeast(0) * 8
+            return s
+        }
     }
 
     /** Matching is case-insensitive; give the suggestion the user's case:
@@ -721,102 +912,10 @@ class WordStore(private val context: Context, private val langCode: String) {
     private fun freqScore(c: Int): Int = (ln(1.0 + c) * 40.0).toInt()
 
     /**
-     * Weighted Levenshtein with transposition, where the typed string is only
-     * a PREFIX of the candidate: the trailing characters of a longer word are
-     * free, which is what makes one routine serve completion and correction.
-     *
-     * Only a diagonal BAND is computed. A cell (i, j) can only come in under
-     * budget while |i - j| stays within it, because every length mismatch
-     * costs an insertion or a deletion — so the work is proportional to the
-     * error budget, not to the length of the dictionary word. Without this the
-     * table was O(typed × word) for tens of thousands of words per keystroke,
-     * which is what made fast typing fall behind.
-     *
-     * [rows] is three scratch rows owned by the caller and reused across every
-     * candidate.
-     */
-    private fun score(
-        typed: String,
-        w: String,
-        freq: Int,
-        subCost: List<Map<Char, Float>>,
-        budget: Int,
-        slack: Int,
-        rows: Array<FloatArray>
-    ): Cand? {
-        if (w.equals(typed, ignoreCase = true)) return null
-        val n = typed.length
-        val m = w.length
-        val maxCost = budget.toFloat()
-        // never look further along the word than the typed text can reach
-        val jMax = if (m < n + slack) m else n + slack
-
-        var prevPrev = rows[0]
-        var prev = rows[1]
-        var cur = rows[2]
-
-        for (j in 0..jMax) prev[j] = j * DEL_COST
-        if (jMax + 1 < prev.size) prev[jMax + 1] = INF
-
-        for (i in 1..n) {
-            val jLo = if (i - slack > 1) i - slack else 1
-            val jHi = if (i + slack < jMax) i + slack else jMax
-            // seal the cells just outside the band so the recurrence cannot
-            // read a stale value from an earlier, wider row
-            cur[jLo - 1] = if (jLo - 1 == 0) i * INS_COST else INF
-            if (jHi + 1 < cur.size) cur[jHi + 1] = INF
-
-            var rowBest = cur[jLo - 1]
-            val subs = subCost[i - 1]
-            val ti = typed[i - 1].lowercaseChar()
-            val tiPrev = if (i > 1) typed[i - 2].lowercaseChar() else ' '
-            for (j in jLo..jHi) {
-                val cj = w[j - 1].lowercaseChar()
-                var best = prev[j - 1] + (subs[cj] ?: MISMATCH)
-                val del = prev[j] + INS_COST      // typed char not in the word
-                if (del < best) best = del
-                val ins = cur[j - 1] + DEL_COST   // word char the user missed
-                if (ins < best) best = ins
-                if (i > 1 && j > 1 && ti == w[j - 2].lowercaseChar() && tiPrev == cj) {
-                    val tr = prevPrev[j - 2] + TRANSPOSE_COST
-                    if (tr < best) best = tr
-                }
-                cur[j] = best
-                if (best < rowBest) rowBest = best
-            }
-            // nothing in this row can still come in under budget
-            if (rowBest > maxCost) return null
-            val spare = prevPrev
-            prevPrev = prev
-            prev = cur
-            cur = spare
-        }
-
-        // the typed text may stop anywhere in the word (completion): take the
-        // cheapest alignment inside the band
-        var bestCost = Float.MAX_VALUE
-        var bestJ = jMax
-        val lo = if (n - slack > 1) n - slack else 1
-        for (j in lo..jMax) {
-            val c = prev[j]
-            if (c < bestCost) { bestCost = c; bestJ = j }
-        }
-        if (bestCost > maxCost) return null
-
-        val exact = bestCost < 0.001f
-        var s = freq
-        // an error-free match must always beat a corrected one
-        s += if (exact) 10000 else 5000 - (bestCost * 1600f).toInt()
-        // prefer finishing the word soon over a long completion
-        s -= (m - bestJ) * 40
-        s -= (m - n).coerceAtLeast(0) * 8
-        return Cand(w, s, exact, m == n, bestCost)
-    }
-
-    /**
      * Next-word prediction: learned bigrams first (repeated pairs only),
      * then the most frequent words of the language fill the empty slots.
      */
+    @Synchronized
     fun suggestNext(prev: String, max: Int, useSeeds: Boolean): List<String> {
         if (prev.isEmpty()) return emptyList()
         ensureLoaded()
@@ -842,6 +941,7 @@ class WordStore(private val context: Context, private val langCode: String) {
      * line). Imported words are trusted at once — the user chose to bring
      * them in. Returns how many words were added.
      */
+    @Synchronized
     fun importText(text: String): Int {
         ensureLoaded()
         val before = learned.size
@@ -863,6 +963,7 @@ class WordStore(private val context: Context, private val langCode: String) {
 
     /** The learned words a user would recognise, as "word<TAB>level" lines
      *  that [importText] reads back. */
+    @Synchronized
     fun exportText(): String {
         ensureLoaded()
         val sb = StringBuilder()
@@ -870,6 +971,7 @@ class WordStore(private val context: Context, private val langCode: String) {
         return sb.toString()
     }
 
+    @Synchronized
     fun save() {
         if (!dirty) return
         dirty = false

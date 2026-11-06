@@ -54,4 +54,9 @@
         <item>Slow (500ms)</item>
         <item>Very slow (700ms)</item>
     </string-array>
+    <string-array name="clip_suggest_names">
+        <item>Never suggest</item>
+        <item>Suggest once</item>
+        <item>Always suggest</item>
+    </string-array>
 </resources>

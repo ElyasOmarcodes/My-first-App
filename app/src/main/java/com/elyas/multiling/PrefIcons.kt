@@ -50,7 +50,7 @@ object PrefIcons {
         "double_space" to (R.drawable.ic_m_space to Ui.Tone.CYAN),
         "autocaps" to (R.drawable.ic_m_title to Ui.Tone.PINK),
         "longpress" to (R.drawable.ic_m_touch to Ui.Tone.ORANGE),
-        "clip_chip_repeat" to (R.drawable.ic_m_paste to Ui.Tone.ROSE),
+        "clip_suggest" to (R.drawable.ic_m_paste to Ui.Tone.ROSE),
         // languages
         "languages" to (R.drawable.ic_m_translate to Ui.Tone.BLUE),
         "space_swipe" to (R.drawable.ic_m_swap to Ui.Tone.TEAL),

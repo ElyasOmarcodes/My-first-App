@@ -39,7 +39,7 @@
     <string name="pref_autocorrect_sum">د سپیس سره غلطه کلمه پخپله په ښه وړاندیز بدلیږي</string>
     <string name="pref_autotext_export">د لنډیزونو خوندي کول یعنې Export</string>
     <string name="pref_autotext_import">د لنډیزونو بیا راوړل یعنې Import</string>
-    <string name="pref_autotext_import_sum">له ثبت شوي متني فایل څخه ټول وړاندیزونه یو ځل باندې اضافه کړئ</string>
+    <string name="pref_autotext_import_sum">له ثبت شوي متني فایل څخه ټول لنډیزونه یو ځل اضافه کړئ؛ هغې ژبې ته ورځي چې د لنډیزونو په پاڼه کې ټاکل شوې ده</string>
     <string name="pref_autotext_manage">لنډیزونه مدیریت کول</string>
     <string name="pref_autotext_manage_sum">نوي لنډیزونه زیاتول، لیدل او ړنګول</string>
     <string name="pref_autotext_on">د لڼدیزونو فعالول</string>
@@ -47,7 +47,7 @@
     <string name="pref_bigrams">د راتلونکې کلمې وړاندوینه</string>
     <string name="pref_bigrams_sum">د مخکینۍ کلمې پر بنسټ بله کلمه وړاندیز کوي</string>
     <string name="pref_bottom_gap">لاندینی واټن یعنې Bottom gap</string>
-    <string name="pref_bottom_gap_sum">د کیبورډ او د سیسټم تڼیو ترمنځ واټن (dp)</string>
+    <string name="pref_bottom_gap_sum">کله چې اتومات واټن بند وي، د سیسټم له تڼیو پورته اضافي واټن (dp)</string>
     <string name="pref_cat_autotext">لنډیزونه</string>
     <string name="pref_cat_colors">د خپلې خوښې رنګونه او بڼه</string>
     <string name="pref_cat_control">د څلور طرف بټنې</string>
@@ -59,9 +59,7 @@
     <string name="pref_cat_typing">لیکل او وړاندیز</string>
     <string name="pref_clear_learned">زده شوې کلمې پاکول</string>
     <string name="pref_clear_learned_sum">ټولې زده شوې کلمې او وړاندوینې ړنګوي</string>
-    <string name="pref_clip_repeat">د کاپي شوي متن تکراري وړاندیز</string>
-    <string name="pref_clip_repeat_sum">که فعال وي : د کاپي شوي متن مستطیل په هر تش لاین کې ښکاري 
-• که غیرفعال وي: له یو ځل کارولو وروسته هغه مستطیل نور پټیږي</string>
+    <string name="pref_clip_repeat">د کاپي شوي متن وړاندیز</string>
     <string name="pref_col_bg">د بک ګراونډ رنګ (د بټنو تر شا او تر منځ)</string>
     <string name="pref_col_cat_general">عمومي</string>
     <string name="pref_col_cat_key_group">د حروفو بټنې</string>
@@ -105,7 +103,7 @@
     <string name="pref_learn_words_sum">هغه کلمې زده کوي چې تاسو یې ساتئ؛ ړنګې شوې یا سمې شوې کلمې نه زده کیږي</string>
     <string name="pref_longpress">د  بټنې د اوږد فشار لپاره وخت</string>
     <string name="pref_nav_gap_auto">اتومات لاندینی واټن</string>
-    <string name="pref_nav_gap_auto_sum">کیبورډ د موبایل د لاندینیو تڼیو له مخې پخپله مناسب واټن اخلي (که غیرفعال شي، لاندینی سکبار بیا باید وکاریږي)</string>
+    <string name="pref_nav_gap_auto_sum">په هر موبایل کې تڼۍ د سیسټم د لاندینیو تڼیو سره سمې پورته ودریږي. که بند یې کړئ، د لاندې سلایډر په مرسته اضافي واټن ورکولای شئ</string>
     <string name="pref_preview">د بټن اوږد نیولو پاپ آپ</string>
     <string name="pref_seed_dict">جوړه شوې لغتنامه کارول</string>
     <string name="pref_seed_dict_sum">د پروګرام دننه عامې کلمې هم وړاندیز کوي</string>
@@ -315,4 +313,9 @@
         <item>په لنډیزونو کې یو لنډ نښان ولیکئ؛ بشپړه جمله یې په وړاندیز پټه کې ښکاري.</item>
         <item>په سپیس بټن ښي یا چپ ګوته کش کړئ ترڅو ژبه بدله شي.</item>
     </string-array>
+    <string name="shortcuts_lang_title">د ژبې لنډیزونه</string>
+    <string name="shortcuts_lang_sub">هره ژبه خپل لیست لري؛ کیبورډ د هماغې ژبې لنډیزونه وړاندې کوي چې په هغې لیکئ</string>
+    <string name="shortcuts_restore">اصلي لنډیزونه راوړل</string>
+    <string name="shortcuts_restored">%1$s لنډیزونه اضافه شول</string>
+    <string name="shortcuts_lang_count">%1$s لنډیزونه</string>
 </resources>

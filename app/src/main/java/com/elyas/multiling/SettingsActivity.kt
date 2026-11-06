@@ -357,7 +357,7 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
             findPreference<Preference>("autotext_export")?.setOnPreferenceClickListener {
-                createDocument(REQ_AUTOTEXT_EXPORT, "autotext.txt")
+                createDocument(REQ_AUTOTEXT_EXPORT, "autotext_${AutoTextStore.selectedLang(requireContext())}.txt")
                 true
             }
         }
@@ -661,13 +661,13 @@ class SettingsActivity : AppCompatActivity() {
                     REQ_AUTOTEXT_IMPORT -> {
                         val text = ctx.contentResolver.openInputStream(uri)
                             ?.bufferedReader()?.readText() ?: return
-                        val n = AutoTextStore(ctx).importText(text)
+                        val n = AutoTextStore.selected(ctx).importText(text)
                         AutoTextStore.bumpDataVersion(ctx)
                         toast(getString(R.string.imported_n_words, n))
                     }
                     REQ_AUTOTEXT_EXPORT -> {
                         ctx.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use {
-                            it.write(AutoTextStore(ctx).exportText())
+                            it.write(AutoTextStore.selected(ctx).exportText())
                         }
                         toast(getString(R.string.done))
                     }
