@@ -184,6 +184,15 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
     private val bigrams = HashMap<String, HashMap<String, Int>>()
     private var loaded = false
+    /**
+     * The dictionary is in memory. Calls from the UI thread check this first
+     * and never queue behind a load in progress: a keyboard opening while the
+     * dictionaries were still loading used to freeze until they finished.
+     */
+    @Volatile private var ready = false
+
+    /** True once the dictionary is loaded (no call will wait for it). */
+    val isReady: Boolean get() = ready
     private var dirty = false
 
     private fun wordFile(): File = File(context.filesDir, "dict_$langCode.txt")
@@ -257,6 +266,7 @@ class WordStore(private val context: Context, private val langCode: String) {
             }
         } catch (_: Exception) {
         }
+        ready = true
     }
 
     private fun readWordFile(f: File) {
@@ -347,8 +357,14 @@ class WordStore(private val context: Context, private val langCode: String) {
      * @param suspect the decoder had a confident correction for it when it
      *   was committed, i.e. the keyboard thought it was a typo.
      */
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun observe(word: String, signal: Signal, suspect: Boolean = false) {
+        if (!ready) return
+        observeLocked(word, signal, suspect)
+    }
+
+    @Synchronized
+    private fun observeLocked(word: String, signal: Signal, suspect: Boolean) {
         if (!learnable(word)) return
         ensureLoaded()
         val t = now()
@@ -398,8 +414,14 @@ class WordStore(private val context: Context, private val langCode: String) {
      * swapped it for a suggestion. One step down, and it becomes a suspect,
      * so a word that keeps getting fixed can never climb back easily.
      */
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun penalize(word: String) {
+        if (!ready) return
+        penalizeLocked(word)
+    }
+
+    @Synchronized
+    private fun penalizeLocked(word: String) {
         ensureLoaded()
         val e = learned[word] ?: return
         if (e.level >= EXPLICIT || e.blocked) return
@@ -415,8 +437,14 @@ class WordStore(private val context: Context, private val langCode: String) {
     fun unlearnRecent(word: String) = penalize(word)
 
     /** True when the decoder would show this learned word. */
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun isLearnedVisible(word: String): Boolean {
+        if (!ready) return false
+        return isLearnedVisibleLocked(word)
+    }
+
+    @Synchronized
+    private fun isLearnedVisibleLocked(word: String): Boolean {
         ensureLoaded()
         return isVisible(learned[word])
     }
@@ -426,8 +454,14 @@ class WordStore(private val context: Context, private val langCode: String) {
      * Deliberately strict — one substitution, insertion, deletion or swap
      * against a word of real corpus frequency.
      */
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun looksLikeTypo(word: String): Boolean {
+        if (!ready) return false
+        return looksLikeTypoLocked(word)
+    }
+
+    @Synchronized
+    private fun looksLikeTypoLocked(word: String): Boolean {
         ensureLoaded()
         return looksLikeTypoRaw(word)
     }
@@ -533,8 +567,14 @@ class WordStore(private val context: Context, private val langCode: String) {
         return true
     }
 
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun learnBigram(prev: String, next: String) {
+        if (!ready) return
+        learnBigramLocked(prev, next)
+    }
+
+    @Synchronized
+    private fun learnBigramLocked(prev: String, next: String) {
         if (prev.length < 2 || next.length < 2) return
         ensureLoaded()
         val m = bigrams.getOrPut(prev) { HashMap() }
@@ -593,8 +633,14 @@ class WordStore(private val context: Context, private val langCode: String) {
     }
 
     /** True when the word is an established dictionary word (any case). */
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun contains(word: String): Boolean {
+        if (!ready) return false
+        return containsLocked(word)
+    }
+
+    @Synchronized
+    private fun containsLocked(word: String): Boolean {
         ensureLoaded()
         if (isTrusted(learned[word]) || seedSet.contains(word)) return true
         val lc = word.lowercase()
@@ -971,8 +1017,14 @@ class WordStore(private val context: Context, private val langCode: String) {
         return sb.toString()
     }
 
-    @Synchronized
+    /** Never waits for the dictionary to load: called on the UI thread. */
     fun save() {
+        if (!ready || !dirty) return
+        saveLocked()
+    }
+
+    @Synchronized
+    private fun saveLocked() {
         if (!dirty) return
         dirty = false
         // snapshot on the caller's thread, write on the background thread so

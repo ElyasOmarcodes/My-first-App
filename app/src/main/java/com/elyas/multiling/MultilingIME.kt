@@ -2456,7 +2456,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         if (bestFor == word) return bestCandidate
         if (!suggestionsOn || word.isEmpty()) return null
         val s = store()
-        if (s.contains(word)) return null
+        // still loading: no correction rather than a frozen space bar
+        if (!s.isReady || s.contains(word)) return null
         return s.suggestSmart(word, 1, seedDictOn, confusion(), taps).firstOrNull()
     }
 
