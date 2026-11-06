@@ -113,7 +113,11 @@ for rot in 0 1; do
   echo "keyboard in use: $(adb shell settings get secure default_input_method)"
   echo "== IME window:"; adb shell dumpsys window windows | grep -A6 "InputMethod" | grep -i "frame\|mHasSurface\|isVisible\|mViewVisibility" | head -12
   echo "== keyboard crashes:"; adb logcat -d -b crash | tail -40
-  adb logcat -d | grep -i "keyflux\|multiling" | grep -iE "exception|error|fatal" | tail -20
+  sleep 8; shot "kb_${name}_keyflux_late" 1
+  echo "== IME service:"; adb shell dumpsys activity service "$IME" | grep -iE "mWindowVisible|mInputViewStarted|mIsInputViewShown|mShowInputRequested|mDecorViewVisible|mInputFrame|mContentTop|touchable" | head -20
+  echo "== IME frames:"; adb shell dumpsys window windows | grep -B2 -A30 "Window{.*InputMethod}" | grep -iE "mFrame|mAttrs|surface|mHasSurface|shown|alpha" | head -12
+  P=$(adb shell pidof "$PKG" | tr -d '\r'); echo "== app log (pid $P):"
+  [ -n "$P" ] && adb logcat -d --pid="$P" | grep -vE " (D|V) " | tail -60
   OTHER=$(adb shell ime list -s | tr -d '\r' | grep -v "$PKG" | head -1)
   if [ -n "$OTHER" ]; then
     dismiss
