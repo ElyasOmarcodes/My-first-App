@@ -323,23 +323,14 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             )
         )
         rootView = root
-        // The gap under the keys comes only from the insets delivered to this
-        // view: they are what is left after every parent has taken its share.
-        // Reading the window's raw insets instead added the navigation bar a
-        // second time on phones whose IME decor already pads for it (the empty
-        // band some users saw above the system buttons).
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
-            val nav = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())
-            // gesture mode with the keyboard up: the hide / switch buttons form
-            // a tappable strip that can be taller than the pill
-            val tap = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.tappableElement())
-            val cut = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout())
-            navInsetBottom = maxOf(nav.bottom, tap.bottom)
-            // landscape with 3-button navigation: the bar sits at a side
-            v.setPadding(maxOf(nav.left, cut.left), 0, maxOf(nav.right, cut.right), 0)
-            applyBottomGap()
+        // re-measure the gap whenever the system insets change (rotation,
+        // switching between gesture and 3-button navigation, etc.) or the
+        // keyboard moves on screen
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            gapCheck()
             insets
         }
+        root.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> gapCheck() }
         applySettings()
         rebuildKeyboard()
         applyWindowDirection()
@@ -554,51 +545,72 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         return d
     }
 
-    /** Bottom inset the root view was last given (navigation bar / IME buttons). */
-    private var navInsetBottom = 0
+    /** The navigation-bar overlap currently padded under the keys. */
+    private var appliedNavGap = 0
+    /** Re-measurements that changed the gap since the window was shown. */
+    private var gapChanges = 0
 
-    /**
-     * Pixels the keyboard window overlaps the system navigation area, from
-     * the insets dispatched to the keyboard's own view. Before Android 11 an
-     * IME window can be told about a bar it does not overlap, so there the
-     * window's position is checked against the real screen as well.
-     */
-    private fun autoGapPx(): Int {
-        val nav = navInsetBottom
-        if (nav <= 0) return 0
-        val cap = (72 * resources.displayMetrics.density).toInt()
-        if (android.os.Build.VERSION.SDK_INT >= 30) return nav.coerceAtMost(cap)
-        return try {
-            val decor = window?.window?.decorView ?: return 0
-            val loc = IntArray(2)
-            decor.getLocationOnScreen(loc)
-            val p = android.graphics.Point()
-            @Suppress("DEPRECATION")
-            (getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager)
-                .defaultDisplay.getRealSize(p)
-            if (loc[1] + decor.height >= p.y - 4) nav.coerceAtMost(cap) else 0
-        } catch (_: Exception) { 0 }
+    private fun gapCheck() {
+        val root = rootView ?: return
+        root.post {
+            val g = navOverlapPx()
+            // a window that is not anchored to the bottom would chase its own
+            // padding: a few corrections per showing are plenty
+            if (g != appliedNavGap && gapChanges < 4) {
+                gapChanges++
+                appliedNavGap = g
+                applyBottomGap()
+            }
+        }
     }
 
     /**
-     * Draw the keyboard under the navigation bar on every Android version,
-     * the way Gboard does: the bar turns transparent over the keyboard's own
-     * colour and the keys are lifted by exactly the inset. Without this the
-     * layout depended on the device (Android 15 forces edge-to-edge, older
-     * versions and some skins do not), which is where the gaps came from.
+     * How many pixels of the keyboard sit on top of the system navigation
+     * area (3-button bar, gesture pill or the IME's own back / switch
+     * strip), measured on screen.
+     *
+     * Earlier versions trusted the window's insets, but those report the
+     * bar whether or not the keyboard window actually reaches under it, and
+     * on many phones the system already keeps the window above the bar: the
+     * bar got counted twice, leaving an empty band above the buttons. Where
+     * the keyboard really ends on screen does not depend on any of that. The
+     * keyboard view is anchored to the bottom of its window, so this does
+     * not change when the padding does.
      */
-    private fun applyEdgeToEdge() {
-        val w = window?.window ?: return
-        try {
-            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(w, false)
-            @Suppress("DEPRECATION")
-            w.navigationBarColor = android.graphics.Color.TRANSPARENT
-            if (android.os.Build.VERSION.SDK_INT >= 29) w.isNavigationBarContrastEnforced = false
-            val bg = keyboardView?.resolvedBackground ?: return
-            androidx.core.view.WindowCompat.getInsetsController(w, w.decorView)
-                .isAppearanceLightNavigationBars = androidx.core.graphics.ColorUtils.calculateLuminance(bg) > 0.5
-        } catch (_: Exception) {
-        }
+    private fun navOverlapPx(): Int {
+        val root = rootView ?: return 0
+        if (!root.isAttachedToWindow || root.height == 0) return 0
+        return try {
+            val loc = IntArray(2)
+            root.getLocationOnScreen(loc)
+            val bottom = loc[1] + root.height
+            val wm = getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
+            var barH = 0
+            val screenH: Int
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                val m = wm.maximumWindowMetrics
+                screenH = m.bounds.height()
+                barH = m.windowInsets.getInsets(
+                    android.view.WindowInsets.Type.navigationBars() or
+                        android.view.WindowInsets.Type.tappableElement()
+                ).bottom
+            } else {
+                val p = android.graphics.Point()
+                @Suppress("DEPRECATION")
+                wm.defaultDisplay.getRealSize(p)
+                screenH = p.y
+            }
+            androidx.core.view.ViewCompat.getRootWindowInsets(root)?.let {
+                val t = it.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.navigationBars() or
+                        androidx.core.view.WindowInsetsCompat.Type.tappableElement()
+                ).bottom
+                if (t > barH) barH = t
+            }
+            if (screenH <= 0 || barH <= 0) return 0
+            val cap = (72 * resources.displayMetrics.density).toInt()
+            (bottom - (screenH - barH)).coerceIn(0, cap)
+        } catch (_: Exception) { 0 }
     }
 
     /** Bottom padding under the keys: the nav-bar overlap, plus the manual
@@ -607,7 +619,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun applyBottomGap() {
         val kv = keyboardView ?: return
         val density = resources.displayMetrics.density
-        val pad = autoGapPx() + if (navGapAuto) 0 else (manualBottomGapDp * density).toInt()
+        val pad = appliedNavGap + if (navGapAuto) 0 else (manualBottomGapDp * density).toInt()
         kv.setPadding(0, 0, 0, pad)
         kv.requestLayout()
         // the gap belongs to whichever view is bottom-most: in emoji SEARCH
@@ -618,10 +630,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onWindowShown() {
         super.onWindowShown()
-        // the decor is rebuilt with the window: re-assert edge-to-edge and ask
-        // for fresh insets, which re-run the gap
-        applyEdgeToEdge()
-        rootView?.let { androidx.core.view.ViewCompat.requestApplyInsets(it) }
+        // positions are only final once the window is up: measure afresh
+        gapChanges = 0
+        gapCheck()
         // the decor is recreated with the window, so re-assert both each time
         applyWindowDirection()
         registerBackCallback()
@@ -1056,7 +1067,6 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         rootView?.setBackgroundColor(kv.resolvedBackground)
-        applyEdgeToEdge()
         suggestionScroll?.visibility = if (suggestionsOn) View.VISIBLE else View.GONE
     }
 

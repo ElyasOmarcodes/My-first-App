@@ -111,6 +111,9 @@ for rot in 0 1; do
   sleep 1
   open KeyboardTestActivity --ez land $([ $rot = 1 ] && echo true || echo false); shot "kb_${name}_keyflux" 6
   echo "keyboard in use: $(adb shell settings get secure default_input_method)"
+  echo "== IME window:"; adb shell dumpsys window windows | grep -A6 "InputMethod" | grep -i "frame\|mHasSurface\|isVisible\|mViewVisibility" | head -12
+  echo "== keyboard crashes:"; adb logcat -d -b crash | tail -40
+  adb logcat -d | grep -i "keyflux\|multiling" | grep -iE "exception|error|fatal" | tail -20
   OTHER=$(adb shell ime list -s | tr -d '\r' | grep -v "$PKG" | head -1)
   if [ -n "$OTHER" ]; then
     dismiss
