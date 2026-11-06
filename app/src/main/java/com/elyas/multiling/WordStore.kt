@@ -11,7 +11,8 @@ import kotlin.math.ln
  * Three sources, fully offline:
  *  - a bundled frequency dictionary per language (assets/dict/<lang>.txt.xz,
  *    LZMA2-compressed; lines are "word<TAB>frequency" sorted by frequency,
- *    highest first) built from the Leipzig news corpora
+ *    highest first) built from the Leipzig news corpora merged with word
+ *    counts from each language's Wikipedia
  *  - words learned from the user's typing ("dict_<lang>.txt")
  *  - imported word lists (merged into the learned file), one word per line
  *    or "word<TAB>count".
@@ -157,7 +158,16 @@ class WordStore(private val context: Context, private val langCode: String) {
     private val learned = HashMap<String, Entry>()
     private var seeds: List<String> = emptyList()   // frequency order, high → low
     private var seedFreq: IntArray = IntArray(0)    // parallel corpus frequencies
-    private var seedSet: HashSet<String> = HashSet()
+    private var seedSet: SortedWords = SortedWords(emptyArray())
+
+    /**
+     * Membership test for the dictionary: a sorted array searched by binary
+     * search. With a quarter of a million words per language, a HashSet's
+     * per-entry nodes cost tens of megabytes across the enabled languages.
+     */
+    private class SortedWords(private val words: Array<String>) {
+        fun contains(w: String): Boolean = java.util.Arrays.binarySearch(words, w) >= 0
+    }
     private val bigrams = HashMap<String, HashMap<String, Int>>()
     private var loaded = false
     private var dirty = false
@@ -181,31 +191,33 @@ class WordStore(private val context: Context, private val langCode: String) {
             } catch (_: Exception) {
                 context.assets.open("dict/$langCode.txt")
             }
-            val ws = ArrayList<String>(70000)
-            val fs = ArrayList<Int>(70000)
+            val ws = ArrayList<String>(250000)
+            var fs = IntArray(250000)
             stream.bufferedReader().useLines { lines ->
                 for (line in lines) {
                     val idx = line.indexOf('\t')
                     if (idx > 0) {
-                        val w = line.substring(0, idx)
-                        ws.add(w)
-                        fs.add(line.substring(idx + 1).toIntOrNull() ?: 1)
+                        if (ws.size == fs.size) fs = fs.copyOf(fs.size * 2)
+                        fs[ws.size] = line.substring(idx + 1).toIntOrNull() ?: 1
+                        ws.add(line.substring(0, idx))
                     } else {
                         val w = line.trim()
                         if (w.isNotEmpty()) {
+                            if (ws.size == fs.size) fs = fs.copyOf(fs.size * 2)
+                            fs[ws.size] = 1
                             ws.add(w)
-                            fs.add(1)
                         }
                     }
                 }
             }
+            ws.trimToSize()
             seeds = ws
-            seedFreq = fs.toIntArray()
-            seedSet = HashSet(ws)
+            seedFreq = fs.copyOf(ws.size)
+            seedSet = SortedWords(ws.toTypedArray().also { it.sort() })
         } catch (_: Exception) {
             seeds = emptyList()
             seedFreq = IntArray(0)
-            seedSet = HashSet()
+            seedSet = SortedWords(emptyArray())
         }
         // the learned file is read after the dictionary: migrating an old
         // file needs the typo test, which needs the dictionary
