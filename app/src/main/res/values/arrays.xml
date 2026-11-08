@@ -44,6 +44,7 @@
     </string-array>
 
     <string-array name="sound_type_names">
+        <item>کیفلکس (Keyflux) ✦</item>
         <item>نرم (Pop)</item>
         <item>کلیک (Click)</item>
         <item>څاڅکی (Drop)</item>
@@ -53,6 +54,7 @@
         <item>د سیسټم غږ</item>
     </string-array>
     <string-array name="sound_type_values">
+        <item>keyflux</item>
         <item>pop</item>
         <item>click</item>
         <item>drop</item>

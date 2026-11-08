@@ -795,10 +795,10 @@ class KeyboardView(context: Context) : View(context) {
             // hand the touch point over BEFORE the character, so the listener
             // can attach it to the letter it is about to receive
             if (st != null && key.displayLabel.length == 1) {
-                calibration?.record(
-                    (st.downX - key.rect.centerX()) / (key.rect.width() / 2f),
-                    (st.downY - key.rect.centerY()) / (key.rect.height() / 2f)
-                )
+                // where in the key the finger landed; the IME teaches the
+                // touch model with it only once the letter proves right
+                lastTapOffX = (st.downX - key.rect.centerX()) / (key.rect.width() / 2f)
+                lastTapOffY = (st.downY - key.rect.centerY()) / (key.rect.height() / 2f)
                 listener?.onCharTap(key.displayLabel, st.downX, st.downY)
             }
             listener?.onChar(key.displayLabel)
@@ -807,6 +807,11 @@ class KeyboardView(context: Context) : View(context) {
 
     /** Learns this user's systematic touch offset; set by the IME. */
     var calibration: TouchCalibration? = null
+
+    /** Offset of the last letter tap from its key's centre, in half-key
+     *  units (read by the IME in onCharTap). */
+    var lastTapOffX = 0f
+    var lastTapOffY = 0f
 
     /**
      * The letter keys of the current layout, for the decoder's spatial model.

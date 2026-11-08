@@ -33,7 +33,11 @@ object SpatialModel {
     class KeyBox(val ch: Char, val cx: Float, val cy: Float, val hw: Float, val hh: Float)
 
     /** Where a finger landed for one typed character. */
-    class Tap(val ch: Char, val x: Float, val y: Float)
+    class Tap(
+        val ch: Char, val x: Float, val y: Float,
+        /** Offset from the key centre in half-key units, for the touch model. */
+        val offX: Float = 0f, val offY: Float = 0f
+    )
 
     /**
      * Fingers land low. The user aims at what they can see in front of the

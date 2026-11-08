@@ -20,6 +20,7 @@
     </string-array>
 
     <string-array name="sound_type_names">
+        <item>Keyflux ✦</item>
         <item>Pop</item>
         <item>Click</item>
         <item>Drop</item>

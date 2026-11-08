@@ -21,6 +21,17 @@ class HkApp : Application() {
         AppLook.apply(this)
         AutoTextStore.bootstrapDefaults(this)
         migrateClipSetting()
+        migrateSound()
+    }
+
+    /** The Keyflux click set becomes the default once, replacing the old
+     *  default (bubble); a sound the user picked themselves stays. */
+    private fun migrateSound() {
+        val p = PreferenceManager.getDefaultSharedPreferences(this)
+        if (p.getBoolean("sound_v2", false)) return
+        val e = p.edit().putBoolean("sound_v2", true)
+        if ((p.getString("sound_type", null) ?: "bubble") == "bubble") e.putString("sound_type", "keyflux")
+        e.apply()
     }
 
     /** The old on/off "repeat" switch becomes the three-way clipboard setting. */

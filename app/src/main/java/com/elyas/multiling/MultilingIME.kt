@@ -27,6 +27,9 @@ import androidx.preference.PreferenceManager
 class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     companion object {
+        private const val SOUND_STANDARD = 0
+        private const val SOUND_MODIFIER = 1
+        private const val SOUND_DELETE = 2
         /**
          * Landscape height as a percentage of the standard size. A new key:
          * the old key_height_land held dp values from earlier builds, which
@@ -40,6 +43,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
         /** separators that delete a space left before them ("word ،"→"word،") */
         private val TIGHT_PUNCT = setOf("،", ".", ":", "۔", "؛")
+        /** Keys that end a word and may auto-replace it (Samsung: space,
+         *  . , ! ? — plus their Arabic-script forms). */
+        private val AUTO_TRIGGERS = setOf(" ", ".", ",", "!", "?", "،", "؟", "۔", "؛")
+        /** Marks that end a sentence: the next word starts a new context. */
+        private val SENTENCE_END = setOf(".", "!", "?", "؟", "۔", "\n")
+        /** Marks inside a sentence that keep the word sequence going. */
+        private val SOFT_PUNCT = setOf(",", "،", "؛", ";", ":")
+        /** Log-frequency points one unit of slip costs when weighing a
+         *  replacement (70 ≈ a factor of 5.7 per everyday slip). */
+        private const val LIKELIHOOD_PER_EDIT = 70f
     }
 
     private enum class Mode {
@@ -83,7 +96,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private var soundPool: android.media.SoundPool? = null
     private var popSoundId = 0
-    private var soundType = "bubble"
+    private var soundType = "keyflux"
+    /** Which click the next [feedback] plays (Keyflux sound set). */
+    private var soundKind = SOUND_STANDARD
+    private var modSoundId = 0
+    private var delSoundId = 0
 
     private var autocorrectOn = true
     private var isPasswordField = false
@@ -98,12 +115,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      */
     private class PendingWord(
         val word: String, val code: String, val signal: WordStore.Signal,
-        val suspect: Boolean, val prev: String
+        val suspect: Boolean, val prev: List<String>
     )
     private val pendingWords = ArrayDeque<PendingWord>()
     /** Fields whose text must never teach the dictionary (passwords, URLs,
      *  e-mail, "no suggestions", incognito). */
     private var noLearnField = false
+    /** Fields where a word must never be replaced on its own. */
+    private var noAutoReplaceField = false
+    /** The last key was delete: an emptied field was cleared by the user,
+     *  not sent. */
+    private var lastWasDelete = false
     private var lastDataVersion = -1
     private var bestCandidate: WordStore.Cand? = null
     private val confusionMaps = HashMap<String, Map<Char, Set<Char>>>()
@@ -151,7 +173,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         touchCal ?: TouchCalibration(this).also { touchCal = it }
 
     override fun onCharTap(text: String, x: Float, y: Float) {
-        pendingTap = if (text.length == 1) SpatialModel.Tap(text[0], x, y) else null
+        val kv = keyboardView
+        pendingTap = if (text.length == 1)
+            SpatialModel.Tap(text[0], x, y, kv?.lastTapOffX ?: 0f, kv?.lastTapOffY ?: 0f) else null
     }
 
     /**
@@ -672,11 +696,26 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         )
         val noSugg = inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0
         val incognito = (info?.imeOptions ?: 0) and 0x1000000 != 0  // IME_FLAG_NO_PERSONALIZED_LEARNING
-        noLearnField = isPasswordField || noSugg || incognito || (cls == InputType.TYPE_CLASS_TEXT && (
+        val privateOpts = info?.privateImeOptions ?: ""
+        val webOrMail = cls == InputType.TYPE_CLASS_TEXT && (
             variation == InputType.TYPE_TEXT_VARIATION_URI ||
             variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
-            variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS ||
-            variation == InputType.TYPE_TEXT_VARIATION_FILTER))
+            variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS)
+        // Samsung's rules: no learning in password, incognito, e-mail / URL
+        // fields or where the app asks for none ...
+        noLearnField = isPasswordField || noSugg || incognito || webOrMail ||
+            (cls == InputType.TYPE_CLASS_TEXT && variation == InputType.TYPE_TEXT_VARIATION_FILTER) ||
+            privateOpts.contains("disableLearning")
+        // ... and no auto-replacement there, nor in names and addresses
+        noAutoReplaceField = isPasswordField || noSugg || webOrMail ||
+            (cls == InputType.TYPE_CLASS_TEXT && (
+                variation == InputType.TYPE_TEXT_VARIATION_PERSON_NAME ||
+                variation == InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS)) ||
+            privateOpts.contains("disableAutoReplacement")
+        // a new field is a new session for the temporary model
+        for (st in wordStores.values) st.clearSession()
+        ctxWords.clear()
+        lastWasDelete = false
         pendingWords.clear()
         if (mode != Mode.EDIT) {
             mode = when (cls) {
@@ -713,6 +752,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         settleAllWords(verify = true)
+        // what survived is learned for good; the temporary model starts over
+        for (st in wordStores.values) st.clearSession()
         for (s in wordStores.values) s.save()
         for (a in autoTexts.values) a.save()
         keyboardView?.dismissPopups()
@@ -765,10 +806,22 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     private fun syncBufferFromCursor() {
         val ic = currentInputConnection ?: return
-        val before = try { ic.getTextBeforeCursor(32, 0) } catch (_: Exception) { null } ?: ""
+        // 64 characters: the current word and the context for the next one,
+        // as much as Samsung's keyboard reads
+        val before = try { ic.getTextBeforeCursor(64, 0) } catch (_: Exception) { null } ?: ""
+        if (before.isEmpty() && pendingWords.isNotEmpty() && !lastWasDelete) {
+            // the app emptied the field without our delete key: the message
+            // was sent, so the words waiting to be confirmed were meant
+            val after = try { ic.getTextAfterCursor(1, 0) } catch (_: Exception) { null }
+            if (after != null && after.isEmpty()) {
+                settleAllWords(verify = false)
+                for (st in wordStores.values) st.clearSession()
+            }
+        }
         var start = before.length
         while (start > 0 && Character.isLetter(before[start - 1])) start--
         val word = before.substring(start)
+        contextFrom(before.subSequence(0, start))
         if (word != wordBuffer.toString()) {
             wordBuffer.setLength(0)
             wordTaps.clear()
@@ -1023,7 +1076,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         vibrateMs = p.getInt("vibrate_ms", 20).toLong()
         soundOn = p.getBoolean("sound", true)
         soundVol = p.getInt("sound_vol", 5) / 100f
-        soundType = p.getString("sound_type", "bubble") ?: "bubble"
+        soundType = p.getString("sound_type", "keyflux") ?: "keyflux"
         if (soundOn && soundType != "system") initSoundPool()
         suggestionsOn = p.getBoolean("suggestions", true)
         learnWordsOn = p.getBoolean("learn_words", true)
@@ -1444,6 +1497,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     // ------------------------------------------------------------ listener
     override fun onChar(rawText: String) {
+        soundKind = SOUND_STANDARD
+        lastWasDelete = false
         feedback()
         revertOriginal = null
         revertCorrected = null
@@ -1516,34 +1571,36 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      * committed. AutoText never expands automatically — the expansion is
      * offered on the suggestion strip and inserted only when tapped.
      */
-    private fun handleSeparator(sep: String, commitSep: Boolean = true) {
+    /**
+     * A separator (space, punctuation, emoji, newline) ends the current word:
+     * auto-replacement and learning happen here, then the separator itself
+     * is committed. [newline] marks an Enter that inserts a line break (an
+     * Enter that sends or searches never corrects, as on Samsung).
+     */
+    private fun handleSeparator(sep: String, commitSep: Boolean = true, newline: Boolean = false) {
         val ic = currentInputConnection
         val word = wordBuffer.toString()
-        val needBest = word.length >= 2 && ic != null && !isPasswordField
-        val best = if (needBest) bestCandidateFor(word, ArrayList(tapAlternatives())) else null
+        val trigger = newline || sep in AUTO_TRIGGERS
+        val taps = ArrayList(tapAlternatives())
+        val touches = if (wordTaps.size == word.length) ArrayList(wordTaps) else null
+        val cands = if (trigger && word.length >= 2 && ic != null && !isPasswordField)
+            candidatesFor(word, taps) else emptyList()
         wordBuffer.setLength(0)
         wordTaps.clear()
         wordTapAlts.clear()
 
         if (word.isNotEmpty() && ic != null && !isPasswordField) {
             var committed = word
-            // autocorrect: replace an unknown same-length typo with the
-            // highlighted best suggestion (e.g. "چط" → "چې"). AutoText
-            // shortcuts are legitimate words for the user — never
-            // autocorrect them away.
-            if (autocorrectOn && suggestionsOn && sep == " " &&
-                word.length >= 2 && best != null && !best.exact &&
-                best.sameLen && !store().contains(word) &&
-                !rejectedWords.contains(word) &&
-                !(autotextOn && autoTextStore().expansionFor(word) != null)
-            ) {
+            val target = if (trigger) autoReplaceTarget(word, cands, taps) else null
+            if (target != null) {
                 ic.deleteSurroundingText(word.length, 0)
-                ic.commitText(best.word, 1)
-                committed = best.word
+                val replacement = recaseLike(word, target.word)
+                ic.commitText(replacement, 1)
+                committed = replacement
                 // backspace right after this replacement restores the
                 // original word (Samsung-style revert)
                 revertOriginal = word
-                revertCorrected = best.word
+                revertCorrected = replacement
             }
             if (committed.length >= 2) {
                 if (committed != word) {
@@ -1551,15 +1608,29 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 } else {
                     // the decoder had a close correction the user did not
                     // take: maybe a word, maybe a slip — it needs more proof
+                    val best = cands.firstOrNull()
                     val suspect = best != null && !best.exact && best.cost <= 1.0f &&
                         !store().contains(word)
                     queueLearn(committed, WordStore.Signal.TYPED, suspect)
                 }
+                if (learnWordsOn && !noLearnField) store().sessionLearn(committed)
+            }
+            // the touch model learns only from a word that came out exactly as
+            // tapped and is a real word: every touch hit its letter
+            if (committed == word && touches != null && !noLearnField && store().contains(word)) {
+                teachTouches(touches, word)
             }
             lastWord = committed
+            pushContext(committed)
+        }
+        if (newline || sep in SENTENCE_END) ctxWords.clear()
+        else if (word.isEmpty() && sep.isNotEmpty() && sep != " " && sep.none { it.isLetter() }) {
+            // a lone mark or emoji between words breaks the word sequence
+            if (sep !in SOFT_PUNCT) ctxWords.clear()
         }
         bestCandidate = null
         bestFor = null
+        bestCands = emptyList()
         if (commitSep && sep.isNotEmpty()) {
             // punctuation hugs the word before it: "کلمه ،" → "کلمه،"
             if (sep in TIGHT_PUNCT && ic != null) {
@@ -1572,11 +1643,111 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             ic?.commitText(sep, 1)
         }
+        lastWasDelete = false
         updateAutoCaps()
     }
 
+    /** Feed the touch model the taps whose letter matches [word]. */
+    private fun teachTouches(touches: List<SpatialModel.Tap>, word: String) {
+        val cal = calibration()
+        for ((i, t) in touches.withIndex()) {
+            if (i < word.length && t.ch.lowercaseChar() == word[i].lowercaseChar()) cal.record(t.offX, t.offY)
+        }
+    }
+
+    /** The words before the cursor in this sentence (oldest first, ≤ 3);
+     *  empty at the start of a message or sentence. */
+    private val ctxWords = ArrayList<String>()
+
+    private fun pushContext(w: String) {
+        if (w.none { it.isLetter() }) return
+        ctxWords.add(w)
+        while (ctxWords.size > 3) ctxWords.removeAt(0)
+    }
+
+    /** Re-derive [ctxWords] from the text before the current word. */
+    private fun contextFrom(before: CharSequence) {
+        ctxWords.clear()
+        val t = before.toString()
+        // only the current sentence counts
+        var cut = -1
+        for (i in t.indices.reversed()) {
+            val c = t[i].toString()
+            if (c in SENTENCE_END || c == "\n") { cut = i; break }
+        }
+        val words = t.substring(cut + 1).split(Regex("[^\\p{L}\\p{M}\u200C']+")).filter { it.isNotEmpty() }
+        for (w in words.takeLast(3)) ctxWords.add(w)
+    }
+
+    /**
+     * Should the typed [word] be replaced on its own, and by what — the
+     * auto-replace rules of Samsung's keyboard (g50/a.shouldAutoReplace):
+     *
+     *  - never in fields where it does harm (password, e-mail, URL, names,
+     *    addresses, no-suggestion fields, apps that ask for it off);
+     *  - never for a word the user already uses (dictionary, learned, typed
+     *    earlier in this field), a shortcut, or one whose correction they
+     *    took back before (the revoked list);
+     *  - never for shapes that are deliberate: digits, - _ # @, ALL CAPS,
+     *    CamelCase, a capitalised name in mid-sentence, "x.y", possessives;
+     *  - only to a word from the bundled dictionary — never to a word only
+     *    the user taught — within two slips;
+     *  - a completion only when at least 4 letters were typed and the word
+     *    is 6 or more long;
+     *  - and only when the target is clearly the likeliest: at least twice
+     *    as likely as the runner-up when it fixes a slip, ten times as
+     *    likely otherwise.
+     */
+    private fun autoReplaceTarget(
+        word: String, cands: List<WordStore.Cand>,
+        taps: List<List<Pair<Char, Float>>> = ArrayList(tapAlternatives())
+    ): WordStore.Cand? {
+        if (!autocorrectOn || !suggestionsOn || noAutoReplaceField) return null
+        if (word.length < 2 || cands.isEmpty()) return null
+        val s = store()
+        if (!s.isReady || s.contains(word) || s.isLearnedVisible(word) || s.inSession(word)) return null
+        if (rejectedWords.contains(word) || s.isRevoked(word)) return null
+        if (autotextOn && autoTextStore().expansionFor(word) != null) return null
+        if (word.any { it.isDigit() || it in "-_#@.\"'" }) return null
+        if (word.length >= 2 && word.all { !it.isLetter() || it.isUpperCase() } && word.any { it.isUpperCase() }) return null
+        // CamelCase / iPhone: a capital after the first letter
+        if (word.drop(1).any { it.isUpperCase() }) return null
+        // a capitalised word in mid-sentence is a name
+        if (word[0].isUpperCase() && ctxWords.isNotEmpty()) return null
+
+        // how likely each candidate is as THE word, on the log-frequency
+        // scale: frequency minus the slips it takes to get there
+        val conf = confusion()
+        val readings = HashMap<String, WordStore.Reading>()
+        for (c in cands) if (c.word !in readings) readings[c.word] = s.replaceReading(word, c.word, conf, taps)
+        fun lk(c: WordStore.Cand) = c.freq - (readings.getValue(c.word).cost * LIKELIHOOD_PER_EDIT).toInt()
+        fun eligible(c: WordStore.Cand): Boolean {
+            val r = readings.getValue(c.word)
+            if (!c.static || !r.withinLimits || c.word.equals(word, ignoreCase = true)) return false
+            // a completion only from 4 typed letters and for words of 6+
+            return r.completion == 0 || (word.length >= 4 && c.word.length >= 6)
+        }
+        val target = cands.filter { eligible(it) }.maxByOrNull { lk(it) } ?: return null
+        val rival = cands.filter { it.word != target.word }.maxByOrNull { lk(it) }
+        if (rival != null) {
+            // log-frequency points: 40 per factor e, so ×2 ≈ 28 and ×10 ≈ 92;
+            // a pure completion (no slip fixed) needs the larger margin
+            val r = readings.getValue(target.word)
+            val need = if (r.cost - r.completion * 2.0f > 0.001f) 28 else 92
+            val gap = lk(target) - lk(rival)
+            if (gap < need) return null
+        }
+        return target
+    }
+
+    /** Give the replacement the typed word's capitalisation. */
+    private fun recaseLike(typed: String, w: String): String =
+        if (typed.isNotEmpty() && typed[0].isUpperCase() && w.isNotEmpty() && w[0].isLowerCase())
+            w.replaceFirstChar { it.titlecase() } else w
+
     override fun onSpecial(code: Int) {
         val ic = currentInputConnection
+        soundKind = if (code == Keys.DELETE) SOUND_DELETE else SOUND_MODIFIER
         if (mode == Mode.EMOJI_SEARCH) {
             when (code) {
                 Keys.SPACE -> {
@@ -1635,6 +1806,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     try { ic?.getTextBeforeCursor(1, 0)?.isNotEmpty() == true } catch (_: Exception) { false }
                 if (!hasText && !hasSelection) return
                 feedback()
+                lastWasDelete = true
                 if (tryRevertAutocorrect()) return
                 if (wordBuffer.isEmpty()) cancelPendingAtCursor()
                 if (wordBuffer.isNotEmpty()) wordBuffer.setLength(wordBuffer.length - 1)
@@ -1658,15 +1830,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             Keys.ENTER -> {
                 feedback()
-                handleSeparator("", commitSep = false)
                 val info = currentInputEditorInfo
                 val action = info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)
                     ?: EditorInfo.IME_ACTION_NONE
                 val noEnterAction =
                     info?.imeOptions?.and(EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
-                if (action != EditorInfo.IME_ACTION_NONE &&
+                val sends = action != EditorInfo.IME_ACTION_NONE &&
                     action != EditorInfo.IME_ACTION_UNSPECIFIED && !noEnterAction
-                ) {
+                handleSeparator("", commitSep = false, newline = !sends)
+                ctxWords.clear()
+                if (sends) {
+                    // the message leaves the field: what was typed was meant
+                    settleAllWords(verify = false)
                     ic?.performEditorAction(action)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
@@ -1801,7 +1976,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun queueLearn(word: String, signal: WordStore.Signal, suspect: Boolean) {
         if (!suggestionsOn || noLearnField) return
         if (!learnWordsOn && !bigramsOn) return
-        pendingWords.addLast(PendingWord(word, lang.code, signal, suspect, lastWord))
+        pendingWords.addLast(PendingWord(word, lang.code, signal, suspect, ArrayList(ctxWords)))
         // two words later the user has moved on: settle the oldest
         while (pendingWords.size > 2) settleWord(pendingWords.removeFirst(), verify = true)
     }
@@ -1815,7 +1990,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
         val s = wordStores.getOrPut(p.code) { WordStore(this, p.code) }
         if (learnWordsOn) s.observe(p.word, p.signal, p.suspect)
-        if (bigramsOn && p.prev.length >= 2) s.learnBigram(p.prev, p.word)
+        if (bigramsOn) s.learnSequence(p.prev, p.word)
     }
 
     private fun settleAllWords(verify: Boolean) {
@@ -1870,6 +2045,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         ic.deleteSurroundingText(expect.length, 0)
         ic.commitText(original, 1)
         rejectedWords.add(original)
+        // never auto-replace this word again (Samsung's revoked list)
+        store().revoke(original)
+        if (ctxWords.isNotEmpty()) ctxWords[ctxWords.size - 1] = original
         // the correction was wrong: it must not count, and the word the user
         // fought for is exactly the evidence a keyboard should learn from
         pendingWords.removeLastOrNull()
@@ -2397,8 +2575,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private val suggWorker = android.os.Handler(suggThread.looper)
     /** Bumped for every request; a result for an older one is dropped. */
     private var suggGen = 0
-    /** The word [bestCandidate] was computed for. */
+    /** The word [bestCandidate] / [bestCands] were computed for. */
     private var bestFor: String? = null
+    /** The strip's candidates for [bestFor] (they decide auto-replace). */
+    private var bestCands: List<WordStore.Cand> = emptyList()
 
     private fun buildSuggestions() {
         val bar = suggestionBar ?: return
@@ -2413,7 +2593,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
         val prefix = wordBuffer.toString()
         val store = store()
-        val last = lastWord
+        val ctx = ArrayList(ctxWords)
         val seeds = seedDictOn
         val bigrams = bigramsOn
         val conf = confusion()
@@ -2426,7 +2606,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         suggWorker.post {
             val r = try {
                 if (prefix.isEmpty()) DictResult(false, emptyList(),
-                    if (bigrams && last.isNotEmpty()) store.suggestNext(last, 4, seeds) else emptyList())
+                    if (bigrams) store.suggestNext(ctx, 4, seeds) else emptyList())
                 else DictResult(store.contains(prefix),
                     store.suggestSmart(prefix, 6, seeds, conf, taps), emptyList())
             } catch (_: Exception) { return@post }
@@ -2450,15 +2630,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         return if (isCurrentLineEmpty()) item else null
     }
 
-    /** The best correction for [word], from the strip when it is current,
-     *  else worked out now (a separator typed before the strip caught up). */
-    private fun bestCandidateFor(word: String, taps: List<List<Pair<Char, Float>>>): WordStore.Cand? {
-        if (bestFor == word) return bestCandidate
-        if (!suggestionsOn || word.isEmpty()) return null
+    /** The candidates for [word], from the strip when it is current, else
+     *  worked out now (a separator typed before the strip caught up). */
+    private fun candidatesFor(word: String, taps: List<List<Pair<Char, Float>>>): List<WordStore.Cand> {
+        if (bestFor == word) return bestCands
+        if (!suggestionsOn || word.isEmpty()) return emptyList()
         val s = store()
         // still loading: no correction rather than a frozen space bar
-        if (!s.isReady || s.contains(word)) return null
-        return s.suggestSmart(word, 1, seedDictOn, confusion(), taps).firstOrNull()
+        if (!s.isReady || s.contains(word)) return emptyList()
+        return s.suggestSmart(word, 6, seedDictOn, confusion(), taps)
     }
 
     private fun showSuggestions(prefix: String, clip: String?, autos: List<String>, r: DictResult) {
@@ -2467,6 +2647,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         bar.removeAllViews()
         bestCandidate = null
         bestFor = prefix
+        bestCands = if (r.typedIsKnown) emptyList() else r.cands
         val items = ArrayList<SuggItem>()
         val STYLE_NORMAL = 0
         val STYLE_ACCENT = 1
@@ -2482,13 +2663,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             for (e in autos) items.add(SuggItem(e, STYLE_NORMAL, isAutoText = true))
             for (c in r.cands) items.add(SuggItem(c.word, STYLE_NORMAL))
         } else {
-            // unknown word: the top match is the correction target (blue),
-            // the typed word stays available (plain, long-press to save)
+            // unknown word: the word space would put in its place leads in
+            // blue; with no confident target nothing is blue and space keeps
+            // what was typed. The typed word stays available (long-press to
+            // save it).
             items.add(SuggItem(prefix, STYLE_TYPED))
             for (e in autos) items.add(SuggItem(e, STYLE_ACCENT, isAutoText = true))
-            bestCandidate = r.cands.firstOrNull()
-            for ((i, c) in r.cands.withIndex()) {
-                items.add(SuggItem(c.word, if (i == 0) STYLE_ACCENT else STYLE_NORMAL))
+            val target = autoReplaceTarget(prefix, r.cands)
+            bestCandidate = target
+            target?.let { items.add(SuggItem(recaseLike(prefix, it.word), STYLE_ACCENT)) }
+            for (c in r.cands) {
+                if (c.word != target?.word) items.add(SuggItem(c.word, STYLE_NORMAL))
             }
         }
 
@@ -2732,6 +2917,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private fun commitSuggestion(word: String) {
         val ic = currentInputConnection ?: return
         val prefix = wordBuffer.toString()
+        if (wordTaps.size == prefix.length && !noLearnField) teachTouches(ArrayList(wordTaps), word)
         // Replacing what you typed with something else is the clearest signal
         // that the typed form was wrong — withdraw the evidence for it, or a
         // habitual mistyping slowly accumulates its way into the dictionary.
@@ -2740,7 +2926,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         ic.commitText("$word ", 1)
         queueLearn(word,
             if (prefix == word) WordStore.Signal.PICKED_TYPED else WordStore.Signal.USED, false)
+        if (learnWordsOn && !noLearnField) store().sessionLearn(word)
         lastWord = word
+        pushContext(word)
         wordBuffer.setLength(0)
         wordTaps.clear()
         wordTapAlts.clear()
@@ -2786,7 +2974,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 .setMaxStreams(3)
                 .setAudioAttributes(attrs)
                 .build()
-            popSoundId = sp.load(this, soundRes(soundType), 1)
+            if (soundType == "keyflux") {
+                // three clicks: letters, the big keys (space / enter / shift
+                // and the other function keys) and delete — the way phone
+                // keyboards tell them apart by ear
+                popSoundId = sp.load(this, R.raw.kf_standard, 1)
+                modSoundId = sp.load(this, R.raw.kf_modifier, 1)
+                delSoundId = sp.load(this, R.raw.kf_delete, 1)
+            } else {
+                popSoundId = sp.load(this, soundRes(soundType), 1)
+                modSoundId = 0
+                delSoundId = 0
+            }
             soundPool = sp
             loadedSoundType = soundType
         } catch (_: Exception) {
@@ -2804,6 +3003,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     @Suppress("DEPRECATION")
     private fun feedback() {
+        val kind = soundKind
+        soundKind = SOUND_STANDARD
         if (vibrateOn) {
             try {
                 val v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -2816,12 +3017,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 if (soundType != "system") {
                     if (soundPool == null) initSoundPool()
                     val sp = soundPool
-                    if (sp != null && popSoundId != 0) {
-                        sp.play(popSoundId, soundVol, soundVol, 1, 0, 1f)
+                    val id = when (kind) {
+                        SOUND_DELETE -> delSoundId
+                        SOUND_MODIFIER -> modSoundId
+                        else -> 0
+                    }.takeIf { it != 0 } ?: popSoundId
+                    if (sp != null && id != 0) {
+                        sp.play(id, soundVol, soundVol, 1, 0, 1f)
                     }
                 } else {
                     val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                    am.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, soundVol)
+                    am.playSoundEffect(when (kind) {
+                        SOUND_DELETE -> AudioManager.FX_KEYPRESS_DELETE
+                        SOUND_MODIFIER -> AudioManager.FX_KEYPRESS_SPACEBAR
+                        else -> AudioManager.FX_KEYPRESS_STANDARD
+                    }, soundVol)
                 }
             } catch (_: Exception) {
             }
