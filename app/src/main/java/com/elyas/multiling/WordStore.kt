@@ -286,9 +286,22 @@ class WordStore(private val context: Context, private val langCode: String) {
             ws.trimToSize()
             seeds = ws
             seedFreq = fs.copyOf(ws.size)
-            val order = ws.indices.sortedWith { a, b -> ws[a].compareTo(ws[b]) }
-            seedSet = Lexicon(Array(order.size) { ws[order[it]] }, IntArray(order.size) { fs[order[it]] },
-                IntArray(order.size) { order[it] })
+            // Lexicographic copy for the trie walk. Sorting the strings
+            // themselves and then finding each word's slot by binary search
+            // allocates nothing per word; sorting boxed indices with a
+            // comparator made a quarter of a million objects per language,
+            // and the garbage collector paid for it while the keyboard opened.
+            val sorted = ws.toTypedArray()
+            java.util.Arrays.sort(sorted)
+            val lf = IntArray(sorted.size)
+            val rank = IntArray(sorted.size)
+            val set = BooleanArray(sorted.size)
+            for (i in ws.indices) {
+                val p = java.util.Arrays.binarySearch(sorted, ws[i])
+                // a repeated word keeps its first (most frequent) line
+                if (p >= 0 && !set[p]) { lf[p] = fs[i]; rank[p] = i; set[p] = true }
+            }
+            seedSet = Lexicon(sorted, lf, rank)
         } catch (_: Exception) {
             seeds = emptyList()
             seedFreq = IntArray(0)

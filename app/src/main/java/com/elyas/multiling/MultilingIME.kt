@@ -50,6 +50,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         private val SENTENCE_END = setOf(".", "!", "?", "؟", "۔", "\n")
         /** Marks inside a sentence that keep the word sequence going. */
         private val SOFT_PUNCT = setOf(",", "،", "؛", ";", ":")
+        /** How long a separator waits for a correction the strip has not
+         *  shown yet (AOSP waits up to 200 ms); after that, no correction. */
+        private const val TARGET_WAIT_MS = 150L
         /** Log-frequency points one unit of slip costs when weighing a
          *  replacement (70 ≈ a factor of 5.7 per everyday slip). */
         private const val LIKELIHOOD_PER_EDIT = 70f
@@ -713,7 +716,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 variation == InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS)) ||
             privateOpts.contains("disableAutoReplacement")
         // a new field is a new session for the temporary model
-        for (st in wordStores.values) st.clearSession()
+        val stores = wordStores.values.toList()
+        onWorker { for (st in stores) st.clearSession() }
         ctxWords.clear()
         lastWasDelete = false
         pendingWords.clear()
@@ -746,15 +750,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInput() {
         settleAllWords(verify = false)
-        for (s in wordStores.values) s.save()
+        val stores = wordStores.values.toList()
+        onWorker { for (s in stores) s.save() }
         super.onFinishInput()
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         settleAllWords(verify = true)
         // what survived is learned for good; the temporary model starts over
-        for (st in wordStores.values) st.clearSession()
-        for (s in wordStores.values) s.save()
+        val stores = wordStores.values.toList()
+        onWorker { for (st in stores) { st.clearSession(); st.save() } }
         for (a in autoTexts.values) a.save()
         keyboardView?.dismissPopups()
         wordMenu?.dismiss()
@@ -815,7 +820,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             val after = try { ic.getTextAfterCursor(1, 0) } catch (_: Exception) { null }
             if (after != null && after.isEmpty()) {
                 settleAllWords(verify = false)
-                for (st in wordStores.values) st.clearSession()
+                val stores = wordStores.values.toList()
+                onWorker { for (st in stores) st.clearSession() }
             }
         }
         var start = before.length
@@ -1109,13 +1115,21 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
         // decompress + parse the frequency dictionaries (and the clipboard
         // history) off the UI thread so the first keystroke doesn't stutter
-        val toLoad = languages.filter { preloadedLangs.add(it.code) }
+        // The language on screen loads first; the rest follow at background
+        // priority, so loading a quarter of a million words per language
+        // never competes with the keyboard opening or with typing.
+        val current = languages[langIndex].code
+        val toLoad = languages.sortedBy { if (it.code == current) 0 else 1 }
+            .filter { preloadedLangs.add(it.code) }
             .map { l -> wordStores.getOrPut(l.code) { WordStore(this, l.code) } }
         val clips = clipboardStore()
         if (toLoad.isNotEmpty()) {
             Thread {
-                try { clips.preload() } catch (_: Exception) {}
-                for (s in toLoad) try { s.preload() } catch (_: Exception) {}
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+                for ((i, s) in toLoad.withIndex()) {
+                    try { s.preload() } catch (_: Exception) {}
+                    if (i == 0) try { clips.preload() } catch (_: Exception) {}
+                }
             }.start()
         }
 
@@ -1583,15 +1597,16 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val trigger = newline || sep in AUTO_TRIGGERS
         val taps = ArrayList(tapAlternatives())
         val touches = if (wordTaps.size == word.length) ArrayList(wordTaps) else null
-        val cands = if (trigger && word.length >= 2 && ic != null && !isPasswordField)
-            candidatesFor(word, taps) else emptyList()
+        // the strip's closest match, for the "maybe a slip" learning hint
+        val nearest = if (bestFor == word) bestCands.firstOrNull() else null
+        val target = if (trigger && word.length >= 2 && ic != null && !isPasswordField)
+            targetFor(word, taps) else null
         wordBuffer.setLength(0)
         wordTaps.clear()
         wordTapAlts.clear()
 
         if (word.isNotEmpty() && ic != null && !isPasswordField) {
             var committed = word
-            val target = if (trigger) autoReplaceTarget(word, cands, taps) else null
             if (target != null) {
                 ic.deleteSurroundingText(word.length, 0)
                 val replacement = recaseLike(word, target.word)
@@ -1608,17 +1623,22 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 } else {
                     // the decoder had a close correction the user did not
                     // take: maybe a word, maybe a slip — it needs more proof
-                    val best = cands.firstOrNull()
-                    val suspect = best != null && !best.exact && best.cost <= 1.0f &&
-                        !store().contains(word)
+                    // (whether it is a dictionary word is checked when it settles)
+                    val suspect = nearest != null && !nearest.exact && nearest.cost <= 1.0f
                     queueLearn(committed, WordStore.Signal.TYPED, suspect)
                 }
-                if (learnWordsOn && !noLearnField) store().sessionLearn(committed)
+                if (learnWordsOn && !noLearnField) {
+                    val st = store()
+                    onWorker { st.sessionLearn(committed) }
+                }
             }
             // the touch model learns only from a word that came out exactly as
             // tapped and is a real word: every touch hit its letter
-            if (committed == word && touches != null && !noLearnField && store().contains(word)) {
-                teachTouches(touches, word)
+            if (committed == word && touches != null && !noLearnField) {
+                val st = store()
+                onWorker {
+                    if (st.contains(word)) suggHandler.post { teachTouches(touches, word) }
+                }
             }
             lastWord = committed
             pushContext(committed)
@@ -1698,26 +1718,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      *    as likely as the runner-up when it fixes a slip, ten times as
      *    likely otherwise.
      */
-    private fun autoReplaceTarget(
-        word: String, cands: List<WordStore.Cand>,
-        taps: List<List<Pair<Char, Float>>> = ArrayList(tapAlternatives())
-    ): WordStore.Cand? {
-        if (!autocorrectOn || !suggestionsOn || noAutoReplaceField) return null
-        if (word.length < 2 || cands.isEmpty()) return null
-        val s = store()
-        if (!s.isReady || s.contains(word) || s.isLearnedVisible(word) || s.inSession(word)) return null
-        if (rejectedWords.contains(word) || s.isRevoked(word)) return null
-        if (autotextOn && autoTextStore().expansionFor(word) != null) return null
-        if (word.any { it.isDigit() || it in "-_#@.\"'" }) return null
-        if (word.length >= 2 && word.all { !it.isLetter() || it.isUpperCase() } && word.any { it.isUpperCase() }) return null
+    /** The checks that need only the keyboard's own state (UI thread). */
+    private fun replaceAllowed(word: String): Boolean {
+        if (!autocorrectOn || !suggestionsOn || noAutoReplaceField) return false
+        if (word.length < 2) return false
+        if (rejectedWords.contains(word)) return false
+        if (autotextOn && autoTextStore().expansionFor(word) != null) return false
+        if (word.any { it.isDigit() || it in "-_#@.\"'" }) return false
+        if (word.all { !it.isLetter() || it.isUpperCase() } && word.any { it.isUpperCase() }) return false
         // CamelCase / iPhone: a capital after the first letter
-        if (word.drop(1).any { it.isUpperCase() }) return null
+        if (word.drop(1).any { it.isUpperCase() }) return false
         // a capitalised word in mid-sentence is a name
-        if (word[0].isUpperCase() && ctxWords.isNotEmpty()) return null
+        if (word[0].isUpperCase() && ctxWords.isNotEmpty()) return false
+        return true
+    }
 
+    /** The dictionary half of the decision (suggestion thread). */
+    private fun pickTarget(
+        s: WordStore, word: String, cands: List<WordStore.Cand>,
+        conf: Map<Char, Set<Char>>, taps: List<List<Pair<Char, Float>>>
+    ): WordStore.Cand? {
+        if (cands.isEmpty()) return null
+        if (s.contains(word) || s.isLearnedVisible(word) || s.inSession(word) || s.isRevoked(word)) return null
         // how likely each candidate is as THE word, on the log-frequency
         // scale: frequency minus the slips it takes to get there
-        val conf = confusion()
         val readings = HashMap<String, WordStore.Reading>()
         for (c in cands) if (c.word !in readings) readings[c.word] = s.replaceReading(word, c.word, conf, taps)
         fun lk(c: WordStore.Cand) = c.freq - (readings.getValue(c.word).cost * LIKELIHOOD_PER_EDIT).toInt()
@@ -1982,19 +2006,30 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Learn a held-back word — if it is still in the text. */
-    private fun settleWord(p: PendingWord, verify: Boolean) {
+    private fun settleWord(p: PendingWord, verify: Boolean, text: String? = null) {
         if (verify) {
-            val ic = currentInputConnection
-            val before = try { ic?.getTextBeforeCursor(800, 0)?.toString() } catch (_: Exception) { null }
+            val before = text ?: try {
+                currentInputConnection?.getTextBeforeCursor(800, 0)?.toString()
+            } catch (_: Exception) { null }
             if (before != null && !containsWord(before, p.word)) return
         }
         val s = wordStores.getOrPut(p.code) { WordStore(this, p.code) }
-        if (learnWordsOn) s.observe(p.word, p.signal, p.suspect)
-        if (bigramsOn) s.learnSequence(p.prev, p.word)
+        val learn = learnWordsOn
+        val seq = bigramsOn
+        onWorker {
+            if (learn) s.observe(p.word, p.signal, p.suspect && !s.contains(p.word))
+            if (seq) s.learnSequence(p.prev, p.word)
+        }
     }
 
     private fun settleAllWords(verify: Boolean) {
-        while (pendingWords.isNotEmpty()) settleWord(pendingWords.removeFirst(), verify)
+        if (pendingWords.isEmpty()) return
+        // one read of the text for all of them: every call into the app is a
+        // round trip, and a field that is closing can be slow to answer
+        val text = if (verify) try {
+            currentInputConnection?.getTextBeforeCursor(800, 0)?.toString()
+        } catch (_: Exception) { null } else null
+        while (pendingWords.isNotEmpty()) settleWord(pendingWords.removeFirst(), verify, text)
     }
 
     /** [word] occurs in [text] as a whole word, not inside a longer one. */
@@ -2025,7 +2060,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val trimmed = before.trimEnd { !Character.isLetter(it) }
         if (!trimmed.endsWith(last.word)) return
         pendingWords.removeLast()
-        wordStores[last.code]?.penalize(last.word)
+        wordStores[last.code]?.let { st -> onWorker { st.penalize(last.word) } }
     }
 
     /**
@@ -2052,8 +2087,11 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         // fought for is exactly the evidence a keyboard should learn from
         pendingWords.removeLastOrNull()
         if (learnWordsOn && !noLearnField) {
-            store().penalize(corrected)
-            store().observe(original, WordStore.Signal.REVERTED)
+            val st = store()
+            onWorker {
+                st.penalize(corrected)
+                st.observe(original, WordStore.Signal.REVERTED)
+            }
         }
         wordBuffer.setLength(0)
         wordTaps.clear()
@@ -2561,7 +2599,9 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private class DictResult(
         val typedIsKnown: Boolean,
         val cands: List<WordStore.Cand>,
-        val next: List<String>
+        val next: List<String>,
+        /** What space would put in place of the typed word, if anything. */
+        val target: WordStore.Cand? = null
     )
 
     /**
@@ -2573,8 +2613,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
      */
     private val suggThread = android.os.HandlerThread("keyflux-suggest").also { it.start() }
     private val suggWorker = android.os.Handler(suggThread.looper)
-    /** Bumped for every request; a result for an older one is dropped. */
-    private var suggGen = 0
+    /** Bumped for every request; a result for an older one is dropped, and
+     *  a request already overtaken is not even computed. */
+    @Volatile private var suggGen = 0
+
+    /**
+     * Dictionary work — learning, saving, the temporary model — runs on the
+     * suggestion thread, in order with the searches. The UI thread never
+     * takes a dictionary's lock: when it did, every key press could wait for
+     * a search in progress, and opening the keyboard for a save.
+     */
+    private fun onWorker(block: () -> Unit) {
+        suggWorker.post { try { block() } catch (_: Exception) {} }
+    }
     /** The word [bestCandidate] / [bestCands] were computed for. */
     private var bestFor: String? = null
     /** The strip's candidates for [bestFor] (they decide auto-replace). */
@@ -2603,12 +2654,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val clip = if (prefix.isEmpty()) clipChipText() else null
         val autos = if (prefix.isNotEmpty() && autotextOn) autoTextStore().matching(prefix, 3)
             else emptyList()
+        val mayReplace = prefix.isNotEmpty() && replaceAllowed(prefix)
         suggWorker.post {
+            // typing ran ahead: a newer request is queued, skip this one
+            if (gen != suggGen) return@post
             val r = try {
                 if (prefix.isEmpty()) DictResult(false, emptyList(),
                     if (bigrams) store.suggestNext(ctx, 4, seeds) else emptyList())
-                else DictResult(store.contains(prefix),
-                    store.suggestSmart(prefix, 6, seeds, conf, taps), emptyList())
+                else {
+                    val known = store.contains(prefix)
+                    val cands = store.suggestSmart(prefix, 6, seeds, conf, taps)
+                    DictResult(known, cands, emptyList(),
+                        if (!known && mayReplace) pickTarget(store, prefix, cands, conf, taps) else null)
+                }
             } catch (_: Exception) { return@post }
             suggHandler.post {
                 if (gen != suggGen) return@post
@@ -2630,15 +2688,31 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         return if (isCurrentLineEmpty()) item else null
     }
 
-    /** The candidates for [word], from the strip when it is current, else
-     *  worked out now (a separator typed before the strip caught up). */
-    private fun candidatesFor(word: String, taps: List<List<Pair<Char, Float>>>): List<WordStore.Cand> {
-        if (bestFor == word) return bestCands
-        if (!suggestionsOn || word.isEmpty()) return emptyList()
+    /**
+     * The replacement for [word] when space (or a mark) ends it: the strip's
+     * answer when it is current, else asked of the worker — ahead of any
+     * queued search — and waited for briefly, as AOSP's keyboard does before
+     * committing. If it does not come in time the word stays as typed:
+     * a missed correction is better than a frozen key.
+     */
+    private fun targetFor(word: String, taps: List<List<Pair<Char, Float>>>): WordStore.Cand? {
+        if (bestFor == word) return bestCandidate
+        if (!suggestionsOn || word.length < 2 || !replaceAllowed(word)) return null
         val s = store()
-        // still loading: no correction rather than a frozen space bar
-        if (!s.isReady || s.contains(word)) return emptyList()
-        return s.suggestSmart(word, 6, seedDictOn, confusion(), taps)
+        if (!s.isReady) return null
+        val conf = confusion()
+        val seeds = seedDictOn
+        val task = java.util.concurrent.FutureTask {
+            if (s.contains(word)) null
+            else pickTarget(s, word, s.suggestSmart(word, 6, seeds, conf, taps), conf, taps)
+        }
+        if (!suggWorker.postAtFrontOfQueue(task)) return null
+        return try {
+            task.get(TARGET_WAIT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+        } catch (_: Exception) {
+            task.cancel(false)
+            null
+        }
     }
 
     private fun showSuggestions(prefix: String, clip: String?, autos: List<String>, r: DictResult) {
@@ -2669,7 +2743,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             // save it).
             items.add(SuggItem(prefix, STYLE_TYPED))
             for (e in autos) items.add(SuggItem(e, STYLE_ACCENT, isAutoText = true))
-            val target = autoReplaceTarget(prefix, r.cands)
+            val target = r.target
             bestCandidate = target
             target?.let { items.add(SuggItem(recaseLike(prefix, it.word), STYLE_ACCENT)) }
             for (c in r.cands) {
@@ -2797,7 +2871,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                         // bypass the typo gate — otherwise the one deliberate
                         // way to teach the keyboard a word it thinks is a
                         // near-miss would be silently refused.
-                        store().learnExplicit(text)
+                        val st = store()
+                        onWorker { st.learnExplicit(text) }
                         rejectedWords.add(text)
                         Toast.makeText(this, R.string.word_saved, Toast.LENGTH_SHORT).show()
                         true
@@ -2865,11 +2940,13 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             // an explicit request: trust it outright. repeat(learn) would be
             // refused now that learning rejects near-misses of real words,
             // and refusing the user's own instruction is not the intent.
-            store().learnExplicit(word)
+            val st = store()
+            onWorker { st.learnExplicit(word) }
             Toast.makeText(this, R.string.word_boosted, Toast.LENGTH_SHORT).show()
         }
         row(getString(R.string.word_delete), R.drawable.ic_key_trash, 0xFFE05B5B.toInt()) {
-            store().forget(word)
+            val st = store()
+            onWorker { st.forget(word); st.save() }
             rejectedWords.add(word)
             Toast.makeText(this, R.string.word_deleted, Toast.LENGTH_SHORT).show()
         }
@@ -2921,12 +2998,18 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         // Replacing what you typed with something else is the clearest signal
         // that the typed form was wrong — withdraw the evidence for it, or a
         // habitual mistyping slowly accumulates its way into the dictionary.
-        if (prefix.isNotEmpty() && prefix != word) store().penalize(prefix)
+        if (prefix.isNotEmpty() && prefix != word) {
+            val st = store()
+            onWorker { st.penalize(prefix) }
+        }
         if (prefix.isNotEmpty()) ic.deleteSurroundingText(prefix.length, 0)
         ic.commitText("$word ", 1)
         queueLearn(word,
             if (prefix == word) WordStore.Signal.PICKED_TYPED else WordStore.Signal.USED, false)
-        if (learnWordsOn && !noLearnField) store().sessionLearn(word)
+        if (learnWordsOn && !noLearnField) {
+            val st = store()
+            onWorker { st.sessionLearn(word) }
+        }
         lastWord = word
         pushContext(word)
         wordBuffer.setLength(0)
