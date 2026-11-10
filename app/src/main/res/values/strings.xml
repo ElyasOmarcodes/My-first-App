@@ -318,4 +318,6 @@
     <string name="shortcuts_restore">اصلي لنډیزونه راوړل</string>
     <string name="shortcuts_restored">%1$s لنډیزونه اضافه شول</string>
     <string name="shortcuts_lang_count">%1$s لنډیزونه</string>
+    <string name="pref_suggestion_bar">د وړاندیز پټه ښکاره کول</string>
+    <string name="pref_suggestion_bar_sum">د کیبورډ له پاسه د وړاندیزونو او چټکو تڼیو پټه. که بنده شي، پټه بېخي لرې کېږي او کیبورډ لنډېږي</string>
 </resources>

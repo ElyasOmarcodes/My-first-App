@@ -319,4 +319,6 @@ Long-press a suggestion to delete it</string>
     <string name="shortcuts_restore">Add default shortcuts</string>
     <string name="shortcuts_restored">%1$s shortcuts added</string>
     <string name="shortcuts_lang_count">%1$s shortcuts</string>
+    <string name="pref_suggestion_bar">Show suggestion bar</string>
+    <string name="pref_suggestion_bar_sum">The bar of suggestions and quick actions above the keys. When off, it is removed completely and the keyboard gets shorter</string>
 </resources>

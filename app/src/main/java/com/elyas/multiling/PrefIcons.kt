@@ -41,6 +41,7 @@ object PrefIcons {
         "nav_gap_auto" to (R.drawable.ic_m_bottom_bar to Ui.Tone.ORANGE),
         "bottom_gap" to (R.drawable.ic_m_align_bottom to Ui.Tone.ROSE),
         // typing
+        "suggestion_bar" to (R.drawable.ic_m_short_text to Ui.Tone.BLUE),
         "suggestions" to (R.drawable.ic_m_bulb to Ui.Tone.AMBER),
         "autocorrect" to (R.drawable.ic_m_spellcheck to Ui.Tone.GREEN),
         "seed_dict" to (R.drawable.ic_m_book to Ui.Tone.BLUE),

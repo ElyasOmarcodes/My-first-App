@@ -319,4 +319,6 @@
     <string name="shortcuts_restore">افزودن میان‌برهای پیش‌فرض</string>
     <string name="shortcuts_restored">%1$s میان‌بر افزوده شد</string>
     <string name="shortcuts_lang_count">%1$s میان‌بر</string>
+    <string name="pref_suggestion_bar">نمایش نوار پیشنهاد</string>
+    <string name="pref_suggestion_bar_sum">نوار پیشنهادها و دکمه‌های سریع بالای کیبورد. اگر خاموش شود، نوار کاملاً برداشته می‌شود و کیبورد کوتاه‌تر می‌شود</string>
 </resources>

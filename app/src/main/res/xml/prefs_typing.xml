@@ -2,6 +2,8 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory android:title="@string/cat_suggest">
+        <SwitchPreferenceCompat android:key="suggestion_bar" android:title="@string/pref_suggestion_bar"
+            android:summary="@string/pref_suggestion_bar_sum" android:defaultValue="true" />
         <SwitchPreferenceCompat android:key="suggestions" android:title="@string/pref_suggestions"
             android:summary="@string/pref_suggestions_sum" android:defaultValue="true" />
         <SwitchPreferenceCompat android:key="autocorrect" android:title="@string/pref_autocorrect"

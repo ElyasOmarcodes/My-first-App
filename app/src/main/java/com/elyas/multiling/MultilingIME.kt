@@ -73,6 +73,17 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
     private var rootView: LinearLayout? = null
     private var suggestionBar: LinearLayout? = null
     private var suggestionScroll: HorizontalScrollView? = null
+    /** The strip's whole row (strip + resize overlay); hidden when the user
+     *  turns the suggestion bar off, so the keys move up into its place. */
+    private var stripFrame: View? = null
+    private var suggestionBarOn = true
+    /**
+     * Next-word predictions belong right after a word was finished, as on
+     * Gboard and Samsung. When the keyboard opens, after Enter or delete,
+     * the strip shows its quick actions instead — otherwise the strip was
+     * never free for the icons once the keyboard had learned a few words.
+     */
+    private var predictNext = false
 
     private var languages: List<Language> = Layouts.ALL
     private var langIndex = 0
@@ -314,6 +325,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         // draggable pill floats above it — no extra bar is inserted, so the
         // keyboard never grows a black band in resize mode.
         val stripFrame = android.widget.FrameLayout(this)
+        this.stripFrame = stripFrame
         stripFrame.addView(
             scroll,
             android.widget.FrameLayout.LayoutParams(
@@ -500,8 +512,15 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         screenHeightDp() * 0.48f / currentHeightUnits()
 
     /** Toggle the live keyboard-resize mode. */
+    /** The bar is gone when switched off — but shown while resizing, since
+     *  the resize handle lives on it. */
+    private fun applyStripVisibility() {
+        stripFrame?.visibility = if (suggestionBarOn || resizeMode) View.VISIBLE else View.GONE
+    }
+
     private fun toggleResizeMode() {
         resizeMode = !resizeMode
+        applyStripVisibility()
         val kv = keyboardView
         val density = resources.displayMetrics.density
         val accent = kv?.theme?.accent ?: 0xFF4FA3FF.toInt()
@@ -676,6 +695,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        // a keyboard that just opened shows its quick actions
+        predictNext = false
         // tell the system the back/hide button really does dismiss us — some
         // builds consult this before routing the press to the IME at all
         try {
@@ -1134,7 +1155,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
 
         rootView?.setBackgroundColor(kv.resolvedBackground)
-        suggestionScroll?.visibility = if (suggestionsOn) View.VISIBLE else View.GONE
+        suggestionBarOn = p.getBoolean("suggestion_bar", true)
+        applyStripVisibility()
     }
 
     // ------------------------------------------------------- keyboard build
@@ -1642,7 +1664,10 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
             }
             lastWord = committed
             pushContext(committed)
+            // a word was just finished: the strip may guess the next one
+            if (!newline) predictNext = true
         }
+        if (newline) predictNext = false
         if (newline || sep in SENTENCE_END) ctxWords.clear()
         else if (word.isEmpty() && sep.isNotEmpty() && sep != " " && sep.none { it.isLetter() }) {
             // a lone mark or emoji between words breaks the word sequence
@@ -1831,6 +1856,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 if (!hasText && !hasSelection) return
                 feedback()
                 lastWasDelete = true
+                predictNext = false
                 if (tryRevertAutocorrect()) return
                 if (wordBuffer.isEmpty()) cancelPendingAtCursor()
                 if (wordBuffer.isNotEmpty()) wordBuffer.setLength(wordBuffer.length - 1)
@@ -1863,6 +1889,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                     action != EditorInfo.IME_ACTION_UNSPECIFIED && !noEnterAction
                 handleSeparator("", commitSep = false, newline = !sends)
                 ctxWords.clear()
+                predictNext = false
                 if (sends) {
                     // the message leaves the field: what was typed was meant
                     settleAllWords(verify = false)
@@ -2636,17 +2663,19 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         val gen = ++suggGen
         if (!suggestionsOn || isPasswordField || mode == Mode.EMOJI_SEARCH) {
             // in emoji search the query lives in the panel's own field, so the
-            // strip stays empty instead of showing word suggestions for it
+            // strip stays empty instead of showing word suggestions for it;
+            // with word suggestions off (or a password) it keeps its actions
             bestCandidate = null
             bestFor = null
             bar.removeAllViews()
+            if (mode != Mode.EMOJI_SEARCH) keyboardView?.let { showActionRow(bar, it) }
             return
         }
         val prefix = wordBuffer.toString()
         val store = store()
         val ctx = ArrayList(ctxWords)
         val seeds = seedDictOn
-        val bigrams = bigramsOn
+        val bigrams = bigramsOn && predictNext
         val conf = confusion()
         val taps = ArrayList(tapAlternatives())
         // main-thread parts: the clipboard and the AutoText list are cheap
@@ -2672,6 +2701,43 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
                 if (gen != suggGen) return@post
                 try { showSuggestions(prefix, clip, autos, r) } catch (_: Exception) {}
             }
+        }
+    }
+
+    /** The quick-action icons, spread over the whole strip. */
+    private fun showActionRow(bar: LinearLayout, kv: KeyboardView) {
+        val density = resources.displayMetrics.density
+        bar.minimumWidth = suggestionScroll?.width ?: 0
+        bar.gravity = android.view.Gravity.CENTER
+        val actions = listOf(
+            R.drawable.ic_key_settings to Keys.SETTINGS,
+            R.drawable.ic_key_control to Keys.EDIT_PANEL,
+            R.drawable.ic_key_clipboard to Keys.CLIPBOARD,
+            R.drawable.ic_key_numpad to Keys.NUMPAD,
+            R.drawable.ic_key_emoji to Keys.EMOJI,
+            R.drawable.ic_key_resize to Keys.RESIZE
+        )
+        // spread the actions evenly over the whole strip width
+        val stripW = (suggestionScroll?.width ?: 0).let {
+            if (it > 0) it else resources.displayMetrics.widthPixels
+        }
+        for ((iconRes, code) in actions) {
+            val iv = android.widget.ImageView(this)
+            // the resize icon turns accent-blue while resize mode is on
+            val active = code == Keys.RESIZE && resizeMode
+            iv.setImageDrawable(
+                tintedIcon(
+                    iconRes,
+                    if (active) kv.theme.accent else kv.theme.hint,
+                    (21 * density).toInt()
+                )
+            )
+            iv.scaleType = android.widget.ImageView.ScaleType.CENTER
+            iv.setOnClickListener { onSpecial(code) }
+            val lp = LinearLayout.LayoutParams(
+                stripW / actions.size, LinearLayout.LayoutParams.MATCH_PARENT
+            )
+            bar.addView(iv, lp)
         }
     }
 
@@ -2756,39 +2822,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         // an empty strip becomes a quick-action row: settings, control,
         // clipboard, numpad, emoji
         if (items.isEmpty() && prefix.isEmpty()) {
-            bar.minimumWidth = suggestionScroll?.width ?: 0
-            bar.gravity = android.view.Gravity.CENTER
-            val actions = listOf(
-                R.drawable.ic_key_settings to Keys.SETTINGS,
-                R.drawable.ic_key_control to Keys.EDIT_PANEL,
-                R.drawable.ic_key_clipboard to Keys.CLIPBOARD,
-                R.drawable.ic_key_numpad to Keys.NUMPAD,
-                R.drawable.ic_key_emoji to Keys.EMOJI,
-                R.drawable.ic_key_resize to Keys.RESIZE
-            )
-            // spread the actions evenly over the whole strip width
-            val stripW = (suggestionScroll?.width ?: 0).let {
-                if (it > 0) it else resources.displayMetrics.widthPixels
-            }
-            for ((iconRes, code) in actions) {
-                val iv = android.widget.ImageView(this)
-                // the resize icon turns accent-blue while resize mode is on
-                val active = code == Keys.RESIZE && resizeMode
-                iv.setImageDrawable(
-                    tintedIcon(
-                        iconRes,
-                        if (active) kv.theme.accent else kv.theme.hint,
-                        (21 * density).toInt()
-                    )
-                )
-                iv.scaleType = android.widget.ImageView.ScaleType.CENTER
-                iv.setOnClickListener { onSpecial(code) }
-                val lp = LinearLayout.LayoutParams(
-                    stripW / actions.size, LinearLayout.LayoutParams.MATCH_PARENT
-                )
-                bar.addView(iv, lp)
-            }
-            return
+            showActionRow(bar, kv)            return
         }
 
         // a lone clipboard chip is centered, Samsung-style
@@ -3012,6 +3046,7 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         }
         lastWord = word
         pushContext(word)
+        predictNext = true
         wordBuffer.setLength(0)
         wordTaps.clear()
         wordTapAlts.clear()
