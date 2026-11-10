@@ -2822,7 +2822,8 @@ class MultilingIME : InputMethodService(), KeyboardView.Listener {
         // an empty strip becomes a quick-action row: settings, control,
         // clipboard, numpad, emoji
         if (items.isEmpty() && prefix.isEmpty()) {
-            showActionRow(bar, kv)            return
+            showActionRow(bar, kv)
+            return
         }
 
         // a lone clipboard chip is centered, Samsung-style
