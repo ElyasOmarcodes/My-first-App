@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The real Material 3 switch. SwitchPreferenceCompat looks this up by the
+     id switchWidget and drives it as a SwitchCompat, which MaterialSwitch
+     extends. Not clickable itself: the whole row toggles it. -->
+<com.google.android.material.materialswitch.MaterialSwitch
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/switchWidget"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@null"
+    android:clickable="false"
+    android:focusable="false" />

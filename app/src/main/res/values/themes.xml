@@ -1,5 +1,297 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+    <!-- ================================================================
+         App theme — Material 3, DayNight. Every colour role is fed from
+         colors.xml / values-night/colors.xml, so light and dark come from
+         the same theme and no screen hard-codes a colour.
+         ================================================================ -->
+    <style name="Theme.MultiKeyboard" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorOnPrimary">@color/m3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/m3_inverse_primary</item>
+
+        <item name="colorSecondary">@color/m3_secondary</item>
+        <item name="colorOnSecondary">@color/m3_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/m3_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/m3_on_secondary_container</item>
+
+        <item name="colorTertiary">@color/m3_tertiary</item>
+        <item name="colorOnTertiary">@color/m3_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/m3_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/m3_on_tertiary_container</item>
+
+        <item name="colorError">@color/m3_error</item>
+        <item name="colorOnError">@color/m3_on_error</item>
+        <item name="colorErrorContainer">@color/m3_error_container</item>
+        <item name="colorOnErrorContainer">@color/m3_on_error_container</item>
+
+        <item name="android:colorBackground">@color/m3_background</item>
+        <item name="colorOnBackground">@color/m3_on_background</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurface">@color/m3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface_variant</item>
+        <item name="colorSurfaceInverse">@color/m3_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/m3_inverse_on_surface</item>
+        <item name="colorOutline">@color/m3_outline</item>
+        <item name="colorOutlineVariant">@color/m3_outline_variant</item>
+
+        <item name="colorSurfaceContainerLowest">@color/m3_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/m3_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/m3_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/m3_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/m3_surface_container_highest</item>
+
+        <!-- generous, friendly radii — the inspiration's softest feature -->
+        <item name="shapeAppearanceCornerSmall">@style/Shape.Hk.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/Shape.Hk.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/Shape.Hk.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/Shape.Hk.ExtraLarge</item>
+
+        <item name="android:windowBackground">@color/m3_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Vazirmatn everywhere: the plain-text default plus every Material
+             type role, so components (buttons, dialogs, app bars, nav
+             labels, text fields) pick it up without per-view styling -->
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Hk.M3.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.Hk.M3.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.Hk.M3.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Hk.M3.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Hk.M3.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Hk.M3.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Hk.M3.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Hk.M3.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.Hk.M3.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Hk.M3.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Hk.M3.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Hk.M3.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Hk.M3.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Hk.M3.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Hk.M3.LabelSmall</item>
+
+        <item name="android:windowAnimationStyle">@style/Anim.Hk.Activity</item>
+        <item name="preferenceTheme">@style/Pref.Hk</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Hk.AlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Hk.MaterialAlertDialog</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Hk.BottomSheet</item>
+    </style>
+
+    <style name="Theme.MultiKeyboard.Splash" />
+
+    <!-- The keyboard window: the system input-method theme with Vazirmatn
+         as the default face of every text in it -->
+    <style name="Theme.Hk.Ime" parent="@android:style/Theme.DeviceDefault.InputMethod">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+    </style>
+
+    <!-- Screen-to-screen motion: grow/fade, the same in both directions -->
+    <style name="Anim.Hk.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/act_open_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/act_open_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/act_close_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/act_close_exit</item>
+    </style>
+
+    <!-- ========================================================= shapes -->
+    <style name="Shape.Hk.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+    <style name="Shape.Hk.Small" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="Shape.Hk.Medium" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="Shape.Hk.Large" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">22dp</item>
+    </style>
+    <style name="Shape.Hk.ExtraLarge" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <!-- ======================================================== dialogs -->
+    <!-- MaterialAlertDialogBuilder: rounded M3 dialog on a lifted surface -->
+    <style name="ThemeOverlay.Hk.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/Shape.Hk.ExtraLarge</item>
+        <item name="colorSurface">@color/m3_surface_container_high</item>
+    </style>
+
+    <!-- AppCompat AlertDialog, which androidx.preference uses for list
+         choices: give it the same rounded lifted surface -->
+    <style name="ThemeOverlay.Hk.AlertDialog" parent="ThemeOverlay.Material3.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
+    </style>
+
+    <style name="ThemeOverlay.Hk.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Hk.BottomSheet</item>
+    </style>
+    <style name="Widget.Hk.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/m3_surface_container_low</item>
+    </style>
+
+    <!-- ======================================================== widgets -->
+    <!-- the white section card -->
+    <style name="Widget.Hk.Card" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardBackgroundColor">@color/card</item>
+        <item name="strokeColor">@color/card_stroke</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">0dp</item>
+    </style>
+
+    <!-- segmented button segment: tonal fill when checked -->
+    <style name="Widget.Hk.Segment" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="backgroundTint">@color/seg_bg</item>
+        <item name="android:textColor">@color/seg_fg</item>
+        <item name="iconTint">@color/seg_fg</item>
+        <item name="strokeColor">@color/m3_outline</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">46dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">6dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="Widget.Hk.Button.Filled" parent="Widget.Material3.Button">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Widget.Hk.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- ======================================================= type -->
+    <style name="TextAppearance.Hk.M3.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.M3.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">@font/vazirmatn</item>
+        <item name="fontFamily">@font/vazirmatn</item>
+    </style>
+    <style name="TextAppearance.Hk.PageTitle" parent="TextAppearance.Hk.M3.HeadlineMedium">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.BarTitle" parent="TextAppearance.Hk.PageTitle">
+        <item name="android:textSize">23sp</item>
+    </style>
+    <style name="TextAppearance.Hk.CardTitle" parent="TextAppearance.Hk.M3.TitleLarge">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.RowTitle" parent="TextAppearance.Hk.M3.TitleMedium">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+    </style>
+    <style name="TextAppearance.Hk.Body" parent="TextAppearance.Hk.M3.BodyMedium">
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:textColor">@color/m3_on_surface_variant</item>
+        <item name="android:lineSpacingExtra">4dp</item>
+    </style>
+    <style name="TextAppearance.Hk.Caption" parent="TextAppearance.Hk.M3.BodySmall">
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:textColor">@color/m3_on_surface_variant</item>
+    </style>
+    <style name="TextAppearance.Hk.Section" parent="TextAppearance.Hk.M3.TitleSmall">
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/m3_primary</item>
+    </style>
+
+    <!-- ============================================ preference screens -->
+    <style name="Pref.Hk" parent="PreferenceThemeOverlay">
+        <item name="preferenceStyle">@style/Pref.Hk.Row</item>
+        <item name="switchPreferenceCompatStyle">@style/Pref.Hk.Switch</item>
+        <item name="preferenceCategoryStyle">@style/Pref.Hk.Category</item>
+        <item name="dialogPreferenceStyle">@style/Pref.Hk.Row</item>
+        <item name="editTextPreferenceStyle">@style/Pref.Hk.Row</item>
+    </style>
+    <style name="Pref.Hk.Row" parent="Preference.Material">
+        <item name="android:layout">@layout/pref_row</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+    <style name="Pref.Hk.Switch" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:layout">@layout/pref_row</item>
+        <item name="android:widgetLayout">@layout/pref_widget_switch</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+    <style name="Pref.Hk.Category" parent="Preference.Category.Material">
+        <item name="android:layout">@layout/pref_category</item>
+        <item name="iconSpaceReserved">false</item>
+    </style>
+
 </resources>

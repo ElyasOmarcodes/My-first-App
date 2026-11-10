@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keyflux launcher foreground: one white keycap carrying a bold "K",
+     with a small spark for the "flux". A single centred glyph inside the
+     66dp safe zone of the 108dp adaptive canvas, the way system keyboards
+     (Gboard, SwiftKey) draw theirs, so every launcher mask keeps it whole
+     and it stays legible at small sizes. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#3B23B8" android:fillAlpha="0.55" android:pathData="M44,34h20a13,13 0 0 1 13,13v20a13,13 0 0 1 -13,13h-20a13,13 0 0 1 -13,-13v-20a13,13 0 0 1 13,-13z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M44,29h20a13,13 0 0 1 13,13v20a13,13 0 0 1 -13,13h-20a13,13 0 0 1 -13,-13v-20a13,13 0 0 1 13,-13z" />
+    <path android:fillColor="#5B3FE6" android:pathData="M44,39h7v11.2l10.4,-11.2h9.1l-11.6,12.3l12.2,14.7h-9.2l-8.4,-10.4l-2.5,2.6v7.8h-7z" />
+    <path android:fillColor="#FFC83D" android:pathData="M74,24l1.6,4.2l4.2,1.6l-4.2,1.6l-1.6,4.2l-1.6,-4.2l-4.2,-1.6l4.2,-1.6z" />
+</vector>
